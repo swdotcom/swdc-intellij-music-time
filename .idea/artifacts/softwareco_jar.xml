@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="softwareco:jar">
+    <output-path>$USER_HOME$/Desktop/artifacts/softwareco_jar</output-path>
+    <root id="archive" name="softwareco.jar">
+      <element id="module-output" name="softwareco" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/gson-2.8.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/httpclient-4.5.7.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/httpcore-4.4.11.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

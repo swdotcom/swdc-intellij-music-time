@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><idea-plugin>
+  <id>com.softwareco.intellij.plugin.musictime</id>
+
+  <name>Music Time</name>
+  <version>1.0.0</version>
+
+  <vendor email="cody@software.com" url="https://software.com">Software</vendor>
+
+    <description><![CDATA[
+<h1 id="musictimeforintellij">Music Time for IntelliJ</h1>
+
+<blockquote>
+<p><strong>Music Time</strong> is an open source plugin that provides music listening metrics right in your code editor.</p>
+</blockquote>
+
+<p align="center" style="margin: 0 10%">
+<img src="https://raw.githubusercontent.com/swdotcom/swdc-intellij/master/resources/assets/intellij-dashboard.gif" alt="Code Time for IntelliJ" />
+</p>
+
+<h2 id="powerupyourdevelopment">Power up your development</h2>
+
+<p><strong>In-editor dashboard</strong>
+Get daily and weekly reports of your music listening activity right in your code editor.</p>
+
+<p><strong>Status bar metrics</strong>
+After installing our plugin, your status bar will show real-time metrics about time music listen per day.</p>
+
+<p><strong>Weekly email reports</strong>
+Get a weekly report delivered right to your email inbox.</p>
+
+<p><strong>Data visualizations</strong>
+Go to our web app to get simple data visualizations, such as a rolling heatmap of your best programming times by hour of the day.</p>
+<p><strong>Calendar integration</strong>
+Integrate with Google Calendar to automatically set calendar events to protect your best programming times from meetings and interrupts.</p>
+
+<p><strong>More stats</strong>
+See your best time for coding and the speed, frequency, and top files across your commits.</p>
+
+<h2 id="whyyoushouldtryitout">Why you should try it out</h2>
+
+<ul>
+<li>Automatic time reports by project</li>
+
+<li>See what time you listen music your best-find your "flow"</li>
+
+<li>Defend your best music times against meetings and interrupts</li>
+
+<li>Find out what you can learn from your data</li>
+</ul>
+
+<h2 id="itssafesecureandfree">It's safe, secure, and free</h2>
+
+<p><strong>We never access your code</strong>
+We do not process, send, or store your proprietary code. We only provide metrics about music listening, and we make it easy to see the data we collect.</p>
+
+<p><strong>Your data is private</strong>
+We will never share your individually identifiable data with your boss. In the future, we will roll up data into groups and teams but we will keep your data anonymized.</p>
+
+<p><strong>Free for you, forever</strong>
+We provide 90 days of data history for free, forever. In the future, we will provide premium plans for advanced features and historical data access.</p>
+]]></description>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+  <idea-version since-build="162"/>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <depends>com.intellij.modules.lang</depends>
+
+  <application-components>
+    <!-- Add your application components here -->
+    <component>
+      <implementation-class>com.softwareco.intellij.plugin.SoftwareCoMusic</implementation-class>
+    </component>
+  </application-components>
+
+  <extensions defaultExtensionNs="com.intellij">
+<postStartupActivity implementation="com.softwareco.intellij.plugin.PluginPostStartupActivity"/>
+<toolWindow anchor="right" factoryClass="com.softwareco.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/softwareco/intellij/plugin/assets/playlist.png" id="PlayList"/>
+</extensions>
+
+  <actions>
+<group class="com.softwareco.intellij.plugin.actions.CustomMusicActionGroup" description="Music Time menu actions" id="CustomDefaultActionGroup1" text="Music Time">
+<add-to-group anchor="before" group-id="MainMenu" relative-to-action="HelpMenu"/>
+<action class="com.softwareco.intellij.plugin.actions.MusicDashboardAction" description="View your latest music metrics on editor" id="MusicDashboardAction" text="Music Time Dashboard"/>
+<action class="com.softwareco.intellij.plugin.actions.SubmitGitIssueAction" description="Encounter a bug? Submit an issue on our GitHub page" id="SubmitGitIssueAction" text="Submit an issue on GitHub"/>
+<action class="com.softwareco.intellij.plugin.actions.SubmitFeedbackAction" description="Send us an email at cody@software.com" id="SubmitFeedbackAction" text="Submit Feedback"/>
+<separator/>
+<action class="com.softwareco.intellij.plugin.actions.ConnectSpotifyAction" description="Connect to the Spotify." id="ConnectSpotifyAction" text="Connect Spotify"/>
+<action class="com.softwareco.intellij.plugin.actions.DisconnectSpotifyAction" description="Disconnect to the Spotify." id="DisconnectSpotifyAction" text="Disconnect Spotify"/>
+<action class="com.softwareco.intellij.plugin.actions.ConnectSlackAction" description="To share a playlist or track on Slack, Please connect your account" id="ConnectSlackAction" text="Connect Slack"/>
+<action class="com.softwareco.intellij.plugin.actions.DisconnectSlackAction" description="Disconnect to the Slack" id="DisconnectSlackAction" text="Disconnect Slack"/>
+</group>
+</actions>
+
+</idea-plugin>
