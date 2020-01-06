@@ -51,7 +51,7 @@ public class SoftwareCoMusicManager {
                     // update the end time on the previous track and send it as well
                     currentTrack.addProperty("end", now);
                     // send the post to end the previous track
-                    trackStr = SoftwareCo.gson.toJson(currentTrack);
+                    trackStr = SoftwareCoMusic.gson.toJson(currentTrack);
                     if (trackStr != null) {
                         response = SoftwareCoUtils.makeApiCall("/data/music", HttpPost.METHOD_NAME, trackStr);
                     }
@@ -93,7 +93,7 @@ public class SoftwareCoMusicManager {
                     // update the end time on the previous track and send it as well
                     currentTrack.addProperty("end", now);
                     // send the post to end the previous track
-                    trackStr = SoftwareCo.gson.toJson(currentTrack);
+                    trackStr = SoftwareCoMusic.gson.toJson(currentTrack);
                 }
 
 
@@ -104,7 +104,7 @@ public class SoftwareCoMusicManager {
                     trackInfo.addProperty("start", now);
                     trackInfo.addProperty("local_start", local_start);
 
-                    trackStr = SoftwareCo.gson.toJson(trackInfo);
+                    trackStr = SoftwareCoMusic.gson.toJson(trackInfo);
 
                     // update the current track
                     cloneTrackInfoToCurrent(trackInfo);
