@@ -250,4 +250,8 @@ public class Apis {
         return resp;
     }
     //***** End ****************
+
+    public static void startDesktopPlayer(String playerName) {
+        Util.startPlayer(playerName);
+    }
 }

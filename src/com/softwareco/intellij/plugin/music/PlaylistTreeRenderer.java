@@ -5,6 +5,7 @@ import com.intellij.openapi.util.IconLoader;
 import javax.swing.*;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
+import java.awt.event.FocusEvent;
 
 public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
     Icon pauseIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/pause_new.png");
@@ -24,11 +25,13 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
             boolean leaf,
             int row,
             boolean hasFocus) {
+        tree.requestFocusInWindow();
 
         super.getTreeCellRendererComponent(
                 tree, value, sel,
                 expanded, leaf, row,
-                hasFocus);
+                true);
+
         if (leaf) {
             if(isCurrentTrack(value)) {
                 if (!MusicControlManager.defaultbtn.equals("play")) {
@@ -62,8 +65,7 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
                 }
             }
         }
-
-
+        tree.requestFocusInWindow();
 
         return this;
     }

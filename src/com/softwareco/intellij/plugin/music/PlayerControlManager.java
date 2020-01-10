@@ -14,10 +14,6 @@ public class PlayerControlManager {
     public static final Logger LOG = Logger.getLogger("PlayerControlManager");
 
     public static boolean playSpotifyPlaylist(String playlistId, String trackId) {
-        boolean serverIsOnline = Util.isServerOnline();
-        if (!serverIsOnline) {
-            Util.showOfflinePrompt(false);
-        }
 
         if(playlistId == null || trackId == null) {
             playlistId = MusicControlManager.currentPlaylistId;
@@ -46,13 +42,14 @@ public class PlayerControlManager {
                     return true;
                 }
             }
-        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isSpotifyRunning()) {
+        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isSpotifyRunning() &&
+                MusicControlManager.currentDeviceId != null) {
             if(playlistId != null && playlistId.length() > 5 && trackId != null)
                 MusicController.playDesktopTrackInPlaylist("Spotify", playlistId, trackId);
             else if(playlistId != null && playlistId.length() < 5 && trackId != null)
                 MusicController.playDesktopTrack("Spotify", trackId);
-            else if(playlistId != null && playlistId.length() > 5)
-                MusicController.playDesktopPlaylist("Spotify", playlistId);
+//            else if(playlistId != null && playlistId.length() > 5)
+//                MusicController.playDesktopPlaylist("Spotify", playlistId);
 
             MusicControlManager.currentPlaylistId = playlistId;
             MusicControlManager.currentTrackId = trackId;

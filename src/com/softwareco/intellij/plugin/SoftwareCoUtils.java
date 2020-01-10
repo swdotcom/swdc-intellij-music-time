@@ -780,6 +780,7 @@ public class SoftwareCoUtils {
         } else {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
+            MusicToolWindow.triggerRefresh();
         }
     }
 
@@ -795,10 +796,19 @@ public class SoftwareCoUtils {
         if(MusicControlManager.currentDeviceId == null) {
             MusicControlManager.getSpotifyDevices();
             if(MusicControlManager.currentDeviceId == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                if(MusicControlManager.spotifyDeviceIds.size() == 1)
-                    MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(MusicControlManager.spotifyDeviceIds.size()-1);
+                MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+                if(MusicControlManager.currentDeviceName.contains("Web Player"))
+                    MusicControlManager.playerType = "Web Player";
+                else
+                    MusicControlManager.playerType = "Desktop Player";
                 PlayerControlManager.playSpotifyPlaylist(null, null); // play current playlist
             } else if(MusicControlManager.currentDeviceId != null) {
+                MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+                if(MusicControlManager.currentDeviceName.contains("Web Player"))
+                    MusicControlManager.playerType = "Web Player";
+                else
+                    MusicControlManager.playerType = "Desktop Player";
                 PlayerControlManager.playSpotifyPlaylist(null, null); // play current playlist
             }
         }

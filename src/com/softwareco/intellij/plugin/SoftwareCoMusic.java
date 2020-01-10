@@ -50,10 +50,18 @@ public class SoftwareCoMusic implements ApplicationComponent {
         return SoftwareCoUtils.pluginName;
     }
 
+    public static boolean getCodeTimePluginState() {
+        IdeaPluginDescriptor pluginDescriptor = PluginManager.getPlugin(PluginId.getId("com.softwareco.intellij.plugin"));
+        if(pluginDescriptor != null) {
+            return true;
+        }
+        return false;
+    }
+
     public void initComponent() {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
-        boolean musicDataFileExists = SoftwareCoSessionManager.musicDataFileExists();
+        //boolean musicDataFileExists = SoftwareCoSessionManager.musicDataFileExists();
         boolean jwtExists = SoftwareCoSessionManager.jwtExists();
         if (!sessionFileExists || !jwtExists) {
             if (!serverIsOnline) {
@@ -117,6 +125,13 @@ public class SoftwareCoMusic implements ApplicationComponent {
         asyncManager.scheduleService(
                 userStatusRunner, "userStatusRunner", 60, 60 * 3);
 
+//        if(!getCodeTimePluginState()) {
+//            // every 30 minutes
+//            final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
+//            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 30);
+//        }
+
+
         initializeUserInfoWhenProjectsReady(initializedUser);
 
     }
@@ -151,6 +166,17 @@ public class SoftwareCoMusic implements ApplicationComponent {
         }
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
+    }
+
+    private void sendOfflineDataRunner() {
+        new Thread(() -> {
+
+            try {
+                SoftwareCoSessionManager.getInstance().sendOfflineData();
+            } catch (Exception e) {
+                System.err.println(e);
+            }
+        }).start();
     }
 
     public void disposeComponent() {

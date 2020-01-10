@@ -3,8 +3,8 @@ package com.softwareco.intellij.plugin.music;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.softwareco.intellij.plugin.actions.MusicToolWindow;
-import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 import com.softwareco.intellij.plugin.musicjava.PlaylistController;
+import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -19,24 +19,41 @@ public class PlayListCommands {
     public static JsonObject myAITopTracks = null;
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();
-    public static Map<String, JsonObject> userTracks = new HashMap<>();
+    public static List<String> userPlaylistNames = new ArrayList<>();
+    public static Map<String, String> userPlaylists = new HashMap<>(); // <playlist_name, playlist_id>
+    public static Map<String, JsonObject> userTracks = new HashMap<>(); // <playlist_id, tracks>
+    public static String sortType = "Latest";
     public static int counter = 0;
 
-    public static void updatePlaylists() {
+    public static synchronized void updatePlaylists() {
         topSpotifyTracks = getTopSpotifyTracks();
         likedTracks = getLikedSpotifyTracks();
         PlaylistManager.getUserPlaylists();
         myAITopTracks = getAITopTracks();
-        if(userPlaylistIds.size() > 0) {
+        if(userPlaylists.size() > 0) {
             userTracks.clear();
-            for(String playlistId : userPlaylistIds) {
+
+            if(!sortType.equals("Latest")) {
+                Collections.sort(userPlaylistNames);
+            }
+            userPlaylistIds.clear();
+            for(String name : userPlaylistNames) {
+                String playlistId = userPlaylists.get(name);
+                userPlaylistIds.add(playlistId);
                 userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId));
             }
         }
-        if(topSpotifyTracks != null && counter == 0) {
-            MusicToolWindow.triggerRefresh();
-            counter++;
-        }
+        MusicToolWindow.triggerRefresh();
+    }
+
+    public static void sortAtoZ() {
+        sortType = "Sort A-Z";
+        updatePlaylists();
+    }
+
+    public static void sortLatest() {
+        sortType = "Latest";
+        updatePlaylists();
     }
 
     public static JsonObject getTopSpotifyTracks() {

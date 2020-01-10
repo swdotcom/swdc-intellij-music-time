@@ -14,9 +14,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionAdapter;
+import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -33,8 +31,12 @@ public class MusicToolWindow {
     private static JButton reload;
     private Map<String, PlaylistTree> playlists = new HashMap<>();
     private JLabel spotifyState;
+    private JLabel menu;
+    private JPopupMenu popupMenu;
 
     private static int state = 0;
+    private static int refreshButtonState = 0;
+    private static int refreshAIButtonState = 0;
 
     public MusicToolWindow(ToolWindow toolWindow) {
         playlistWindowContent.setFocusable(true);
@@ -42,14 +44,47 @@ public class MusicToolWindow {
         refresh.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if(MusicControlManager.spotifyCacheState)
-                    PlayListCommands.updatePlaylists();
-                refreshButton();
-                SoftwareCoUtils.showMsgPrompt("Playlist Refreshed Successfully !!!");
+                if(refreshButtonState == 0) {
+                    refreshButtonState = 1;
+                    if (MusicControlManager.spotifyCacheState)
+                        PlayListCommands.updatePlaylists();
+                    refreshButton();
+                    SoftwareCoUtils.showMsgPrompt("Playlist Refreshed Successfully !!!");
+                    refreshButtonState = 0;
+                }
             }
         });
         Icon refreshIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/refresh.png");
         refresh.setIcon(refreshIcon);
+
+        // Sorting menu ********************************************************
+        Icon menuIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/menu.png");
+        menu.setIcon(menuIcon);
+        popupMenu = new JPopupMenu();
+        JMenuItem sort1 = new JMenuItem("Sort A-Z");
+        sort1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                PlayListCommands.sortAtoZ();
+            }
+        });
+        JMenuItem sort2 = new JMenuItem("Sort Latest");
+        sort2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                PlayListCommands.sortLatest();
+            }
+        });
+        popupMenu.add(sort1);
+        popupMenu.add(sort2);
+        menu.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                popupMenu.show(e.getComponent(), e.getX(), e.getY());
+            }
+        });
+        // End ******************************************************************
 
         reload = new JButton();
         reload.addActionListener(e -> {
@@ -63,52 +98,7 @@ public class MusicToolWindow {
         this.currentPlayLists();
 
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-//        scrollPane.addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                super.mouseClicked(e);
-//            }
-//
-//            @Override
-//            public void mouseEntered(MouseEvent e) {
-//                super.mouseEntered(e);
-//            }
-//
-//            @Override
-//            public void mouseExited(MouseEvent e) {
-//                super.mouseExited(e);
-//            }
-//        });
-//        scrollPane.addMouseMotionListener(new MouseMotionAdapter() {
-//            @Override
-//            public void mouseMoved(MouseEvent e) {
-//                super.mouseMoved(e);
-//            }
-//        });
-//
-//        dataPanel.addMouseListener(new MouseAdapter() {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                super.mouseClicked(e);
-//            }
-//
-//            @Override
-//            public void mouseEntered(MouseEvent e) {
-//                super.mouseEntered(e);
-//            }
-//
-//            @Override
-//            public void mouseExited(MouseEvent e) {
-//                super.mouseExited(e);
-//            }
-//        });
-//
-//        dataPanel.addMouseMotionListener(new MouseMotionAdapter() {
-//            @Override
-//            public void mouseMoved(MouseEvent e) {
-//                super.mouseMoved(e);
-//            }
-//        });
+
         playlistWindowContent.setBackground((Color) null);
     }
 
@@ -126,6 +116,7 @@ public class MusicToolWindow {
 
         if(!SoftwareCoUtils.isSpotifyConncted()) {
             dataPanel.removeAll();
+            menu.setEnabled(false);
             DefaultListModel listModel = new DefaultListModel();
 
             Icon icon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/spotify.png");
@@ -181,6 +172,8 @@ public class MusicToolWindow {
         } else {
             dataPanel.removeAll();
             dataPanel.setBackground((Color) null);
+            dataPanel.setFocusable(true);
+            menu.setEnabled(true);
 
             DefaultListModel listModel = new DefaultListModel();
             Icon towerIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/tower.png");
@@ -273,14 +266,18 @@ public class MusicToolWindow {
                 public void mouseClicked(MouseEvent e) {
                     super.mouseClicked(e);
 
-                    JList lst = (JList) e.getSource();
-                    JLabel lbl = (JLabel) lst.getSelectedValue();
-                    if(lbl.getText().equals("Refresh My AI Playlist")) {
-                        PlayListCommands.refreshAIPlaylist();
-                        SoftwareCoUtils.showMsgPrompt("My AI Playlist Refreshed Successfully !!!");
-                    } else if(lbl.getText().equals("Generate My AI Playlist")) {
-                        PlayListCommands.generateAIPlaylist();
-                        SoftwareCoUtils.showMsgPrompt("My AI Playlist Generated Successfully !!!");
+                    if(refreshAIButtonState == 0) {
+                        refreshAIButtonState = 1;
+                        JList lst = (JList) e.getSource();
+                        JLabel lbl = (JLabel) lst.getSelectedValue();
+                        if (lbl.getText().equals("Refresh My AI Playlist")) {
+                            PlayListCommands.refreshAIPlaylist();
+                            SoftwareCoUtils.showMsgPrompt("My AI Playlist Refreshed Successfully !!!");
+                        } else if (lbl.getText().equals("Generate My AI Playlist")) {
+                            PlayListCommands.generateAIPlaylist();
+                            SoftwareCoUtils.showMsgPrompt("My AI Playlist Generated Successfully !!!");
+                        }
+                        refreshAIButtonState = 0;
                     }
                 }
 
@@ -342,7 +339,8 @@ public class MusicToolWindow {
                             } else {
                                 MusicControlManager.currentPlaylistId = root.getId();
                                 MusicControlManager.currentTrackId = node.getId();
-                                if(MusicControlManager.currentTrackName == null) {
+                                if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                        || !SoftwareCoUtils.isSpotifyRunning())) {
                                     MusicControlManager.launchPlayer();
                                     lazilyCheckPlayer(20, root.getId(), node.getId());
                                 } else {
@@ -359,7 +357,8 @@ public class MusicToolWindow {
                                 PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
                                 MusicControlManager.currentPlaylistId = node.getId();
                                 MusicControlManager.currentTrackId = child.getId();
-                                if(MusicControlManager.currentTrackName == null) {
+                                if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                        || !SoftwareCoUtils.isSpotifyRunning())) {
                                     MusicControlManager.launchPlayer();
                                     lazilyCheckPlayer(20, node.getId(), child.getId());
                                 } else {
@@ -386,15 +385,14 @@ public class MusicToolWindow {
 
                 playlists.put(PlayListCommands.topSpotifyPlaylistId, tree);
             }
-            tree.setBackground((Color) null);
-            //tree.setRequestFocusEnabled(true);
-            tree.requestFocusInWindow();
+
             PlaylistTreeRenderer renderer = (PlaylistTreeRenderer) tree.getCellRenderer();
             renderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
             renderer.setBorderSelectionColor(new Color(0,0,0,0));
-            //renderer.setBackgroundSelectionColor(new Color(13, 41, 62, 188));
+            tree.setBackground((Color) null);
 
             tree.setExpandedState(new TreePath(model.getPathToRoot(list)), tree.expandState);
+            tree.requestFocusInWindow();
 
             dataPanel.add(tree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
 
@@ -448,7 +446,8 @@ public class MusicToolWindow {
                                     MusicControlManager.currentPlaylistId = root.getId();
                                     MusicControlManager.currentTrackId = node.getId();
 
-                                    if(MusicControlManager.currentTrackName == null) {
+                                    if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                            || !SoftwareCoUtils.isSpotifyRunning())) {
                                         MusicControlManager.launchPlayer();
                                         lazilyCheckPlayer(20, root.getId(), node.getId());
                                     } else {
@@ -466,7 +465,8 @@ public class MusicToolWindow {
                                     MusicControlManager.currentPlaylistId = node.getId();
                                     MusicControlManager.currentTrackId = child.getId();
 
-                                    if(MusicControlManager.currentTrackName == null) {
+                                    if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                            || !SoftwareCoUtils.isSpotifyRunning())) {
                                         MusicControlManager.launchPlayer();
                                         lazilyCheckPlayer(20, node.getId(), child.getId());
                                     } else {
@@ -497,6 +497,7 @@ public class MusicToolWindow {
                 renderer1.setBackgroundNonSelectionColor(new Color(0,0,0,0));
                 renderer1.setBorderSelectionColor(new Color(0,0,0,0));
                 tree1.setBackground((Color)null);
+                tree1.requestFocus();
 
                 tree1.setExpandedState(new TreePath(model1.getPathToRoot(list1)), tree1.expandState);
 
@@ -552,7 +553,8 @@ public class MusicToolWindow {
                                     MusicControlManager.currentPlaylistId = root.getId();
                                     MusicControlManager.currentTrackId = node.getId();
 
-                                    if(MusicControlManager.currentTrackName == null) {
+                                    if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                            || !SoftwareCoUtils.isSpotifyRunning())) {
                                         MusicControlManager.launchPlayer();
                                         lazilyCheckPlayer(20, root.getId(), node.getId());
                                     } else {
@@ -570,7 +572,8 @@ public class MusicToolWindow {
                                     MusicControlManager.currentPlaylistId = node.getId();
                                     MusicControlManager.currentTrackId = child.getId();
 
-                                    if(MusicControlManager.currentTrackName == null) {
+                                    if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                            || !SoftwareCoUtils.isSpotifyRunning())) {
                                         MusicControlManager.launchPlayer();
                                         lazilyCheckPlayer(20, node.getId(), child.getId());
                                     } else {
@@ -601,6 +604,7 @@ public class MusicToolWindow {
                 renderer2.setBackgroundNonSelectionColor(new Color(0,0,0,0));
                 renderer2.setBorderSelectionColor(new Color(0,0,0,0));
                 tree2.setBackground((Color)null);
+                tree2.requestFocus();
 
                 tree2.setExpandedState(new TreePath(model2.getPathToRoot(list2)), tree2.expandState);
 
@@ -613,6 +617,7 @@ public class MusicToolWindow {
                 seperator1.setAlignmentY(0.0f);
                 seperator1.setForeground(new Color(58, 86, 187));
                 dataPanel.add(seperator1, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
+
 
                 for(String playlistId : PlayListCommands.userPlaylistIds) {
                     JsonObject obj1 = PlayListCommands.userTracks.get(playlistId);
@@ -662,7 +667,8 @@ public class MusicToolWindow {
                                             MusicControlManager.currentPlaylistId = root.getId();
                                             MusicControlManager.currentTrackId = node.getId();
 
-                                            if(MusicControlManager.currentTrackName == null) {
+                                            if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                                    || !SoftwareCoUtils.isSpotifyRunning())) {
                                                 MusicControlManager.launchPlayer();
                                                 lazilyCheckPlayer(20, root.getId(), node.getId());
                                             } else {
@@ -680,7 +686,8 @@ public class MusicToolWindow {
                                             MusicControlManager.currentPlaylistId = node.getId();
                                             MusicControlManager.currentTrackId = child.getId();
 
-                                            if(MusicControlManager.currentTrackName == null) {
+                                            if(MusicControlManager.currentTrackName == null && (MusicControlManager.playerType.equals("Web Player")
+                                                    || !SoftwareCoUtils.isSpotifyRunning())) {
                                                 MusicControlManager.launchPlayer();
                                                 lazilyCheckPlayer(20, node.getId(), child.getId());
                                             } else {
@@ -711,6 +718,7 @@ public class MusicToolWindow {
                         renderer3.setBackgroundNonSelectionColor(new Color(0,0,0,0));
                         renderer3.setBorderSelectionColor(new Color(0,0,0,0));
                         tree3.setBackground((Color)null);
+                        tree3.requestFocus();
 
                         tree3.setExpandedState(new TreePath(model3.getPathToRoot(list3)), tree3.expandState);
 
@@ -723,15 +731,13 @@ public class MusicToolWindow {
             // Add VSpacer at last
             dataPanel.add(component, gridConstraints(dataPanel.getComponentCount(), 6, 1, 0, 2, 0));
 
-            //dataPanel.setFocusable(true);
             dataPanel.updateUI();
-            //dataPanel.setVisible(true);
-            //scrollPane.setFocusable(true);
-            //scrollPane.updateUI();
-            //scrollPane.setVisible(true);
-            //playlistWindowContent.setFocusable(true);
-            //playlistWindowContent.updateUI();
-            //playlistWindowContent.setVisible(true);
+            dataPanel.setVisible(true);
+            scrollPane.setFocusable(true);
+            scrollPane.setVisible(true);
+            playlistWindowContent.updateUI();
+            playlistWindowContent.setFocusable(true);
+            playlistWindowContent.setVisible(true);
         }
 
     }
@@ -773,9 +779,24 @@ public class MusicToolWindow {
                 }
             }).start();
         } else if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isSpotifyRunning()) {
-            MusicControlManager.currentPlaylistId = playlist;
-            MusicControlManager.currentTrackId = track;
-            PlayerControlManager.playSpotifyPlaylist(playlist, track);
+            if(MusicControlManager.currentDeviceId == null) {
+                final int newRetryCount = retryCount - 1;
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(3000);
+                        lazilyCheckPlayer(newRetryCount, playlist, track);
+                    }
+                    catch (Exception ex){
+                        System.err.println(ex);
+                    }
+                }).start();
+
+                SoftwareCoUtils.initialSetup();
+            } else {
+                MusicControlManager.currentPlaylistId = playlist;
+                MusicControlManager.currentTrackId = track;
+                PlayerControlManager.playSpotifyPlaylist(playlist, track);
+            }
         }
     }
 }

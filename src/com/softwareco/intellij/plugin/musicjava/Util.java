@@ -182,7 +182,7 @@ public class Util {
         if(!track.contains("track")) {
             track = "spotify:track:" + track;
         }
-        String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to play track \""+ track +"\" of playlist \""+ playlist +"\"" };
+        String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to play track \""+ track +"\" in context \""+ playlist +"\"" };
         return runCommand(args, null);
     }
 

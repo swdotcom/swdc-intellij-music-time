@@ -29,15 +29,18 @@ public class PlaylistManager {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
                 MusicControlManager.playlistids.clear();
-                PlayListCommands.userPlaylistIds.clear();
+                PlayListCommands.userPlaylists.clear();
                 PlayListCommands.myAIPlaylistId = null;
+                PlayListCommands.userPlaylistNames.clear();
                 for(JsonElement array : obj.get("items").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
                         MusicControlManager.playlistids.add(array.getAsJsonObject().get("id").getAsString());
                         if(array.getAsJsonObject().get("name").getAsString().equals("My AI Top 40")) {
                             PlayListCommands.myAIPlaylistId = array.getAsJsonObject().get("id").getAsString();
                         } else {
-                            PlayListCommands.userPlaylistIds.add(array.getAsJsonObject().get("id").getAsString());
+                            PlayListCommands.userPlaylistNames.add(array.getAsJsonObject().get("name").getAsString().toLowerCase());
+                            PlayListCommands.userPlaylists.put(array.getAsJsonObject().get("name").getAsString().toLowerCase(),
+                                    array.getAsJsonObject().get("id").getAsString());
                         }
                     }
                 }
@@ -214,7 +217,12 @@ public class PlaylistManager {
             try {
                 JsonObject obj = Util.getCurrentMusicTrack();
                 if (!obj.isJsonNull()) {
-                    MusicControlManager.currentTrackId = obj.get("id").getAsString();
+                    String track_Id = obj.get("id").getAsString();
+                    if(track_Id.contains("track")) {
+                        String[] paramParts = track_Id.split(":");
+                        track_Id = paramParts[paramParts.length-1].trim();
+                    }
+                    MusicControlManager.currentTrackId = track_Id;
                     MusicControlManager.currentTrackName = obj.get("name").getAsString();
                     SoftwareCoSessionManager.setMusicData("playlist_id", MusicControlManager.currentPlaylistId);
                     SoftwareCoSessionManager.setMusicData("track_id", MusicControlManager.currentTrackId);
