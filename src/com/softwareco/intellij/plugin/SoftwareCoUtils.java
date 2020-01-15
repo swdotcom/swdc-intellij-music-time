@@ -459,10 +459,17 @@ public class SoftwareCoUtils {
                                 }
 
                                 if(MusicControlManager.currentTrackName != null) {
-                                    SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
-                                            unlikeIcon, "like", unlikeiconId);
-                                    statusBar.addWidget(unlikeIconWidget, unlikeiconId);
-                                    statusBar.updateWidget(unlikeiconId);
+                                    if(MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
+                                        SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
+                                                likeIcon, "unlike", likeiconId);
+                                        statusBar.addWidget(likeIconWidget, likeiconId);
+                                        statusBar.updateWidget(likeiconId);
+                                    } else {
+                                        SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
+                                                unlikeIcon, "like", unlikeiconId);
+                                        statusBar.addWidget(unlikeIconWidget, unlikeiconId);
+                                        statusBar.updateWidget(unlikeiconId);
+                                    }
 
                                     SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
                                             preIcon, "previous", preiconId);
@@ -762,7 +769,7 @@ public class SoftwareCoUtils {
 
     public static void updatePlayerControles() {
         if(MusicControlManager.spotifyCacheState) {
-            if(MusicControlManager.currentDeviceId == null || MusicControlManager.userStatus == null) {
+            if((MusicControlManager.currentDeviceId == null && MusicControlManager.currentDeviceName == null) || MusicControlManager.userStatus == null) {
                 initialSetup();
             } else if(MusicControlManager.playerType.equals("Web Player")){
                 PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
@@ -790,26 +797,33 @@ public class SoftwareCoUtils {
             if (obj != null)
                 MusicControlManager.userStatus = obj.get("product").getAsString();
         }
-        MusicControlManager.currentPlaylistId = SoftwareCoSessionManager.getMusicData("playlist_id");
-        MusicControlManager.currentTrackId = SoftwareCoSessionManager.getMusicData("track_id");
+
+        MusicControlManager.currentPlaylistId = SoftwareCoSessionManager.getTempData("playlist_id");
+        MusicControlManager.currentTrackId = SoftwareCoSessionManager.getTempData("track_id");
 
         if(MusicControlManager.currentDeviceId == null) {
             MusicControlManager.getSpotifyDevices();
             if(MusicControlManager.currentDeviceId == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
                 MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(MusicControlManager.spotifyDeviceIds.size()-1);
                 MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+
                 if(MusicControlManager.currentDeviceName.contains("Web Player"))
                     MusicControlManager.playerType = "Web Player";
                 else
                     MusicControlManager.playerType = "Desktop Player";
+
                 PlayerControlManager.playSpotifyPlaylist(null, null); // play current playlist
             } else if(MusicControlManager.currentDeviceId != null) {
                 MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+
                 if(MusicControlManager.currentDeviceName.contains("Web Player"))
                     MusicControlManager.playerType = "Web Player";
                 else
                     MusicControlManager.playerType = "Desktop Player";
+
                 PlayerControlManager.playSpotifyPlaylist(null, null); // play current playlist
+            } else {
+                MusicControlManager.currentTrackName = null;
             }
         }
     }
@@ -1026,6 +1040,35 @@ public class SoftwareCoUtils {
             SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), jwt);
             if (!resp.isOk()) {
                 LOG.log(Level.WARNING, pluginName + ": unable to send heartbeat ping");
+            }
+        }
+    }
+
+    public static void sendSessionPayload(String songSession) {
+        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        if (serverIsOnline && jwt != null) {
+
+            String api = "/music/session";
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, songSession, jwt);
+            if (!resp.isOk()) {
+                LOG.log(Level.WARNING, pluginName + ": unable to send song session");
+            }
+        }
+    }
+
+    public static void sendBatchedLikedSongSessions(String tracksToSave) {
+        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        if (serverIsOnline && jwt != null) {
+
+            JsonObject payload = new JsonObject();
+            payload.addProperty("tracks", tracksToSave);
+
+            String api = "/music/session/seed";
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString(), jwt);
+            if (!resp.isOk()) {
+                LOG.log(Level.WARNING, pluginName + ": unable to send liked song sessions");
             }
         }
     }

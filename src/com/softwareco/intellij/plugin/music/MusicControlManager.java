@@ -337,10 +337,13 @@ public class MusicControlManager {
                             playerType = "Desktop Player";
                     }
                 }
-                if(spotifyDeviceIds.size() == 0)
+                if(spotifyDeviceIds.size() == 0) {
                     currentDeviceId = null;
-                else if(!spotifyDeviceIds.contains(currentDeviceId))
+                    currentDeviceName = null;
+                } else if(!spotifyDeviceIds.contains(currentDeviceId)) {
                     currentDeviceId = null;
+                    currentDeviceName = null;
+                }
             } else {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");
             }

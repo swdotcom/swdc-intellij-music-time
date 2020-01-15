@@ -19,8 +19,7 @@ public class PlayListCommands {
     public static JsonObject myAITopTracks = null;
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();
-    public static List<String> userPlaylistNames = new ArrayList<>();
-    public static Map<String, String> userPlaylists = new HashMap<>(); // <playlist_name, playlist_id>
+    public static Map<String, String> userPlaylists = new HashMap<>(); // <playlist_id, playlist_name>
     public static Map<String, JsonObject> userTracks = new HashMap<>(); // <playlist_id, tracks>
     public static String sortType = "Latest";
     public static int counter = 0;
@@ -32,18 +31,54 @@ public class PlayListCommands {
         myAITopTracks = getAITopTracks();
         if(userPlaylists.size() > 0) {
             userTracks.clear();
+            Map<String, String> sortedPlaylist = new LinkedHashMap<>();
 
             if(!sortType.equals("Latest")) {
-                Collections.sort(userPlaylistNames);
+                sortedPlaylist = sortHashMapByValues((HashMap<String, String>) userPlaylists);
+                userPlaylistIds.clear();
+            } else {
+                sortedPlaylist = userPlaylists;
             }
-            userPlaylistIds.clear();
-            for(String name : userPlaylistNames) {
-                String playlistId = userPlaylists.get(name);
-                userPlaylistIds.add(playlistId);
+
+            Set<String> ids = sortedPlaylist.keySet();
+            for(String playlistId : ids) {
+                if(!sortType.equals("Latest")) {
+                    userPlaylistIds.add(playlistId);
+                }
                 userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId));
             }
         }
         MusicToolWindow.triggerRefresh();
+    }
+
+    public static LinkedHashMap<String, String> sortHashMapByValues(
+            HashMap<String, String> passedMap) {
+        List<String> mapKeys = new ArrayList<>(passedMap.keySet());
+        List<String> mapValues = new ArrayList<>(passedMap.values());
+        Collections.sort(mapValues);
+        Collections.sort(mapKeys);
+
+        LinkedHashMap<String, String> sortedMap =
+                new LinkedHashMap<>();
+
+        Iterator<String> valueIt = mapValues.iterator();
+        while (valueIt.hasNext()) {
+            String val = valueIt.next();
+            Iterator<String> keyIt = mapKeys.iterator();
+
+            while (keyIt.hasNext()) {
+                String key = keyIt.next();
+                String comp1 = passedMap.get(key);
+                String comp2 = val;
+
+                if (comp1.equals(comp2)) {
+                    keyIt.remove();
+                    sortedMap.put(key, val);
+                    break;
+                }
+            }
+        }
+        return sortedMap;
     }
 
     public static void sortAtoZ() {

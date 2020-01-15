@@ -31,16 +31,16 @@ public class PlaylistManager {
                 MusicControlManager.playlistids.clear();
                 PlayListCommands.userPlaylists.clear();
                 PlayListCommands.myAIPlaylistId = null;
-                PlayListCommands.userPlaylistNames.clear();
+                PlayListCommands.userPlaylistIds.clear();
                 for(JsonElement array : obj.get("items").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
                         MusicControlManager.playlistids.add(array.getAsJsonObject().get("id").getAsString());
                         if(array.getAsJsonObject().get("name").getAsString().equals("My AI Top 40")) {
                             PlayListCommands.myAIPlaylistId = array.getAsJsonObject().get("id").getAsString();
                         } else {
-                            PlayListCommands.userPlaylistNames.add(array.getAsJsonObject().get("name").getAsString().toLowerCase());
-                            PlayListCommands.userPlaylists.put(array.getAsJsonObject().get("name").getAsString().toLowerCase(),
-                                    array.getAsJsonObject().get("id").getAsString());
+                            PlayListCommands.userPlaylistIds.add(array.getAsJsonObject().get("id").getAsString());
+                            PlayListCommands.userPlaylists.put(array.getAsJsonObject().get("id").getAsString(),
+                                    array.getAsJsonObject().get("name").getAsString().toLowerCase().trim());
                         }
                     }
                 }
@@ -148,8 +148,8 @@ public class PlaylistManager {
                 JsonObject track = tracks.get("item").getAsJsonObject();
                 MusicControlManager.currentTrackId = track.get("id").getAsString();
                 MusicControlManager.currentTrackName = track.get("name").getAsString();
-                SoftwareCoSessionManager.setMusicData("playlist_id", MusicControlManager.currentPlaylistId);
-                SoftwareCoSessionManager.setMusicData("track_id", MusicControlManager.currentTrackId);
+                SoftwareCoSessionManager.setTempData("playlist_id", MusicControlManager.currentPlaylistId);
+                SoftwareCoSessionManager.setTempData("track_id", MusicControlManager.currentTrackId);
                 if(!tracks.get("context").isJsonNull()) {
                     JsonObject context = tracks.get("context").getAsJsonObject();
                     String[] uri = context.get("uri").getAsString().split(":");
@@ -224,8 +224,8 @@ public class PlaylistManager {
                     }
                     MusicControlManager.currentTrackId = track_Id;
                     MusicControlManager.currentTrackName = obj.get("name").getAsString();
-                    SoftwareCoSessionManager.setMusicData("playlist_id", MusicControlManager.currentPlaylistId);
-                    SoftwareCoSessionManager.setMusicData("track_id", MusicControlManager.currentTrackId);
+                    SoftwareCoSessionManager.setTempData("playlist_id", MusicControlManager.currentPlaylistId);
+                    SoftwareCoSessionManager.setTempData("track_id", MusicControlManager.currentTrackId);
                     if (obj.get("state").getAsString().equals("playing")) {
                         MusicControlManager.defaultbtn = "pause";
                     } else {

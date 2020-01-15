@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.music.MusicControlManager;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 
@@ -143,4 +144,33 @@ public class MusicController {
     public static void nextSpotifyDesktop() {
         Util.nextTrack("Spotify");
     }
+
+    public static Object likeSpotifyWeb(boolean like, String trackId, String accessToken) {
+        if(like) {
+            // Add to liked playlist
+            JsonObject obj = new JsonObject();
+            if(trackId != null) {
+                JsonArray array = new JsonArray();
+                array.add(trackId);
+                obj.add("ids", array);
+            }
+
+            String api = "/v1/me/tracks";
+            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+            if (resp.isOk()) {
+                return resp;
+            }
+            return resp;
+        } else {
+            // remove from liked playlist
+
+            String api = "/v1/me/tracks?ids=" + trackId;
+            SoftwareResponse resp = Client.makeApiCall(api, HttpDelete.METHOD_NAME, null, accessToken);
+            if (resp.isOk()) {
+                return resp;
+            }
+            return resp;
+        }
+    }
+    //const api = `/music/liked/track/${track.id}?type=${type}`; type = spotify
 }

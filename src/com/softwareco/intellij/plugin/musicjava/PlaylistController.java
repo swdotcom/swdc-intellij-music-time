@@ -3,6 +3,7 @@ package com.softwareco.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.softwareco.intellij.plugin.music.MusicControlManager;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -36,6 +37,15 @@ public class PlaylistController {
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to get Top Tracks, null response");
             }
+        } else if(!resp.getJsonObj().isJsonNull()) {
+            JsonObject tracks = resp.getJsonObj();
+            if (tracks != null && tracks.has("error")) {
+                JsonObject error = tracks.get("error").getAsJsonObject();
+                String message = error.get("message").getAsString();
+                if(message.equals("The access token expired")) {
+                    MusicControlManager.refreshAccessToken();
+                }
+            }
         }
         return resp;
     }
@@ -55,6 +65,15 @@ public class PlaylistController {
 
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to get Liked Tracks, null response");
+            }
+        } else if(!resp.getJsonObj().isJsonNull()) {
+            JsonObject tracks = resp.getJsonObj();
+            if (tracks != null && tracks.has("error")) {
+                JsonObject error = tracks.get("error").getAsJsonObject();
+                String message = error.get("message").getAsString();
+                if(message.equals("The access token expired")) {
+                    MusicControlManager.refreshAccessToken();
+                }
             }
         }
         return resp;

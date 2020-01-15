@@ -50,7 +50,14 @@ public class MusicToolWindow {
                         PlayListCommands.updatePlaylists();
                     refreshButton();
                     SoftwareCoUtils.showMsgPrompt("Playlist Refreshed Successfully !!!");
-                    refreshButtonState = 0;
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(1000);
+                            refreshButtonState = 0;
+                        } catch (Exception ex) {
+                            System.err.println(ex);
+                        }
+                    }).start();
                 }
             }
         });
@@ -277,7 +284,14 @@ public class MusicToolWindow {
                             PlayListCommands.generateAIPlaylist();
                             SoftwareCoUtils.showMsgPrompt("My AI Playlist Generated Successfully !!!");
                         }
-                        refreshAIButtonState = 0;
+                        new Thread(() -> {
+                            try {
+                                Thread.sleep(1000);
+                                refreshAIButtonState = 0;
+                            } catch (Exception ex) {
+                                System.err.println(ex);
+                            }
+                        }).start();
                     }
                 }
 
@@ -758,7 +772,7 @@ public class MusicToolWindow {
         return constraints;
     }
 
-    private void refreshButton() {
+    private synchronized void refreshButton() {
         this.currentPlayLists();
     }
 
@@ -767,35 +781,35 @@ public class MusicToolWindow {
     }
 
     protected void lazilyCheckPlayer(int retryCount, String playlist, String track) {
-        if(MusicControlManager.playerType.equals("Desktop Player") && !SoftwareCoUtils.isSpotifyRunning() && retryCount > 0) {
-            final int newRetryCount = retryCount - 1;
-            new Thread(() -> {
-                try {
-                    Thread.sleep(3000);
-                    lazilyCheckPlayer(newRetryCount, playlist, track);
-                }
-                catch (Exception ex){
-                    System.err.println(ex);
-                }
-            }).start();
-        } else if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isSpotifyRunning()) {
-            if(MusicControlManager.currentDeviceId == null) {
+        if(MusicControlManager.currentTrackName == null) {
+            if (MusicControlManager.playerType.equals("Desktop Player") && !SoftwareCoUtils.isSpotifyRunning() && retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
                 new Thread(() -> {
                     try {
                         Thread.sleep(3000);
                         lazilyCheckPlayer(newRetryCount, playlist, track);
-                    }
-                    catch (Exception ex){
+                    } catch (Exception ex) {
                         System.err.println(ex);
                     }
                 }).start();
+            } else if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isSpotifyRunning()) {
+                if (MusicControlManager.currentDeviceId == null) {
+                    final int newRetryCount = retryCount - 1;
+                    new Thread(() -> {
+                        try {
+                            Thread.sleep(3000);
+                            lazilyCheckPlayer(newRetryCount, playlist, track);
+                        } catch (Exception ex) {
+                            System.err.println(ex);
+                        }
+                    }).start();
 
-                SoftwareCoUtils.initialSetup();
-            } else {
-                MusicControlManager.currentPlaylistId = playlist;
-                MusicControlManager.currentTrackId = track;
-                PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                    SoftwareCoUtils.initialSetup();
+                } else {
+                    MusicControlManager.currentPlaylistId = playlist;
+                    MusicControlManager.currentTrackId = track;
+                    PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                }
             }
         }
     }

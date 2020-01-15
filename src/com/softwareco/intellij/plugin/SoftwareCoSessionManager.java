@@ -11,8 +11,13 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.softwareco.intellij.plugin.music.MusicControlManager;
 import com.softwareco.intellij.plugin.music.PlayListCommands;
 import com.softwareco.intellij.plugin.music.PlayerControlManager;
@@ -23,8 +28,10 @@ import org.apache.http.client.methods.HttpPost;
 import java.awt.event.MouseEvent;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -35,6 +42,9 @@ public class SoftwareCoSessionManager {
     private static Map<String, String> sessionMap = new HashMap<>();
     private static Map<String, String> musicData = new HashMap<>();
     private static long lastAppAvailableCheck = 0;
+
+    private static String SERVICE_NOT_AVAIL =
+            "Our service is temporarily unavailable.\n\nPlease try again later.\n";
 
     public static SoftwareCoSessionManager getInstance() {
         if (instance == null) {
@@ -101,7 +111,17 @@ public class SoftwareCoSessionManager {
         return file;
     }
 
-    private String getSongSessionDataFile() {
+    public static String getTempDataFile(boolean autoCreate) {
+        String file = getSoftwareDir(autoCreate);
+        if (SoftwareCoUtils.isWindows()) {
+            file += "\\tempData.json";
+        } else {
+            file += "/tempData.json";
+        }
+        return file;
+    }
+
+    private static String getSongSessionDataFile() {
         String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\songSessionData.json";
@@ -111,7 +131,7 @@ public class SoftwareCoSessionManager {
         return file;
     }
 
-    private String getSoftwareDataStoreFile() {
+    private static String getSoftwareDataStoreFile() {
         String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\data.json";
@@ -119,6 +139,25 @@ public class SoftwareCoSessionManager {
             file += "/data.json";
         }
         return file;
+    }
+
+    private static String getMusicDashboardFile() {
+        String file = getSoftwareDir(true);
+        if (SoftwareCoUtils.isWindows()) {
+            file += "\\musicTime.html";
+        } else {
+            file += "/musicTime.html";
+        }
+        return file;
+    }
+
+    public static Project getOpenProject() {
+        ProjectManager projMgr = ProjectManager.getInstance();
+        Project[] projects = projMgr.getOpenProjects();
+        if (projects != null && projects.length > 0) {
+            return projects[0];
+        }
+        return null;
     }
 
     public synchronized static boolean isServerOnline() {
@@ -301,6 +340,36 @@ public class SoftwareCoSessionManager {
         return null;
     }
 
+    public static void setTempData(String key, String val) {
+        musicData.put(key, val);
+        JsonObject jsonObj = getTempDataAsJson();
+        jsonObj.addProperty(key, val);
+
+        String content = jsonObj.toString();
+
+        String sessionFile = getTempDataFile(true);
+
+        try {
+            Writer output = new BufferedWriter(new FileWriter(sessionFile));
+            output.write(content);
+            output.close();
+        } catch (Exception e) {
+            log.warning("Music Time: Failed to write the key value pair (" + key + ", " + val + ") into the music data, error: " + e.getMessage());
+        }
+    }
+
+    public static String getTempData(String key) {
+        String val = musicData.get(key);
+        if (val != null) {
+            return val;
+        }
+        JsonObject jsonObj = getTempDataAsJson();
+        if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
+            return jsonObj.get(key).getAsString();
+        }
+        return null;
+    }
+
     private static JsonObject getSoftwareSessionAsJson() {
         JsonObject data = null;
 
@@ -339,6 +408,77 @@ public class SoftwareCoSessionManager {
             }
         }
         return (data == null) ? new JsonObject() : data;
+    }
+
+    private static JsonObject getTempDataAsJson() {
+        JsonObject data = null;
+
+        String sessionFile = getTempDataFile(true);
+        File f = new File(sessionFile);
+        if (f.exists()) {
+            try {
+                byte[] encoded = Files.readAllBytes(Paths.get(sessionFile));
+                String content = new String(encoded, Charset.defaultCharset());
+                if (content != null) {
+                    // json parse it
+                    data = SoftwareCoMusic.jsonParser.parse(content).getAsJsonObject();
+                }
+            } catch (Exception e) {
+                log.warning("Music Time: Error trying to read and json parse the music data file, error: " + e.getMessage());
+            }
+        }
+        return (data == null) ? new JsonObject() : data;
+    }
+
+    public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
+        boolean isOnline = isServerOnline();
+        String dashboardFile = SoftwareCoSessionManager.getMusicDashboardFile();
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+
+        Writer writer = null;
+
+        if (isOnline) {
+            String api = "/dashboard?plugin=" + plugin + "&linux=" + SoftwareCoUtils.isLinux() + "&html=" + isHtml;
+            SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+            if(response.isOk()) {
+                String dashboardSummary = response.getJsonStr();
+                if (dashboardSummary == null || dashboardSummary.trim().isEmpty()) {
+                    dashboardSummary = SERVICE_NOT_AVAIL;
+                }
+
+                // write the dashboard summary content
+                try {
+                    writer = new BufferedWriter(new OutputStreamWriter(
+                            new FileOutputStream(dashboardFile), StandardCharsets.UTF_8));
+                    writer.write(dashboardSummary);
+                } catch (IOException ex) {
+                    // Report
+                } finally {
+                    try {
+                        writer.close();
+                    } catch (Exception ex) {/*ignore*/}
+                }
+            }
+        }
+    }
+
+    public static void launchMusicTimeMetricsDashboard() {
+        if (!SoftwareCoSessionManager.isServerOnline()) {
+            SoftwareCoUtils.showOfflinePrompt(false);
+        }
+        Project p = getOpenProject();
+        if (p == null) {
+            return;
+        }
+
+        fetchMusicTimeMetricsDashboard("music-time", true);
+
+        String musicTimeFile = SoftwareCoSessionManager.getMusicDashboardFile();
+        File f = new File(musicTimeFile);
+
+        VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
+        OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
+        FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
     }
 
     private Project getCurrentProject() {
@@ -467,6 +607,10 @@ public class SoftwareCoSessionManager {
                 }
             } else if(id.equals(songtrackId)) {
                 MusicControlManager.launchPlayer();
+            } else if(id.equals(unlikeiconId)) {
+                PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
+            } else if(id.equals(likeiconId)) {
+                PlayerControlManager.likeSpotifyTrack(false, MusicControlManager.currentTrackId);
             }
         } else {
             SoftwareCoUtils.showOfflinePrompt(false);

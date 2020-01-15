@@ -68,6 +68,15 @@ public class Apis {
             } else {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");
             }
+        } else if(!resp.getJsonObj().isJsonNull()) {
+            JsonObject tracks = resp.getJsonObj();
+            if (tracks != null && tracks.has("error")) {
+                JsonObject error = tracks.get("error").getAsJsonObject();
+                String message = error.get("message").getAsString();
+                if(message.equals("The access token expired")) {
+                    refreshAccessToken(null, null, null);
+                }
+            }
         }
         return resp;
     }
@@ -123,6 +132,15 @@ public class Apis {
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to get Playlists, null response");
             }
+        } else if(!resp.getJsonObj().isJsonNull()) {
+            JsonObject tracks = resp.getJsonObj();
+            if (tracks != null && tracks.has("error")) {
+                JsonObject error = tracks.get("error").getAsJsonObject();
+                String message = error.get("message").getAsString();
+                if(message.equals("The access token expired")) {
+                    refreshAccessToken(null, null, null);
+                }
+            }
         }
         return resp;
     }
@@ -143,6 +161,15 @@ public class Apis {
                     }
                 } else {
                     LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
+                }
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject tracks = resp.getJsonObj();
+                if (tracks != null && tracks.has("error")) {
+                    JsonObject error = tracks.get("error").getAsJsonObject();
+                    String message = error.get("message").getAsString();
+                    if(message.equals("The access token expired")) {
+                        refreshAccessToken(null, null, null);
+                    }
                 }
             }
             return resp;

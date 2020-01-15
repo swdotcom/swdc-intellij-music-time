@@ -34,7 +34,7 @@ public class PlayerControlManager {
                             MusicControlManager.currentTrackId = finalTrackId;
                             MusicControlManager.playerState = "End";
                             SoftwareCoUtils.updatePlayerControles();
-                            MusicToolWindow.triggerRefresh();
+                            PlayListCommands.updatePlaylists();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -54,7 +54,7 @@ public class PlayerControlManager {
             MusicControlManager.currentPlaylistId = playlistId;
             MusicControlManager.currentTrackId = trackId;
             SoftwareCoUtils.updatePlayerControles();
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists();
             return true;
         }
         return false;
@@ -78,7 +78,7 @@ public class PlayerControlManager {
                         try {
                             Thread.sleep(1000);
                             SoftwareCoUtils.updatePlayerControles();
-                            MusicToolWindow.triggerRefresh();
+                            PlayListCommands.updatePlaylists();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -100,7 +100,7 @@ public class PlayerControlManager {
             MusicController.playSpotifyDesktop();
             MusicControlManager.playerState = "End";
             SoftwareCoUtils.updatePlayerControles();
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists();
             return true;
         }
         return false;
@@ -124,7 +124,7 @@ public class PlayerControlManager {
                         try {
                             Thread.sleep(1000);
                             SoftwareCoUtils.updatePlayerControles();
-                            MusicToolWindow.triggerRefresh();
+                            PlayListCommands.updatePlaylists();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -146,7 +146,7 @@ public class PlayerControlManager {
             MusicController.pauseSpotifyDesktop();
             MusicControlManager.playerState = "Resume";
             SoftwareCoUtils.updatePlayerControles();
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists();
             return true;
         }
         return false;
@@ -169,7 +169,7 @@ public class PlayerControlManager {
                         try {
                             Thread.sleep(1000);
                             SoftwareCoUtils.updatePlayerControles();
-                            MusicToolWindow.triggerRefresh();
+                            PlayListCommands.updatePlaylists();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -194,7 +194,7 @@ public class PlayerControlManager {
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.previousSpotifyDesktop();
             SoftwareCoUtils.updatePlayerControles();
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists();
             return true;
         }
         return false;
@@ -217,7 +217,7 @@ public class PlayerControlManager {
                         try {
                             Thread.sleep(1000);
                             SoftwareCoUtils.updatePlayerControles();
-                            MusicToolWindow.triggerRefresh();
+                            PlayListCommands.updatePlaylists();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -242,8 +242,35 @@ public class PlayerControlManager {
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.nextSpotifyDesktop();
             SoftwareCoUtils.updatePlayerControles();
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists();
             return true;
+        }
+        return false;
+    }
+
+    public static boolean likeSpotifyTrack(boolean like, String trackId) {
+        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        if (!serverIsOnline) {
+            SoftwareCoUtils.showOfflinePrompt(false);
+        }
+
+        if(trackId != null) {
+
+            String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+            SoftwareResponse resp = (SoftwareResponse) MusicController.likeSpotifyWeb(like, trackId, accessToken);
+            if (resp.isOk()) {
+                MusicControlManager.playerCounter = 0;
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(1000);
+                        SoftwareCoUtils.updatePlayerControles();
+                        PlayListCommands.updatePlaylists();
+                    } catch (Exception e) {
+                        System.err.println(e);
+                    }
+                }).start();
+                return true;
+            }
         }
         return false;
     }

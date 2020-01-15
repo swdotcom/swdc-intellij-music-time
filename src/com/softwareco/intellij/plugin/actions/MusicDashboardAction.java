@@ -8,7 +8,9 @@ import org.jetbrains.annotations.NotNull;
 
 public class MusicDashboardAction extends AnAction {
     @Override
-    public void actionPerformed(@NotNull AnActionEvent anActionEvent) { }
+    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
+        SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
+    }
 
     @Override
     public void update(AnActionEvent event) {
