@@ -8,6 +8,7 @@ import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.messages.MessageBusConnection;
+import com.softwareco.intellij.plugin.music.MusicControlManager;
 
 import java.util.logging.Logger;
 
@@ -21,7 +22,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     private SoftwareCoMusicManager musicMgr = SoftwareCoMusicManager.getInstance();
     private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
-    private SoftwareCoEventManager eventMgr = SoftwareCoEventManager.getInstance();
     private AsyncManager asyncManager = AsyncManager.getInstance();
 
     private static int retry_counter = 0;
@@ -50,9 +50,18 @@ public class SoftwareCoMusic implements ApplicationComponent {
         return SoftwareCoUtils.pluginName;
     }
 
+    public static boolean getCodeTimePluginState() {
+        IdeaPluginDescriptor pluginDescriptor = PluginManager.getPlugin(PluginId.getId("com.softwareco.intellij.plugin"));
+        if(pluginDescriptor != null) {
+            return true;
+        }
+        return false;
+    }
+
     public void initComponent() {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
+        //boolean musicDataFileExists = SoftwareCoSessionManager.musicDataFileExists();
         boolean jwtExists = SoftwareCoSessionManager.jwtExists();
         if (!sessionFileExists || !jwtExists) {
             if (!serverIsOnline) {
@@ -70,15 +79,10 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 }).start();
             } else {
                 getPluginName();
-                boolean music = SoftwareCoUtils.isMusicTime();
-                String jwt = null;
-                if(!music) {
-                    // create the anon user
-                    jwt = SoftwareCoUtils.createAnonymousUser(serverIsOnline);
-                } else {
-                    jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
-                    SoftwareCoUtils.jwt = jwt;
-                }
+
+                String jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
+                SoftwareCoUtils.jwt = jwt;
+
                 if (jwt == null) {
                     // it failed, try again later
                     if (retry_counter == 0) {
@@ -111,10 +115,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
         log.info(plugName + ": Finished initializing SoftwareCoMusic plugin");
 
-//        final Runnable hourlyRunner = () -> this.processHourlyJobs();
-//        asyncManager.scheduleService(
-//                hourlyRunner, "hourlyJobsRunner", 45, 60 * 60);
-
         // run the music manager task every 15 seconds
         final Runnable musicTrackRunner = () -> musicMgr.processMusicTrackInfo();
         asyncManager.scheduleService(
@@ -125,7 +125,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
         asyncManager.scheduleService(
                 userStatusRunner, "userStatusRunner", 60, 60 * 3);
 
-        eventMgr.setAppIsReady(true);
+//        if(!getCodeTimePluginState()) {
+//            // every 30 minutes
+//            final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
+//            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 30);
+//        }
+
 
         initializeUserInfoWhenProjectsReady(initializedUser);
 
@@ -150,29 +155,28 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private void initializeUserInfo(boolean initializedUser) {
 
         SoftwareCoUtils.getUserStatus();
-        String userStatus = null;
 
         if(!SoftwareCoUtils.isSpotifyConncted()) {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
         } else {
-            SoftwareCoUtils.getUserProfile();
-            //SoftwareCoUtils.launchPlayer();
-            SoftwareCoUtils.lazyUpdatePlayer();
+            MusicControlManager.getUserProfile();
+            MusicControlManager.lazyUpdatePlayer();
+            MusicControlManager.lazyUpdatePlaylist();
         }
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
     }
 
-    protected void sendInstallPayload() {
-        KeystrokeManager keystrokeManager = KeystrokeManager.getInstance();
-        String fileName = "Untitled";
-        eventMgr.initializeKeystrokeObjectGraph(fileName, "Unnamed", "");
-        KeystrokeCount.FileInfo fileInfo = keystrokeManager.getKeystrokeCount().getSourceByFileName(fileName);
-        fileInfo.setAdd(fileInfo.getAdd() + 1);
-        fileInfo.setNetkeys(fileInfo.getAdd() - fileInfo.getDelete());
-        keystrokeManager.getKeystrokeCount().setKeystrokes(String.valueOf(1));
-        keystrokeManager.getKeystrokeCount().processKeystrokes();
+    private void sendOfflineDataRunner() {
+        new Thread(() -> {
+
+            try {
+                SoftwareCoSessionManager.getInstance().sendOfflineData();
+            } catch (Exception e) {
+                System.err.println(e);
+            }
+        }).start();
     }
 
     public void disposeComponent() {
