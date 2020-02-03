@@ -50,6 +50,13 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
                     break;
                 case HttpPut.METHOD_NAME:
                     req = new HttpPut(SoftwareCoUtils.api_endpoint + "" + this.api);
+                    if (payload != null) {
+                        //
+                        // add the json payload
+                        //
+                        StringEntity params = new StringEntity(payload);
+                        ((HttpPut)req).setEntity(params);
+                    }
                     break;
                 default:
                     req = new HttpGet(SoftwareCoUtils.api_endpoint + "" + this.api);

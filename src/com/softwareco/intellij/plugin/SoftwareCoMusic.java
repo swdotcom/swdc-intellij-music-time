@@ -1,14 +1,20 @@
 package com.softwareco.intellij.plugin;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManager;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ApplicationComponent;
+import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.extensions.PluginId;
+import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
+import com.intellij.util.messages.MessageBus;
 import com.intellij.util.messages.MessageBusConnection;
 import com.softwareco.intellij.plugin.music.MusicControlManager;
+import com.softwareco.intellij.plugin.music.PlaylistManager;
 
 import java.util.logging.Logger;
 
@@ -23,6 +29,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private SoftwareCoMusicManager musicMgr = SoftwareCoMusicManager.getInstance();
     private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
     private AsyncManager asyncManager = AsyncManager.getInstance();
+    private KeystrokeManager keystrokeMgr = KeystrokeManager.getInstance();
 
     private static int retry_counter = 0;
     private static long check_online_interval_ms = 1000 * 60 * 10;
@@ -60,6 +67,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     public void initComponent() {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        SoftwareCoSessionManager.isServerActive = serverIsOnline;
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         //boolean musicDataFileExists = SoftwareCoSessionManager.musicDataFileExists();
         boolean jwtExists = SoftwareCoSessionManager.jwtExists();
@@ -113,6 +121,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
         gson = new Gson();
 
+        setupEventListeners();
+
         log.info(plugName + ": Finished initializing SoftwareCoMusic plugin");
 
         // run the music manager task every 15 seconds
@@ -125,11 +135,11 @@ public class SoftwareCoMusic implements ApplicationComponent {
         asyncManager.scheduleService(
                 userStatusRunner, "userStatusRunner", 60, 60 * 3);
 
-//        if(!getCodeTimePluginState()) {
-//            // every 30 minutes
-//            final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
-//            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 30);
-//        }
+        if(!getCodeTimePluginState()) {
+            // every 30 minutes
+            final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
+            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 30);
+        }
 
 
         initializeUserInfoWhenProjectsReady(initializedUser);
@@ -148,6 +158,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 }
             }).start();
         } else {
+            keystrokeMgr.addKeystrokeWrapperIfNoneExists(p);
             initializeUserInfo(initializedUser);
         }
     }
@@ -160,9 +171,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
         } else {
-            MusicControlManager.getUserProfile();
+            JsonObject obj = MusicControlManager.getUserProfile();
+            if (obj != null)
+                MusicControlManager.userStatus = obj.get("product").getAsString();
+
+            PlaylistManager.getUserPlaylists(); // API call
             MusicControlManager.lazyUpdatePlayer();
-            MusicControlManager.lazyUpdatePlaylist();
         }
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
@@ -177,6 +191,19 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 System.err.println(e);
             }
         }).start();
+    }
+
+    private void setupEventListeners() {
+        ApplicationManager.getApplication().invokeLater(() -> {
+
+            // save file
+            MessageBus bus = ApplicationManager.getApplication().getMessageBus();
+            connection = bus.connect();
+            connection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new SoftwareCoFileEditorListener());
+
+            // edit document
+            EditorFactory.getInstance().getEventMulticaster().addDocumentListener(new SoftwareCoDocumentListener());
+        });
     }
 
     public void disposeComponent() {

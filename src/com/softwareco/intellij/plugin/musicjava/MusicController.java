@@ -1,6 +1,7 @@
 package com.softwareco.intellij.plugin.musicjava;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
@@ -9,6 +10,8 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,6 +68,47 @@ public class MusicController {
             JsonArray array = new JsonArray();
             array.add("spotify:track:" + trackId);
             obj.add("uris", array);
+        }
+
+        if(deviceId != null) {
+            String api = "/v1/me/player/play?device_id=" + deviceId;
+            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+            if (resp.isOk()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean playSpotifyTracks(String deviceId, String playlistId, String trackId, JsonObject tracks, String accessToken) {
+
+        if(deviceId == null) {
+            Apis.getSpotifyDevices(accessToken);
+            deviceId = MusicStore.getCurrentDeviceId();
+        }
+
+        JsonObject obj = new JsonObject();
+        if(playlistId != null && playlistId.equals("2")) {
+            if(trackId != null) {
+                JsonArray arr = new JsonArray();
+                List<String> trks = new ArrayList<>();
+                if (tracks != null && tracks.has("items")) {
+
+                    for(JsonElement array : tracks.get("items").getAsJsonArray()) {
+                        JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                        arr.add("spotify:track:" + track.get("id").getAsString());
+                        trks.add(track.get("id").getAsString());
+                    }
+                }
+
+                obj.add("uris", arr);
+                int index = trks.indexOf(trackId);
+                if(index >= 0) {
+                    JsonObject pos = new JsonObject();
+                    pos.addProperty("position", index);
+                    obj.add("offset", pos);
+                }
+            }
         }
 
         if(deviceId != null) {

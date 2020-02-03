@@ -1,6 +1,7 @@
 package com.softwareco.intellij.plugin.music;
 
 import com.intellij.openapi.util.IconLoader;
+import com.intellij.util.ui.UIUtil;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -11,6 +12,7 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
     Icon pauseIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/pause_new.png");
     Icon playIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/play_new.png");
     Icon musicIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/music.png");
+    Icon emptyIcon = new ImageIcon(UIUtil.createImage(1, 1, 5));
     Icon playlistIcon;
 
     public PlaylistTreeRenderer(Icon playlistIcon) {
@@ -25,27 +27,36 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
             boolean leaf,
             int row,
             boolean hasFocus) {
-        tree.requestFocusInWindow();
+        if(sel)
+            tree.requestFocusInWindow();
 
         super.getTreeCellRendererComponent(
                 tree, value, sel,
                 expanded, leaf, row,
                 true);
 
+        PlaylistTreeNode node =
+                (PlaylistTreeNode)value;
+        String id = node.getId();
+
         if (leaf) {
             if(isCurrentTrack(value)) {
                 if (!MusicControlManager.defaultbtn.equals("play")) {
                     setIcon(pauseIcon);
-                    //setBackground(new Color(13, 41, 62, 188));
                 } else {
                     setIcon(playIcon);
-                    //setBackground(new Color(13, 41, 62, 188));
                 }
             } else if(row >= 1) {
                 if(sel) {
-                    setIcon(playIcon);
+                    if(id == null)
+                        setIcon(emptyIcon);
+                    else
+                        setIcon(playIcon);
                 } else {
-                    setIcon(musicIcon);
+                    if(id == null)
+                        setIcon(emptyIcon);
+                    else
+                        setIcon(musicIcon);
                 }
             } else {
                 setIcon(playlistIcon);
@@ -65,7 +76,6 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
                 }
             }
         }
-        tree.requestFocusInWindow();
 
         return this;
     }

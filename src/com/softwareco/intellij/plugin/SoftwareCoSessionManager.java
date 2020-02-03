@@ -18,10 +18,7 @@ import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.softwareco.intellij.plugin.music.MusicControlManager;
-import com.softwareco.intellij.plugin.music.PlayListCommands;
-import com.softwareco.intellij.plugin.music.PlayerControlManager;
-import com.softwareco.intellij.plugin.music.PlaylistTreeNode;
+import com.softwareco.intellij.plugin.music.*;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 
@@ -40,7 +37,13 @@ public class SoftwareCoSessionManager {
     private static SoftwareCoSessionManager instance = null;
     public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
     private static Map<String, String> sessionMap = new HashMap<>();
-    private static Map<String, String> musicData = new HashMap<>();
+    private static Map<String, JsonObject> musicData = new HashMap<>();
+    private static JsonArray keystrokeData = new JsonArray();
+    public static int playerState = 0; // 0 = inactive & 1 = active
+    public static boolean isServerActive = false;
+    private static int keyStrokes = 0;
+    public static long start = 0L;
+    public static long local_start = 0L;
     private static long lastAppAvailableCheck = 0;
 
     private static String SERVICE_NOT_AVAIL =
@@ -111,18 +114,8 @@ public class SoftwareCoSessionManager {
         return file;
     }
 
-    public static String getTempDataFile(boolean autoCreate) {
+    private static String getSongSessionDataFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
-        if (SoftwareCoUtils.isWindows()) {
-            file += "\\tempData.json";
-        } else {
-            file += "/tempData.json";
-        }
-        return file;
-    }
-
-    private static String getSongSessionDataFile() {
-        String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\songSessionData.json";
         } else {
@@ -144,9 +137,9 @@ public class SoftwareCoSessionManager {
     private static String getMusicDashboardFile() {
         String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
-            file += "\\musicTime.html";
+            file += "\\musicTime.txt";
         } else {
-            file += "/musicTime.html";
+            file += "/musicTime.txt";
         }
         return file;
     }
@@ -181,16 +174,41 @@ public class SoftwareCoSessionManager {
         } else {
             payload += "\n";
         }
-        String dataStoreFile = getSoftwareDataStoreFile();
-        File f = new File(dataStoreFile);
-        try {
-            log.info("Music Time: Storing kpm metrics: " + payload);
-            Writer output;
-            output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
-            output.append(payload);
-            output.close();
-        } catch (Exception e) {
-            log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
+        // Storing kpm data in data.json
+        if(!SoftwareCoMusic.getCodeTimePluginState()) {
+            String dataStoreFile = getSoftwareDataStoreFile();
+            File f = new File(dataStoreFile);
+            try {
+                log.info("Music Time: Storing kpm metrics in data.json: " + payload);
+                Writer output;
+                output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
+                output.append(payload);
+                output.close();
+            } catch (Exception e) {
+                log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
+            }
+        }
+
+        // Storing kmp data in musicData.json
+        if(!isServerActive && playerState == 1) {
+            String dataStoreFile = getMusicDataFile(true);
+            File f = new File(dataStoreFile);
+            try {
+                log.info("Music Time: Storing kpm metrics in musicData.json: " + payload);
+                Writer output;
+                output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
+                output.append(payload);
+                output.close();
+            } catch (Exception e) {
+                log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
+            }
+        } else if(playerState == 1) {
+            JsonObject obj = (JsonObject) SoftwareCoMusic.jsonParser.parse(payload);
+            keystrokeData.add(obj);
+        } else if(playerState == 0) {
+            String dataStoreFile = getMusicDataFile(false);
+            deleteFile(dataStoreFile);
+            keystrokeData = new JsonArray();
         }
     }
 
@@ -225,7 +243,7 @@ public class SoftwareCoSessionManager {
                     JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
 
                     // delete the file
-                    this.deleteFile(dataStoreFile);
+                    deleteFile(dataStoreFile);
 
                     JsonArray batch = new JsonArray();
                     // go through the array about 50 at a time
@@ -259,20 +277,367 @@ public class SoftwareCoSessionManager {
                 log.warning("Music Time: Error trying to read and send offline data, error: " + e.getMessage());
             }
         }
-
-        //SoftwareCoOfflineManager.getInstance().clearSessionSummaryData();
-        // fetch kpm metrics
-//        new Thread(() -> {
-//            try {
-//                Thread.sleep(10000);
-//                fetchDailyKpmSessionInfo();
-//            } catch (Exception e) {
-//                System.err.println(e);
-//            }
-//        }).start();
     }
 
-    public void deleteFile(String file) {
+    public static void processMusicPayload(JsonObject object) {
+
+        TrackInfo track = TrackInfoManager.getTrackInfo();
+
+        if(object.has("item")) {
+            JsonObject item = object.get("item").getAsJsonObject();
+            if (item.has("album")) {
+                JsonObject album = item.get("album").getAsJsonObject();
+                if (album.has("available_markets"))
+                    album.remove("available_markets");
+
+                if (album.has("external_urls"))
+                    album.remove("external_urls");
+
+                track.setAlbum(album);
+            }
+
+            if (item.has("artists")) {
+                JsonArray artistNames = track.getArtist_names();
+                JsonArray genre = track.getGenre();
+                String artist = "";
+                for (JsonElement arr : item.get("artists").getAsJsonArray()) {
+                    artist += arr.getAsJsonObject().get("name").getAsString() + ",";
+                    artistNames.add(arr.getAsJsonObject().get("name").getAsString());
+                    if (arr.getAsJsonObject().has("genres")) {
+                        for (JsonElement gen : arr.getAsJsonObject().get("genres").getAsJsonArray())
+                            genre.add(gen.getAsString());
+                    }
+                }
+                artist = artist.substring(0, artist.lastIndexOf(","));
+                track.setArtists(item.get("artists").getAsJsonArray());
+                track.setArtist_names(artistNames);
+                track.setArtist(artist);
+                track.setGenre(genre);
+            }
+
+            if (item.has("disc_number"))
+                track.setDisc_number(item.get("disc_number").getAsInt());
+
+            if (item.has("duration_ms")) {
+                track.setDuration_ms(item.get("duration_ms").getAsLong());
+                track.setDuration(item.get("duration_ms").getAsLong());
+            }
+
+            if (item.has("explicit"))
+                track.setExplicit(item.get("explicit").getAsBoolean());
+
+            if (item.has("id"))
+                track.setId(item.get("id").getAsString());
+
+            if (item.has("is_local"))
+                track.setIs_local(item.get("is_local").getAsBoolean());
+
+            if (item.has("name"))
+                track.setName(item.get("name").getAsString());
+
+            if (item.has("popularity"))
+                track.setPopularity(item.get("popularity").getAsInt());
+
+            if (item.has("preview_url"))
+                track.setPreview_url(item.get("preview_url").getAsString());
+
+            if (item.has("track_number"))
+                track.setTrack_number(item.get("track_number").getAsInt());
+
+            if (item.has("type"))
+                track.setType(item.get("type").getAsString());
+
+            if (item.has("uri"))
+                track.setUri(item.get("uri").getAsString());
+
+            if (object.has("progress_ms"))
+                track.setProgress_ms(object.get("progress_ms").getAsLong());
+
+            if (object.get("is_playing").getAsBoolean())
+                track.setState("playing");
+            else
+                track.setState("paused");
+        } else {
+            if(object.has("album")) {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("album_type", "album");
+                obj.addProperty("name", object.get("album").getAsString());
+                track.setAlbum(obj);
+            }
+
+            if(object.has("artist")) {
+                JsonArray arr = new JsonArray();
+                JsonObject obj = new JsonObject();
+                obj.addProperty("name", object.get("artist").getAsString());
+                arr.add(obj);
+                track.setArtists(arr);
+                track.setArtist(object.get("artist").getAsString());
+            }
+
+            if(object.has("name"))
+                track.setName(object.get("name").getAsString());
+
+            if(object.has("id")) {
+                String track_Id = object.get("id").getAsString();
+                if(track_Id.contains("track")) {
+                    String[] paramParts = track_Id.split(":");
+                    track_Id = paramParts[paramParts.length-1].trim();
+                }
+                track.setId(track_Id);
+            }
+
+            if(object.has("duration")) {
+                track.setDuration_ms(object.get("duration").getAsLong());
+                track.setDuration(object.get("duration").getAsLong());
+            }
+
+            if(object.has("discNumber"))
+                track.setDisc_number(object.get("discNumber").getAsInt());
+
+            if(object.has("popularity"))
+                track.setPopularity(object.get("popularity").getAsInt());
+
+            if(object.has("state"))
+                track.setState(object.get("state").getAsString());
+
+        }
+
+        track.setPlayerType(MusicControlManager.playerType);
+
+        if(MusicControlManager.likedTracks.containsKey(track.getId()))
+            track.setLoved(true);
+        else
+            track.setLoved(false);
+
+        KeystrokeCount kc = KeystrokeManager.getInstance().getKeystrokeCount();
+        if(kc != null) {
+            kc = kc.clone();
+            processMusicData();
+            track.setVersion(kc.getVersion());
+            track.setPluginId(kc.getPluginId());
+            track.setKeystrokes("" + keyStrokes);
+            SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+            long end = timesData.now;
+            long end_local = timesData.local_now;
+            if(start == 0) {
+                track.setStart(end - track.getDuration());
+                track.setLocal_start(end_local - track.getDuration());
+            } else {
+                track.setStart(start);
+                track.setLocal_start(local_start);
+            }
+            track.setEnd(end);
+            track.setLocal_end(end_local);
+            track.setTimezone(timesData.timezone);
+            track.setOs(kc.getOs());
+            track.setSource(musicData);
+        }
+
+        final String payload = SoftwareCoMusic.gson.toJson(track);
+        //storeSongSessionPayload(payload);
+
+        boolean isOnline = isServerOnline();
+        if(isOnline) {
+            sendMusicOfflineData();
+            SoftwareCoUtils.sendSongSessionPayload(payload);
+        } else if(SoftwareCoUtils.isMac() && MusicControlManager.playerType.equals("Desktop Player")) {
+            storeSongSessionPayload(payload);
+        }
+        // Reset song session payload
+        TrackInfoManager.resetTrackInfo();
+        keyStrokes = 0;
+        musicData = new HashMap<>();
+    }
+
+    public static void storeSongSessionPayload(String payload) {
+        if (payload == null || payload.length() == 0) {
+            return;
+        }
+        if (SoftwareCoUtils.isWindows()) {
+            payload += "\r\n";
+        } else {
+            payload += "\n";
+        }
+        String dataStoreFile = getSongSessionDataFile(true);
+        File f = new File(dataStoreFile);
+        try {
+            log.info("Music Time: Storing song session payload: " + payload);
+            Writer output;
+            output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
+            output.append(payload);
+            output.close();
+        } catch (Exception e) {
+            log.warning("Music Time: Error appending to the Software song session file, error: " + e.getMessage());
+        }
+    }
+
+    public static void processMusicData() {
+        final String dataStoreFile = getMusicDataFile(false);
+        File f = new File(dataStoreFile);
+
+        if (f.exists()) {
+            // found a data file, check if there's content
+            StringBuffer sb = new StringBuffer();
+            try {
+                FileInputStream fis = new FileInputStream(f);
+
+                //Construct BufferedReader from InputStreamReader
+                BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+
+                String line = null;
+                while ((line = br.readLine()) != null) {
+                    if (line.length() > 0) {
+                        sb.append(line).append(",");
+                    }
+                }
+
+                br.close();
+
+                if (sb.length() > 0) {
+                    // we have data to send
+                    String payloads = sb.toString();
+                    payloads = payloads.substring(0, payloads.lastIndexOf(","));
+                    payloads = "[" + payloads + "]";
+
+                    JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
+
+                    // delete the file
+                    deleteFile(dataStoreFile);
+
+                    isServerActive = isServerOnline();
+                    processKeystrokes(jsonArray);
+
+                } else {
+                    log.info("Music Time: No keystroke data to send");
+                }
+            } catch (Exception e) {
+                log.warning("Music Time: Error trying to read music data file, error: " + e.getMessage());
+            }
+        } else {
+            if(keystrokeData.size() > 0) {
+                processKeystrokes(keystrokeData);
+                keystrokeData = new JsonArray();
+                isServerActive = isServerOnline();
+            } else {
+                log.info("Music Time: No keystroke data to send");
+            }
+        }
+    }
+
+    private static void processKeystrokes(JsonArray jsonArray) {
+        // go through the array
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JsonObject obj = jsonArray.get(i).getAsJsonObject();
+            if(keyStrokes == 0) {
+                keyStrokes = Integer.parseInt(obj.get("keystrokes").getAsString());
+            } else {
+                keyStrokes += Integer.parseInt(obj.get("keystrokes").getAsString());
+            }
+            JsonObject source = obj.get("source").getAsJsonObject();
+            Set<String> keys = source.keySet();
+            for(String key : keys) {
+                JsonObject data = musicData.get(key);
+                if(data == null) {
+                    data = source.get(key).getAsJsonObject();
+                    musicData.put(key, data);
+                } else {
+                    JsonObject val = source.get(key).getAsJsonObject();
+                    int add = data.get("add").getAsInt() + val.get("add").getAsInt();
+                    data.addProperty("add", add);
+                    int paste = data.get("paste").getAsInt() + val.get("paste").getAsInt();
+                    data.addProperty("paste", paste);
+                    int open = data.get("open").getAsInt() + val.get("open").getAsInt();
+                    data.addProperty("open", open);
+                    int close = data.get("close").getAsInt() + val.get("close").getAsInt();
+                    data.addProperty("close", close);
+                    int delete = data.get("delete").getAsInt() + val.get("delete").getAsInt();
+                    data.addProperty("delete", delete);
+                    data.addProperty("length", val.get("length").getAsInt());
+                    int netkeys = data.get("netkeys").getAsInt() + val.get("netkeys").getAsInt();
+                    data.addProperty("netkeys", netkeys);
+                    data.addProperty("lines", val.get("lines").getAsInt());
+                    int linesAdded = data.get("linesAdded").getAsInt() + val.get("linesAdded").getAsInt();
+                    data.addProperty("linesAdded", linesAdded);
+                    int linesRemoved = data.get("linesRemoved").getAsInt() + val.get("linesRemoved").getAsInt();
+                    data.addProperty("linesRemoved", linesRemoved);
+                    data.addProperty("end", val.get("end").getAsLong());
+                    data.addProperty("local_end", val.get("local_end").getAsLong());
+                    musicData.put(key, data);
+                }
+            }
+        }
+    }
+
+    public static void sendMusicOfflineData() {
+        final String dataStoreFile = getSongSessionDataFile(false);
+        File f = new File(dataStoreFile);
+
+        if (f.exists()) {
+            // found a data file, check if there's content
+            StringBuffer sb = new StringBuffer();
+            try {
+                FileInputStream fis = new FileInputStream(f);
+
+                //Construct BufferedReader from InputStreamReader
+                BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+
+                String line = null;
+                while ((line = br.readLine()) != null) {
+                    if (line.length() > 0) {
+                        sb.append(line).append(",");
+                    }
+                }
+
+                br.close();
+
+                if (sb.length() > 0) {
+                    // we have data to send
+                    String payloads = sb.toString();
+                    payloads = payloads.substring(0, payloads.lastIndexOf(","));
+                    payloads = "[" + payloads + "]";
+
+                    JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
+
+                    // delete the file
+                    deleteFile(dataStoreFile);
+
+                    JsonArray batch = new JsonArray();
+                    // go through the array about 50 at a time
+                    for (int i = 0; i < jsonArray.size(); i++) {
+                        batch.add(jsonArray.get(i));
+                        if (i > 0 && i % 50 == 0) {
+                            String payloadData = SoftwareCoMusic.gson.toJson(batch);
+                            boolean resp = SoftwareCoUtils.sendSongSessionPayload(payloadData);;
+                            if (!resp) {
+                                // add these back to the offline file
+                                storeSongSessionPayload(jsonArray.get(i).getAsString());
+                                log.info("Music Time: Unable to send batch data");
+                            }
+                            batch = new JsonArray();
+                        }
+                    }
+                    if (batch.size() > 0) {
+                        String payloadData = SoftwareCoMusic.gson.toJson(batch);
+                        boolean resp = SoftwareCoUtils.sendSongSessionPayload(payloadData);;
+                        if (!resp) {
+                            // add these back to the offline file
+                            for (int i = 0; i < jsonArray.size(); i++) {
+                                storeSongSessionPayload(jsonArray.get(i).getAsString());
+                            }
+                            log.info("Music Time: Unable to send batch data");
+                        }
+                    }
+
+                } else {
+                    log.info("Music Time: No offline data to send");
+                }
+            } catch (Exception e) {
+                log.warning("Music Time: Error trying to read and send offline data, error: " + e.getMessage());
+            }
+        }
+    }
+
+    public static void deleteFile(String file) {
         File f = new File(file);
         // if the file exists, delete it
         if (f.exists()) {
@@ -304,66 +669,6 @@ public class SoftwareCoSessionManager {
             return val;
         }
         JsonObject jsonObj = getSoftwareSessionAsJson();
-        if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
-            return jsonObj.get(key).getAsString();
-        }
-        return null;
-    }
-
-    public static void setMusicData(String key, String val) {
-        musicData.put(key, val);
-        JsonObject jsonObj = getMusicDataAsJson();
-        jsonObj.addProperty(key, val);
-
-        String content = jsonObj.toString();
-
-        String sessionFile = getMusicDataFile(true);
-
-        try {
-            Writer output = new BufferedWriter(new FileWriter(sessionFile));
-            output.write(content);
-            output.close();
-        } catch (Exception e) {
-            log.warning("Music Time: Failed to write the key value pair (" + key + ", " + val + ") into the music data, error: " + e.getMessage());
-        }
-    }
-
-    public static String getMusicData(String key) {
-        String val = musicData.get(key);
-        if (val != null) {
-            return val;
-        }
-        JsonObject jsonObj = getMusicDataAsJson();
-        if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
-            return jsonObj.get(key).getAsString();
-        }
-        return null;
-    }
-
-    public static void setTempData(String key, String val) {
-        musicData.put(key, val);
-        JsonObject jsonObj = getTempDataAsJson();
-        jsonObj.addProperty(key, val);
-
-        String content = jsonObj.toString();
-
-        String sessionFile = getTempDataFile(true);
-
-        try {
-            Writer output = new BufferedWriter(new FileWriter(sessionFile));
-            output.write(content);
-            output.close();
-        } catch (Exception e) {
-            log.warning("Music Time: Failed to write the key value pair (" + key + ", " + val + ") into the music data, error: " + e.getMessage());
-        }
-    }
-
-    public static String getTempData(String key) {
-        String val = musicData.get(key);
-        if (val != null) {
-            return val;
-        }
-        JsonObject jsonObj = getTempDataAsJson();
         if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
             return jsonObj.get(key).getAsString();
         }
@@ -410,26 +715,6 @@ public class SoftwareCoSessionManager {
         return (data == null) ? new JsonObject() : data;
     }
 
-    private static JsonObject getTempDataAsJson() {
-        JsonObject data = null;
-
-        String sessionFile = getTempDataFile(true);
-        File f = new File(sessionFile);
-        if (f.exists()) {
-            try {
-                byte[] encoded = Files.readAllBytes(Paths.get(sessionFile));
-                String content = new String(encoded, Charset.defaultCharset());
-                if (content != null) {
-                    // json parse it
-                    data = SoftwareCoMusic.jsonParser.parse(content).getAsJsonObject();
-                }
-            } catch (Exception e) {
-                log.warning("Music Time: Error trying to read and json parse the music data file, error: " + e.getMessage());
-            }
-        }
-        return (data == null) ? new JsonObject() : data;
-    }
-
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
         boolean isOnline = isServerOnline();
         String dashboardFile = SoftwareCoSessionManager.getMusicDashboardFile();
@@ -438,7 +723,8 @@ public class SoftwareCoSessionManager {
         Writer writer = null;
 
         if (isOnline) {
-            String api = "/dashboard?plugin=" + plugin + "&linux=" + SoftwareCoUtils.isLinux() + "&html=" + isHtml;
+            //String api = "/dashboard?plugin=" + plugin + "&linux=" + SoftwareCoUtils.isLinux() + "&html=" + isHtml;
+            String api = "/dashboard/music";
             SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
             if(response.isOk()) {
                 String dashboardSummary = response.getJsonStr();
@@ -463,7 +749,8 @@ public class SoftwareCoSessionManager {
     }
 
     public static void launchMusicTimeMetricsDashboard() {
-        if (!SoftwareCoSessionManager.isServerOnline()) {
+        boolean isOnline = isServerOnline();
+        if (!isOnline) {
             SoftwareCoUtils.showOfflinePrompt(false);
         }
         Project p = getOpenProject();
@@ -471,7 +758,7 @@ public class SoftwareCoSessionManager {
             return;
         }
 
-        fetchMusicTimeMetricsDashboard("music-time", true);
+        fetchMusicTimeMetricsDashboard("music-time", false);
 
         String musicTimeFile = SoftwareCoSessionManager.getMusicDashboardFile();
         File f = new File(musicTimeFile);
@@ -567,10 +854,10 @@ public class SoftwareCoSessionManager {
                     int index = tracks.indexOf(MusicControlManager.currentTrackId);
                     if(index > 0) {
                         MusicControlManager.currentTrackId = tracks.get(index - 1);
-                        PlayerControlManager.playSpotifyPlaylist(null, null);
+                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(index - 1));
                     } else {
                         MusicControlManager.currentTrackId = tracks.get(0);
-                        PlayerControlManager.playSpotifyPlaylist(null, null);
+                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(0));
                     }
                 }
             } else if(id.equals(nexticonId)) {
@@ -599,14 +886,19 @@ public class SoftwareCoSessionManager {
                     int index = tracks.indexOf(MusicControlManager.currentTrackId);
                     if(index < (tracks.size() - 1)) {
                         MusicControlManager.currentTrackId = tracks.get(index + 1);
-                        PlayerControlManager.playSpotifyPlaylist(null, null);
+                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(index + 1));
                     } else {
                         MusicControlManager.currentTrackId = tracks.get(0);
-                        PlayerControlManager.playSpotifyPlaylist(null, null);
+                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(0));
                     }
                 }
             } else if(id.equals(songtrackId)) {
-                MusicControlManager.launchPlayer();
+                if(MusicControlManager.spotifyDeviceIds.size() > 0) {
+                    String msg = "Your spotify device is inactive now, Please play from Spotify " + MusicControlManager.playerType;
+                    SoftwareCoUtils.showMsgPrompt(msg);
+                } else {
+                    MusicControlManager.launchPlayer();
+                }
             } else if(id.equals(unlikeiconId)) {
                 PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
             } else if(id.equals(likeiconId)) {

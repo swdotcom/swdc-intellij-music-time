@@ -16,6 +16,11 @@ import java.util.logging.Logger;
 public class PlaylistManager {
 
     public static final Logger LOG = Logger.getLogger("PlaylistManager");
+    public static String previousTrack = "";
+    public static JsonObject previousTrackData = null;
+
+    public static boolean pauseTrigger = false;
+    public static long pauseTriggerTime = 0;
 
     public static JsonObject getUserPlaylists() {
 
@@ -31,6 +36,7 @@ public class PlaylistManager {
                 MusicControlManager.playlistids.clear();
                 PlayListCommands.userPlaylists.clear();
                 PlayListCommands.myAIPlaylistId = null;
+                //PlayListCommands.likedPlaylistId = "2";
                 PlayListCommands.userPlaylistIds.clear();
                 for(JsonElement array : obj.get("items").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
@@ -60,10 +66,10 @@ public class PlaylistManager {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
                     JsonObject tracks = obj.get("tracks").getAsJsonObject();
-                    MusicControlManager.currentPlaylistTracks.clear();
+                    MusicControlManager.tracksByPlaylistId.clear();
                     for (JsonElement array : tracks.get("items").getAsJsonArray()) {
                         JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                        MusicControlManager.currentPlaylistTracks.add(track.get("id").getAsString());
+                        MusicControlManager.tracksByPlaylistId.add(track.get("id").getAsString());
                     }
                 } else {
                     LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
@@ -71,49 +77,16 @@ public class PlaylistManager {
                 return resp.getJsonObj();
             }
         }
-        return null;
+        return new JsonObject();
     }
 
-    public static JsonObject getPlaylistTracks() {
+    public static JsonObject getTrackById(String trackId) {
 
-        if(MusicControlManager.currentPlaylistId == null) {
-            MusicControlManager.currentPlaylistId = MusicControlManager.playlistids.get(0);
-        }
-
-        SoftwareResponse resp = (SoftwareResponse) Apis.getCurrentPlaylistTracks();
+        SoftwareResponse resp = (SoftwareResponse) Apis.getTrackById(trackId);
         if (resp.isOk()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("items")) {
-                MusicControlManager.currentPlaylistTracks.clear();
-                for(JsonElement array : tracks.get("items").getAsJsonArray()) {
-                    JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                    MusicControlManager.currentPlaylistTracks.add(track.get("id").getAsString());
-                }
-            } else {
-                LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
-            }
             return resp.getJsonObj();
         }
-        return null;
-    }
-
-    public static JsonObject getTrackById() {
-
-        if(MusicControlManager.currentTrackId == null) {
-            MusicControlManager.currentTrackId = MusicControlManager.currentPlaylistTracks.get(0);
-        }
-
-        SoftwareResponse resp = (SoftwareResponse) Apis.getTrackById();
-        if (resp.isOk()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("name")) {
-                MusicControlManager.currentTrackName = tracks.get("name").getAsString();
-            } else {
-                LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
-            }
-            return resp.getJsonObj();
-        }
-        return null;
+        return new JsonObject();
     }
 
     public static JsonObject getSpotifyWebRecentTrack() {
@@ -148,49 +121,58 @@ public class PlaylistManager {
                 JsonObject track = tracks.get("item").getAsJsonObject();
                 MusicControlManager.currentTrackId = track.get("id").getAsString();
                 MusicControlManager.currentTrackName = track.get("name").getAsString();
-                SoftwareCoSessionManager.setTempData("playlist_id", MusicControlManager.currentPlaylistId);
-                SoftwareCoSessionManager.setTempData("track_id", MusicControlManager.currentTrackId);
+
+                // set context
                 if(!tracks.get("context").isJsonNull()) {
                     JsonObject context = tracks.get("context").getAsJsonObject();
                     String[] uri = context.get("uri").getAsString().split(":");
-                    MusicControlManager.currentPlaylistId = uri[uri.length - 1];
-                }
-                if(tracks.get("is_playing").getAsBoolean()) {
-                    MusicControlManager.defaultbtn = "pause";
+                    if(uri[uri.length - 2].equals("playlist"))
+                        MusicControlManager.currentPlaylistId = uri[uri.length - 1];
                 } else {
-                    MusicControlManager.defaultbtn = "play";
-                    if(MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() < 5
-                            && MusicControlManager.playerState.equals("End")) {
-                        List<String> list = new ArrayList<>();
-                        if(MusicControlManager.currentPlaylistId.equals("1")) {
-                            JsonObject obj = PlayListCommands.topSpotifyTracks;
-                            if (obj != null && obj.has("items")) {
-                                for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                                    JsonObject trk = array.getAsJsonObject();
-                                    list.add(trk.get("id").getAsString());
-                                }
-                            }
-                        } else if(MusicControlManager.currentPlaylistId.equals("2")) {
-                            JsonObject obj = PlayListCommands.likedTracks;
-                            if (obj != null && obj.has("items")) {
-                                for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                                    JsonObject trk = array.getAsJsonObject().getAsJsonObject("track");
-                                    list.add(trk.get("id").getAsString());
-                                }
-                            }
+                    MusicControlManager.currentPlaylistId = PlayListCommands.likedPlaylistId;
+                }
+
+                // set player state
+                if(tracks.get("is_playing").getAsBoolean()) {
+                    if(MusicControlManager.defaultbtn.equals("play")) {
+                        MusicControlManager.defaultbtn = "pause";
+                        PlayListCommands.updatePlaylists(false);
+                    }
+                    pauseTriggerTime = 0;
+                    pauseTrigger = false;
+                    SoftwareCoSessionManager.playerState = 1;
+                } else {
+                    if(MusicControlManager.defaultbtn.equals("pause")) {
+                        MusicControlManager.defaultbtn = "play";
+                        PlayListCommands.updatePlaylists(false);
+                    }
+                    SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+                    if(pauseTriggerTime == 0) {
+                        pauseTriggerTime = timesData.now;
+                    } else if(!pauseTrigger && (timesData.now - pauseTriggerTime) > 60) {
+                        pauseTriggerTime = 0;
+                        pauseTrigger = true;
+                        if(previousTrackData != null) {
+                            // process music payload
+                            SoftwareCoSessionManager.processMusicPayload(previousTrackData);
                         }
-                        int index = list.indexOf(MusicControlManager.currentTrackId);
-                        if(index < (list.size() - 1)) {
-                            MusicControlManager.currentTrackId = list.get(index + 1);
-                            String trackId = list.get(index + 1);
-                            PlayerControlManager.playSpotifyPlaylist(MusicControlManager.currentPlaylistId, trackId);
-                        } else {
-                            MusicControlManager.currentTrackId = list.get(0);
-                            String trackId = list.get(0);
-                            PlayerControlManager.playSpotifyPlaylist(MusicControlManager.currentPlaylistId, trackId);
-                        }
+                        SoftwareCoSessionManager.playerState = 0;
                     }
                 }
+
+                if(!MusicControlManager.currentTrackName.equals(previousTrack)) {
+                    previousTrack = MusicControlManager.currentTrackName;
+                    //PlayListCommands.updatePlaylists(false);
+
+                    if(previousTrackData != null) {
+                        // process music payload
+                        SoftwareCoSessionManager.processMusicPayload(previousTrackData);
+                    }
+                    SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+                    SoftwareCoSessionManager.start = timesData.now;
+                    SoftwareCoSessionManager.local_start = timesData.local_now;
+                }
+                previousTrackData = tracks;
             } else {
                 MusicControlManager.defaultbtn = "play";
                 MusicControlManager.getSpotifyDevices();
@@ -199,6 +181,8 @@ public class PlaylistManager {
         } else if(resp.getCode() == 204) {
             MusicControlManager.currentDeviceName = null;
             MusicControlManager.currentTrackName = null;
+            SoftwareCoSessionManager.playerState = 0;
+            MusicControlManager.defaultbtn = "play";
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
@@ -224,44 +208,75 @@ public class PlaylistManager {
                     }
                     MusicControlManager.currentTrackId = track_Id;
                     MusicControlManager.currentTrackName = obj.get("name").getAsString();
-                    SoftwareCoSessionManager.setTempData("playlist_id", MusicControlManager.currentPlaylistId);
-                    SoftwareCoSessionManager.setTempData("track_id", MusicControlManager.currentTrackId);
                     if (obj.get("state").getAsString().equals("playing")) {
-                        MusicControlManager.defaultbtn = "pause";
+                        if(MusicControlManager.defaultbtn.equals("play")) {
+                            MusicControlManager.defaultbtn = "pause";
+                            PlayListCommands.updatePlaylists(false);
+                        }
+                        pauseTriggerTime = 0;
+                        pauseTrigger = false;
+                        SoftwareCoSessionManager.playerState = 1;
                     } else {
-                        MusicControlManager.defaultbtn = "play";
-                        if(MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() < 5
-                                && MusicControlManager.playerState.equals("End")) {
-                            List<String> list = new ArrayList<>();
-                            if(MusicControlManager.currentPlaylistId.equals("1")) {
-                                JsonObject obj1 = PlayListCommands.topSpotifyTracks;
-                                if (obj1 != null && obj1.has("items")) {
-                                    for(JsonElement array : obj1.get("items").getAsJsonArray()) {
-                                        JsonObject trk = array.getAsJsonObject();
-                                        list.add(trk.get("id").getAsString());
-                                    }
-                                }
-                            } else if(MusicControlManager.currentPlaylistId.equals("2")) {
-                                JsonObject obj2 = PlayListCommands.likedTracks;
-                                if (obj2 != null && obj2.has("items")) {
-                                    for(JsonElement array : obj2.get("items").getAsJsonArray()) {
-                                        JsonObject trk = array.getAsJsonObject().getAsJsonObject("track");
-                                        list.add(trk.get("id").getAsString());
-                                    }
-                                }
+                        if(MusicControlManager.defaultbtn.equals("pause")) {
+                            MusicControlManager.defaultbtn = "play";
+                            PlayListCommands.updatePlaylists(false);
+                        }
+//                        if(MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() < 5
+//                                && MusicControlManager.playerState.equals("End")) {
+//                            List<String> list = new ArrayList<>();
+//                            if(MusicControlManager.currentPlaylistId.equals("1")) {
+//                                JsonObject obj1 = PlayListCommands.topSpotifyTracks;
+//                                if (obj1 != null && obj1.has("items")) {
+//                                    for(JsonElement array : obj1.get("items").getAsJsonArray()) {
+//                                        JsonObject trk = array.getAsJsonObject();
+//                                        list.add(trk.get("id").getAsString());
+//                                    }
+//                                }
+//                            } else if(MusicControlManager.currentPlaylistId.equals("2")) {
+//                                JsonObject obj2 = PlayListCommands.likedTracks;
+//                                if (obj2 != null && obj2.has("items")) {
+//                                    for(JsonElement array : obj2.get("items").getAsJsonArray()) {
+//                                        JsonObject trk = array.getAsJsonObject().getAsJsonObject("track");
+//                                        list.add(trk.get("id").getAsString());
+//                                    }
+//                                }
+//                            }
+//                            int index = list.indexOf(MusicControlManager.currentTrackId);
+//                            if(index < (list.size() - 1)) {
+//                                MusicControlManager.currentTrackId = list.get(index + 1);
+//                                String trackId = list.get(index + 1);
+//                                PlayerControlManager.playSpotifyPlaylist(MusicControlManager.currentPlaylistId, trackId);
+//                            } else {
+//                                MusicControlManager.currentTrackId = list.get(0);
+//                                String trackId = list.get(0);
+//                                PlayerControlManager.playSpotifyPlaylist(MusicControlManager.currentPlaylistId, trackId);
+//                            }
+//                        }
+
+                        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+                        if(pauseTriggerTime == 0) {
+                            pauseTriggerTime = timesData.now;
+                        } else if(!pauseTrigger && (timesData.now - pauseTriggerTime) > 60) {
+                            pauseTriggerTime = 0;
+                            pauseTrigger = true;
+                            if(previousTrackData != null) {
+                                // process music payload
+                                SoftwareCoSessionManager.processMusicPayload(previousTrackData);
                             }
-                            int index = list.indexOf(MusicControlManager.currentTrackId);
-                            if(index < (list.size() - 1)) {
-                                MusicControlManager.currentTrackId = list.get(index + 1);
-                                String trackId = list.get(index + 1);
-                                PlayerControlManager.playSpotifyPlaylist(MusicControlManager.currentPlaylistId, trackId);
-                            } else {
-                                MusicControlManager.currentTrackId = list.get(0);
-                                String trackId = list.get(0);
-                                PlayerControlManager.playSpotifyPlaylist(MusicControlManager.currentPlaylistId, trackId);
-                            }
+                            SoftwareCoSessionManager.playerState = 0;
                         }
                     }
+
+                    if(!MusicControlManager.currentTrackName.equals(previousTrack)) {
+                        previousTrack = MusicControlManager.currentTrackName;
+                        PlayListCommands.updatePlaylists(false);
+
+                        if(previousTrackData != null) {
+                            // process music payload
+                            SoftwareCoSessionManager.processMusicPayload(previousTrackData);
+                        }
+                    }
+                    previousTrackData = obj;
                     return obj;
                 }
             } catch (Exception e) {
@@ -270,6 +285,7 @@ public class PlaylistManager {
         } else {
             MusicControlManager.currentDeviceName = null;
             MusicControlManager.currentTrackName = null;
+            SoftwareCoSessionManager.playerState = 0;
         }
         return null;
     }

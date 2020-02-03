@@ -36,13 +36,14 @@ public class MusicControlManager {
 
     public static List<String> playlistids = new ArrayList<>();
     public static String currentPlaylistId = null;
-    public static List<String> currentPlaylistTracks = new ArrayList<>();
+    public static List<String> tracksByPlaylistId = new ArrayList<>();
     public static String currentTrackId = null;
     public static String currentTrackName = null;
     public static List<String> spotifyDeviceIds = new ArrayList<>();
     public static Map<String, String> spotifyDevices = new HashMap<>(); // Device id and name
     public static String currentDeviceId = null;
     public static String currentDeviceName = null;
+    public static String previousDeviceName = null;
 
     public static int playerCounter = 0;
     public static String spotifyStatus = "Not Connected"; // Connected or Not Connected
@@ -55,7 +56,7 @@ public class MusicControlManager {
 
     public static void resetSpotify() {
         spotifyUserId = null;
-        currentPlaylistTracks.clear();
+        tracksByPlaylistId.clear();
         currentTrackId = null;
         currentTrackName = null;
         playlistids.clear();
@@ -75,6 +76,7 @@ public class MusicControlManager {
         topTracks.clear();
         myAITopTracks.clear();
         PlayListCommands.counter = 0;
+        MusicToolWindow.reset();
     }
 
     public static void disConnectSpotify() {
@@ -167,21 +169,12 @@ public class MusicControlManager {
             if (obj != null)
                 userStatus = obj.get("product").getAsString();
 
+            PlaylistManager.getUserPlaylists(); // API call
             lazyUpdatePlayer();
-            lazyUpdatePlaylist();
         }
     }
 
     public static void launchPlayer() {
-//        if(currentTrackId == null)
-//            PlaylistManager.getSpotifyWebRecentTrack();
-//
-//        if(currentTrackId == null) {
-//            PlaylistManager.getPlaylistTracks();
-//            PlaylistManager.getTrackById();
-//            currentTrackName = null;
-//        }
-//        PlayListCommands.updatePlaylists();
 
         if(SoftwareCoUtils.isMac() && userStatus != null && userStatus.equals("premium")) {
             String infoMsg = "Spotify is currently not running, would you like to launch the \n" +
@@ -225,6 +218,8 @@ public class MusicControlManager {
 
     // Lazily update player controls
     public static void lazyUpdatePlayer() {
+        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        spotifyCacheState = isSpotifyConncted(serverIsOnline);
         if(spotifyCacheState) {
             // Update player controls for every 5 second
             new Thread(() -> {
@@ -238,33 +233,15 @@ public class MusicControlManager {
             }).start();
         }
         if(CLIENT_ID == null) {
-            JsonObject userObj = SoftwareCoUtils.getClientInfo(true);
+            JsonObject userObj = SoftwareCoUtils.getClientInfo(serverIsOnline);
             if(userObj != null) {
                 CLIENT_ID = userObj.get("clientId").getAsString();
                 CLIENT_SECRET = userObj.get("clientSecret").getAsString();
             }
         }
         MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, spotifyCacheState);
-        getSpotifyDevices();
+
         SoftwareCoUtils.updatePlayerControles();
-    }
-
-    // Lazily update playlists
-    public static void lazyUpdatePlaylist() {
-        if(spotifyCacheState) {
-            // Update playlist for every 15 second
-            new Thread(() -> {
-                try {
-                    Thread.sleep(15000);
-                    lazyUpdatePlaylist();
-                }
-                catch (Exception e){
-                    System.err.println(e);
-                }
-            }).start();
-
-            PlayListCommands.updatePlaylists();
-        }
     }
 
     private static boolean isSpotifyConncted(boolean serverIsOnline) {
@@ -289,9 +266,10 @@ public class MusicControlManager {
                         return true;
                     }
                 }
+                return false;
             }
         }
-        return false;
+        return spotifyCacheState;
     }
 
     public static void refreshAccessToken() {
@@ -324,32 +302,51 @@ public class MusicControlManager {
             if (obj != null && obj.has("devices")) {
                 spotifyDeviceIds.clear();
                 spotifyDevices.clear();
+                currentDeviceName = null;
                 for(JsonElement array : obj.get("devices").getAsJsonArray()) {
                     JsonObject device = array.getAsJsonObject();
-                    spotifyDeviceIds.add(device.get("id").getAsString());
-                    spotifyDevices.put(device.get("id").getAsString(), device.get("name").getAsString());
-                    if(device.get("is_active").getAsBoolean()) {
-                        currentDeviceId = device.get("id").getAsString();
-                        currentDeviceName = device.get("name").getAsString();
-                        if(currentDeviceName.contains("Web Player"))
-                            playerType = "Web Player";
-                        else
-                            playerType = "Desktop Player";
+                    if(device.get("type").getAsString().equals("Computer")) {
+                        spotifyDeviceIds.add(device.get("id").getAsString());
+                        spotifyDevices.put(device.get("id").getAsString(), device.get("name").getAsString());
+                        if (device.get("is_active").getAsBoolean()) {
+                            currentDeviceId = device.get("id").getAsString();
+                            currentDeviceName = device.get("name").getAsString();
+                            if (currentDeviceName.contains("Web Player"))
+                                playerType = "Web Player";
+                            else
+                                playerType = "Desktop Player";
+                        }
                     }
                 }
                 if(spotifyDeviceIds.size() == 0) {
                     currentDeviceId = null;
-                    currentDeviceName = null;
+                } else if(spotifyDeviceIds.size() == 1) {
+                    currentDeviceId = spotifyDeviceIds.get(0);
                 } else if(!spotifyDeviceIds.contains(currentDeviceId)) {
                     currentDeviceId = null;
-                    currentDeviceName = null;
+                }
+
+                if(currentDeviceName != null && !currentDeviceName.equals(previousDeviceName)) {
+                    previousDeviceName = currentDeviceName;
+                    MusicToolWindow.triggerRefresh();
                 }
             } else {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");
             }
             return obj;
+        } else if(resp.getCode() == 401) {
+            refreshAccessToken();
         }
         return null;
+    }
+
+    public static boolean activateDevice(String deviceId) {
+        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+        boolean active = Apis.activateDevice(accessToken, deviceId);
+        if(active)
+            getSpotifyDevices();
+
+        return active;
     }
 
     public static JsonObject getUserProfile() {

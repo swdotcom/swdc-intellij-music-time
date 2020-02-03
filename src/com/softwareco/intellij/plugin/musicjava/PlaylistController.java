@@ -3,15 +3,14 @@ package com.softwareco.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.softwareco.intellij.plugin.SoftwareCoMusic;
 import com.softwareco.intellij.plugin.music.MusicControlManager;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,6 +20,7 @@ public class PlaylistController {
     public static Map<String, String> likedTracks = new HashMap<>();
     public static Map<String, String> topTracks = new HashMap<>();
     public static Map<String, String> myAITopTracks = new HashMap<>();
+    public static List<String> recommendedTracks = new ArrayList<>();
 
     public static Object getTopSpotifyTracks() {
 
@@ -52,7 +52,7 @@ public class PlaylistController {
 
     public static Object getLikedSpotifyTracks() {
 
-        String api = "/v1/me/tracks";
+        String api = "/v1/me/tracks?limit=50&offset=0";
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
@@ -92,18 +92,40 @@ public class PlaylistController {
         SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
         if (resp.isOk()) {
             Apis.getUserPlaylists(MusicStore.getSpotifyUserId(), MusicStore.getSpotifyAccessToken());
-            refreshAIPlaylist(MusicStore.myAIPlaylistId);
         }
         return resp;
     }
 
-    public static Object refreshAIPlaylist(String playlistId) {
+    public static Object sendPlaylistToSoftware(String payload, String jwt) {
+
+        String api = "/music/playlist/generated";
+        SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, payload, jwt);
+
+        return resp;
+    }
+
+    public static Object getRecommendedTracks(String jwt) {
+
+        String api = "/music/recommendations?limit=40";
+        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        if(resp.isOk()) {
+            recommendedTracks.clear();
+            JsonArray array = (JsonArray) SoftwareCoMusic.jsonParser.parse(resp.getJsonStr());
+            for(int i=0; i < array.size(); i++) {
+                JsonObject obj = array.get(i).getAsJsonObject();
+                recommendedTracks.add(obj.get("id").getAsString());
+            }
+        }
+        return resp;
+    }
+
+    public static Object refreshAIPlaylist(String playlistId, String jwt) {
 
         if(playlistId != null) {
-            Set<String> tracks = topTracks.keySet();
+            getRecommendedTracks(jwt);
+
             JsonArray arr = new JsonArray();
-            Object[] array = tracks.toArray();
-            for(Object id : array) {
+            for(String id : recommendedTracks) {
                 arr.add("spotify:track:" + id);
             }
             JsonObject obj = new JsonObject();
@@ -156,13 +178,38 @@ public class PlaylistController {
         return null;
     }
 
+    public static Object updatePlaylist(String playlistId, JsonObject tracks) {
+
+        if(playlistId != null) {
+            JsonArray arr = new JsonArray();
+            if (tracks != null && tracks.has("items")) {
+
+                for(JsonElement array : tracks.get("items").getAsJsonArray()) {
+                    JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                    arr.add("spotify:track:" + track.get("id").getAsString());
+                }
+            }
+            JsonObject obj = new JsonObject();
+            obj.add("uris", arr);
+
+            String api = "/v1/playlists/" + playlistId + "/tracks";
+            SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+            if (resp.isOk()) {
+                return resp;
+            }
+        }
+        return null;
+    }
+
     public static Object removeTracksInPlaylist(String playlistId, Set<String> tracks) {
 
         if(playlistId != null) {
             JsonArray arr = new JsonArray();
             Object[] array = tracks.toArray();
             for(Object id : array) {
-                arr.add("spotify:track:" + id);
+                JsonObject uri = new JsonObject();
+                uri.addProperty("uri", "spotify:track:" + id);
+                arr.add(uri);
             }
             JsonObject obj = new JsonObject();
             obj.add("tracks", arr);
