@@ -136,15 +136,20 @@ public class PlaylistManager {
                 if(tracks.get("is_playing").getAsBoolean()) {
                     if(MusicControlManager.defaultbtn.equals("play")) {
                         MusicControlManager.defaultbtn = "pause";
-                        PlayListCommands.updatePlaylists(false);
+                        PlayListCommands.updatePlaylists(5, null);
                     }
                     pauseTriggerTime = 0;
-                    pauseTrigger = false;
+                    if(pauseTrigger) {
+                        pauseTrigger = false;
+                        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+                        SoftwareCoSessionManager.start = timesData.now;
+                        SoftwareCoSessionManager.local_start = timesData.local_now;
+                    }
                     SoftwareCoSessionManager.playerState = 1;
                 } else {
                     if(MusicControlManager.defaultbtn.equals("pause")) {
                         MusicControlManager.defaultbtn = "play";
-                        PlayListCommands.updatePlaylists(false);
+                        PlayListCommands.updatePlaylists(5, null);
                     }
                     SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
                     if(pauseTriggerTime == 0) {
@@ -162,7 +167,6 @@ public class PlaylistManager {
 
                 if(!MusicControlManager.currentTrackName.equals(previousTrack)) {
                     previousTrack = MusicControlManager.currentTrackName;
-                    //PlayListCommands.updatePlaylists(false);
 
                     if(previousTrackData != null) {
                         // process music payload
@@ -211,7 +215,7 @@ public class PlaylistManager {
                     if (obj.get("state").getAsString().equals("playing")) {
                         if(MusicControlManager.defaultbtn.equals("play")) {
                             MusicControlManager.defaultbtn = "pause";
-                            PlayListCommands.updatePlaylists(false);
+                            PlayListCommands.updatePlaylists(5, null);
                         }
                         pauseTriggerTime = 0;
                         pauseTrigger = false;
@@ -219,7 +223,7 @@ public class PlaylistManager {
                     } else {
                         if(MusicControlManager.defaultbtn.equals("pause")) {
                             MusicControlManager.defaultbtn = "play";
-                            PlayListCommands.updatePlaylists(false);
+                            PlayListCommands.updatePlaylists(5, null);
                         }
 //                        if(MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() < 5
 //                                && MusicControlManager.playerState.equals("End")) {
@@ -264,12 +268,13 @@ public class PlaylistManager {
                                 SoftwareCoSessionManager.processMusicPayload(previousTrackData);
                             }
                             SoftwareCoSessionManager.playerState = 0;
+                            previousTrackData = null;
+                            previousTrack = "";
                         }
                     }
 
                     if(!MusicControlManager.currentTrackName.equals(previousTrack)) {
                         previousTrack = MusicControlManager.currentTrackName;
-                        PlayListCommands.updatePlaylists(false);
 
                         if(previousTrackData != null) {
                             // process music payload

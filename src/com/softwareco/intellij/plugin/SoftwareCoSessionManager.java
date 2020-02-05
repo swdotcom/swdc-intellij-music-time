@@ -695,26 +695,6 @@ public class SoftwareCoSessionManager {
         return (data == null) ? new JsonObject() : data;
     }
 
-    private static JsonObject getMusicDataAsJson() {
-        JsonObject data = null;
-
-        String sessionFile = getMusicDataFile(true);
-        File f = new File(sessionFile);
-        if (f.exists()) {
-            try {
-                byte[] encoded = Files.readAllBytes(Paths.get(sessionFile));
-                String content = new String(encoded, Charset.defaultCharset());
-                if (content != null) {
-                    // json parse it
-                    data = SoftwareCoMusic.jsonParser.parse(content).getAsJsonObject();
-                }
-            } catch (Exception e) {
-                log.warning("Music Time: Error trying to read and json parse the music data file, error: " + e.getMessage());
-            }
-        }
-        return (data == null) ? new JsonObject() : data;
-    }
-
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
         boolean isOnline = isServerOnline();
         String dashboardFile = SoftwareCoSessionManager.getMusicDashboardFile();
@@ -777,30 +757,6 @@ public class SoftwareCoSessionManager {
         return project;
     }
 
-    public void showLoginPrompt() {
-        boolean isOnline = isServerOnline();
-
-        if (isOnline) {
-
-            String msg = "To see your coding data in Code Time, please log in your account.";
-            Project project = this.getCurrentProject();
-
-            ApplicationManager.getApplication().invokeLater(new Runnable() {
-                public void run() {
-                    // ask to download the PM
-                    int options = Messages.showDialog(
-                            project,
-                            msg,
-                            "Software", new String[]{"Log in", "Not now"},
-                            0, Messages.getInformationIcon());
-                    if (options == 0) {
-                        launchLogin();
-                    }
-                }
-            });
-        }
-    }
-
     public static String generateToken() {
         String uuid = UUID.randomUUID().toString();
         return uuid.replace("-", "");
@@ -830,71 +786,13 @@ public class SoftwareCoSessionManager {
                 PlayerControlManager.pauseSpotifyDevices();
             } else if(id.equals(preiconId)) {
                 MusicControlManager.playerCounter = 0;
-                if(MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() > 5) {
-                    PlayerControlManager.previousSpotifyTrack();
-                } else if(MusicControlManager.currentPlaylistId != null) {
-                    List<String> tracks = new ArrayList<>();
-                    if(MusicControlManager.currentPlaylistId.equals("1")) {
-                        JsonObject obj = PlayListCommands.topSpotifyTracks;
-                        if (obj != null && obj.has("items")) {
-                            for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                                JsonObject track = array.getAsJsonObject();
-                                tracks.add(track.get("id").getAsString());
-                            }
-                        }
-                    } else if(MusicControlManager.currentPlaylistId.equals("2")) {
-                        JsonObject obj = PlayListCommands.likedTracks;
-                        if (obj != null && obj.has("items")) {
-                            for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                                JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
-                                tracks.add(track.get("id").getAsString());
-                            }
-                        }
-                    }
-                    int index = tracks.indexOf(MusicControlManager.currentTrackId);
-                    if(index > 0) {
-                        MusicControlManager.currentTrackId = tracks.get(index - 1);
-                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(index - 1));
-                    } else {
-                        MusicControlManager.currentTrackId = tracks.get(0);
-                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(0));
-                    }
-                }
+                PlayerControlManager.previousSpotifyTrack();
             } else if(id.equals(nexticonId)) {
                 MusicControlManager.playerCounter = 0;
-                if(MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() > 5) {
-                    PlayerControlManager.nextSpotifyTrack();
-                } else if(MusicControlManager.currentPlaylistId != null) {
-                    List<String> tracks = new ArrayList<>();
-                    if(MusicControlManager.currentPlaylistId.equals("1")) {
-                        JsonObject obj = PlayListCommands.topSpotifyTracks;
-                        if (obj != null && obj.has("items")) {
-                            for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                                JsonObject track = array.getAsJsonObject();
-                                tracks.add(track.get("id").getAsString());
-                            }
-                        }
-                    } else if(MusicControlManager.currentPlaylistId.equals("2")) {
-                        JsonObject obj = PlayListCommands.likedTracks;
-                        if (obj != null && obj.has("items")) {
-                            for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                                JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
-                                tracks.add(track.get("id").getAsString());
-                            }
-                        }
-                    }
-                    int index = tracks.indexOf(MusicControlManager.currentTrackId);
-                    if(index < (tracks.size() - 1)) {
-                        MusicControlManager.currentTrackId = tracks.get(index + 1);
-                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(index + 1));
-                    } else {
-                        MusicControlManager.currentTrackId = tracks.get(0);
-                        PlayerControlManager.playSpotifyPlaylist(null, tracks.get(0));
-                    }
-                }
+                PlayerControlManager.nextSpotifyTrack();
             } else if(id.equals(songtrackId)) {
-                if(MusicControlManager.spotifyDeviceIds.size() > 0) {
-                    String msg = "Your spotify device is inactive now, Please play from Spotify " + MusicControlManager.playerType;
+                if(MusicControlManager.spotifyDeviceIds.size() > 0 && MusicControlManager.playerType.equals("Web Player")) {
+                    String msg = "Your Spotify device is already open on Web Browser: " + MusicControlManager.playerType;
                     SoftwareCoUtils.showMsgPrompt(msg);
                 } else {
                     MusicControlManager.launchPlayer();
@@ -907,40 +805,5 @@ public class SoftwareCoSessionManager {
         } else {
             SoftwareCoUtils.showOfflinePrompt(false);
         }
-    }
-
-    protected static void lazilyFetchUserStatus(int retryCount) {
-        SoftwareCoUtils.UserStatus userStatus = SoftwareCoUtils.getUserStatus();
-
-        if (!userStatus.loggedIn && retryCount > 0) {
-            final int newRetryCount = retryCount - 1;
-            new Thread(() -> {
-                try {
-                    Thread.sleep(10000);
-                    lazilyFetchUserStatus(newRetryCount);
-                }
-                catch (Exception e){
-                    System.err.println(e);
-                }
-            }).start();
-        }
-    }
-
-    public static void launchLogin() {
-        String url = SoftwareCoUtils.launch_url;
-        String jwt = getItem("jwt");
-
-        url += "/onboarding?token=" + jwt;
-        BrowserUtil.browse(url);
-
-        new Thread(() -> {
-            try {
-                Thread.sleep(10000);
-                lazilyFetchUserStatus(12);
-            }
-            catch (Exception e){
-                System.err.println(e);
-            }
-        }).start();
     }
 }

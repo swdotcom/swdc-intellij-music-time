@@ -25,44 +25,56 @@ public class PlayListCommands {
     public static String sortType = "Latest";
     public static int counter = 0;
 
-    public static synchronized void updatePlaylists(boolean loadPlaylists) {
-        if(loadPlaylists) {
+    /*
+    * type = 0 to get all playlists and sort them
+    * type = 1 to update software top 40 playlist
+    * type = 2 to update my ai top 40 playlist
+    * type = 3 to update liked songs
+    * type = 4 to update user playlist with playlist id
+    * type = 5 to refresh playlist window
+    */
+    public static synchronized void updatePlaylists(int type, String playlistId) {
+        if(type == 0) {
             PlaylistManager.getUserPlaylists(); // API call
+            // Sort Playlists ****************************************************
+            if (userPlaylists.size() > 0) {
+
+                Map<String, String> sortedPlaylist = new LinkedHashMap<>();
+
+                if (!sortType.equals("Latest")) {
+                    sortedPlaylist = sortHashMapByValues((HashMap<String, String>) userPlaylists);
+                    userPlaylistIds.clear();
+                } else {
+                    sortedPlaylist = userPlaylists;
+                }
+
+                Set<String> ids = sortedPlaylist.keySet();
+                for (String id : ids) {
+                    if (!sortType.equals("Latest")) {
+                        userPlaylistIds.add(id);
+                    }
+                }
+            }
+            // End Sort Playlists ***************************************************************
+        } else if(type == 1) {
             // Software Top 40 Playlist ******************************************
             JsonObject obj = PlaylistManager.getTracksByPlaylistId(topSpotifyPlaylistId); // API call
             if (obj != null && obj.has("tracks"))
                 topSpotifyTracks = obj.get("tracks").getAsJsonObject();
             // End Software Top 40 ***************************************************************
-
-            // Liked Songs Playlist **********************************************
-            likedTracks = getLikedSpotifyTracks(); // API call
-            // End Liked Songs ***************************************************************
-
+        } else if(type == 2) {
             // My AI Top 40 ******************************************************
             myAITopTracks = getAITopTracks(); // API call
             // End My AI Top 40 ***************************************************************
+        } else if(type == 3) {
+            // Liked Songs Playlist **********************************************
+            likedTracks = getLikedSpotifyTracks(); // API call
+            // End Liked Songs ***************************************************************
+        } else if(type == 4 && playlistId != null) {
+            // User Playlists ****************************************************
+            userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId)); // API call
+            // End User Playlists ***************************************************************
         }
-
-        // User Playlists ****************************************************
-        if (userPlaylists.size() > 0) {
-
-            Map<String, String> sortedPlaylist = new LinkedHashMap<>();
-
-            if (!sortType.equals("Latest")) {
-                sortedPlaylist = sortHashMapByValues((HashMap<String, String>) userPlaylists);
-                userPlaylistIds.clear();
-            } else {
-                sortedPlaylist = userPlaylists;
-            }
-
-            Set<String> ids = sortedPlaylist.keySet();
-            for (String playlistId : ids) {
-                if (!sortType.equals("Latest")) {
-                    userPlaylistIds.add(playlistId);
-                }
-            }
-        }
-        // End User Playlists ***************************************************************
 
         MusicToolWindow.triggerRefresh();
     }
@@ -99,13 +111,12 @@ public class PlayListCommands {
 
     public static void sortAtoZ() {
         sortType = "Sort A-Z";
-        updatePlaylists(false);
+        updatePlaylists(0, null);
     }
 
     public static void sortLatest() {
         sortType = "Latest";
-        PlaylistManager.getUserPlaylists(); // API call
-        updatePlaylists(false);
+        updatePlaylists(0, null);
     }
 
     public static JsonObject getTopSpotifyTracks() {
@@ -173,7 +184,7 @@ public class PlayListCommands {
             SoftwareResponse resp = (SoftwareResponse) PlaylistController.refreshAIPlaylist(myAIPlaylistId, jwt);
             if (resp.isOk()) {
                 myAITopTracks = getAITopTracks();
-                MusicToolWindow.triggerRefresh();
+                updatePlaylists(5, null);
                 return resp.getJsonObj();
             }
         }

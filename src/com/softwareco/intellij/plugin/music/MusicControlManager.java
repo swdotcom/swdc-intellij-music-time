@@ -328,7 +328,7 @@ public class MusicControlManager {
 
                 if(currentDeviceName != null && !currentDeviceName.equals(previousDeviceName)) {
                     previousDeviceName = currentDeviceName;
-                    MusicToolWindow.triggerRefresh();
+                    PlayListCommands.updatePlaylists(5, null);
                 }
             } else {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");

@@ -51,7 +51,7 @@ public class MusicToolWindow {
                 if(refreshButtonState == 0) {
                     refreshButtonState = 1;
                     if (MusicControlManager.spotifyCacheState)
-                        PlayListCommands.updatePlaylists(true);
+                        PlayListCommands.updatePlaylists(0, null);
                     refreshButton();
                     SoftwareCoUtils.showMsgPrompt("Playlist Refreshed Successfully !!!");
                     new Thread(() -> {
@@ -419,6 +419,8 @@ public class MusicToolWindow {
                                     } else {
                                         PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
                                     }
+                                } else {
+                                    SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
                                 }
                             }
                         }
@@ -440,11 +442,7 @@ public class MusicToolWindow {
                 tree.addTreeExpansionListener(new TreeExpansionListener() {
                     @Override
                     public void treeExpanded(TreeExpansionEvent event) {
-                        JsonObject obj = PlaylistManager.getTracksByPlaylistId(PlayListCommands.topSpotifyPlaylistId); // API call
-                        if (obj != null && obj.has("tracks"))
-                            PlayListCommands.topSpotifyTracks = obj.get("tracks").getAsJsonObject();
-
-                        refreshButton();
+                        PlayListCommands.updatePlaylists(1, null);
                     }
 
                     @Override
@@ -555,6 +553,8 @@ public class MusicToolWindow {
                                         } else {
                                             PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
                                         }
+                                    } else {
+                                        SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
                                     }
                                 }
                             }
@@ -576,8 +576,7 @@ public class MusicToolWindow {
                     tree1.addTreeExpansionListener(new TreeExpansionListener() {
                         @Override
                         public void treeExpanded(TreeExpansionEvent event) {
-                            PlayListCommands.myAITopTracks = PlayListCommands.getAITopTracks(); // API call
-                            refreshButton();
+                            PlayListCommands.updatePlaylists(2, null);
                         }
 
                         @Override
@@ -699,8 +698,7 @@ public class MusicToolWindow {
                     tree2.addTreeExpansionListener(new TreeExpansionListener() {
                         @Override
                         public void treeExpanded(TreeExpansionEvent event) {
-                            PlayListCommands.likedTracks = PlayListCommands.getLikedSpotifyTracks(); // API call
-                            refreshButton();
+                            PlayListCommands.updatePlaylists(3, null);
                         }
 
                         @Override
@@ -822,6 +820,8 @@ public class MusicToolWindow {
                                             } else {
                                                 PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
                                             }
+                                        } else {
+                                            SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
                                         }
                                     }
                                 }
@@ -844,8 +844,7 @@ public class MusicToolWindow {
                             @Override
                             public void treeExpanded(TreeExpansionEvent event) {
                                 PlaylistTreeNode node = (PlaylistTreeNode) event.getPath().getPathComponent(0);
-                                PlayListCommands.userTracks.put(node.getId(), PlaylistManager.getTracksByPlaylistId(node.getId())); // API call
-                                refreshButton();
+                                PlayListCommands.updatePlaylists(4, node.getId());
                             }
 
                             @Override

@@ -789,13 +789,8 @@ public class SoftwareCoUtils {
                 else
                     PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar(offline)
             }
-            try {
-                PlayListCommands.likedTracks = PlayListCommands.getLikedSpotifyTracks(); // API call
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
 
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists(3, null);
 
             if(MusicControlManager.userStatus != null && !MusicControlManager.userStatus.equals("premium")) {
                 String headPhoneIcon = "headphone.png";
@@ -807,7 +802,7 @@ public class SoftwareCoUtils {
         } else {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists(5, null);
         }
     }
 
