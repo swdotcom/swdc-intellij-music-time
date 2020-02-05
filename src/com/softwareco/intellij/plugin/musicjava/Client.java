@@ -65,7 +65,9 @@ public class Client {
 
         Future<HttpResponse> response = null;
 
-        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard") || api.contains("/users/plugin/accounts") || api.contains("/disconnect")) {
+        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
+                || api.contains("/users/plugin/accounts") || api.contains("/disconnect")
+                || api.contains("/generated") || api.contains("/recommendations")) {
             // if the server is having issues, we'll timeout within 5 seconds for these calls
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);

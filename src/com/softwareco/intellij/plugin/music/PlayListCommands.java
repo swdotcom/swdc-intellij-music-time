@@ -2,6 +2,7 @@ package com.softwareco.intellij.plugin.music;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.actions.MusicToolWindow;
 import com.softwareco.intellij.plugin.musicjava.PlaylistController;
 import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
@@ -13,7 +14,7 @@ import java.util.logging.Logger;
 public class PlayListCommands {
     public static final Logger LOG = Logger.getLogger("PlayListCommands");
     public static JsonObject topSpotifyTracks = null;
-    public static String topSpotifyPlaylistId = "1";
+    public static String topSpotifyPlaylistId = "6jCkTED0V5NEuM8sKbGG1Z"; // Software Top 40 playlist_id
     public static JsonObject likedTracks = null;
     public static String likedPlaylistId = "2";
     public static JsonObject myAITopTracks = null;
@@ -24,30 +25,57 @@ public class PlayListCommands {
     public static String sortType = "Latest";
     public static int counter = 0;
 
-    public static synchronized void updatePlaylists() {
-        topSpotifyTracks = getTopSpotifyTracks();
-        likedTracks = getLikedSpotifyTracks();
-        PlaylistManager.getUserPlaylists();
-        myAITopTracks = getAITopTracks();
-        if(userPlaylists.size() > 0) {
-            userTracks.clear();
-            Map<String, String> sortedPlaylist = new LinkedHashMap<>();
+    /*
+    * type = 0 to get all playlists and sort them
+    * type = 1 to update software top 40 playlist
+    * type = 2 to update my ai top 40 playlist
+    * type = 3 to update liked songs
+    * type = 4 to update user playlist with playlist id
+    * type = 5 to refresh playlist window
+    */
+    public static synchronized void updatePlaylists(int type, String playlistId) {
+        if(type == 0) {
+            PlaylistManager.getUserPlaylists(); // API call
+            // Sort Playlists ****************************************************
+            if (userPlaylists.size() > 0) {
 
-            if(!sortType.equals("Latest")) {
-                sortedPlaylist = sortHashMapByValues((HashMap<String, String>) userPlaylists);
-                userPlaylistIds.clear();
-            } else {
-                sortedPlaylist = userPlaylists;
-            }
+                Map<String, String> sortedPlaylist = new LinkedHashMap<>();
 
-            Set<String> ids = sortedPlaylist.keySet();
-            for(String playlistId : ids) {
-                if(!sortType.equals("Latest")) {
-                    userPlaylistIds.add(playlistId);
+                if (!sortType.equals("Latest")) {
+                    sortedPlaylist = sortHashMapByValues((HashMap<String, String>) userPlaylists);
+                    userPlaylistIds.clear();
+                } else {
+                    sortedPlaylist = userPlaylists;
                 }
-                userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId));
+
+                Set<String> ids = sortedPlaylist.keySet();
+                for (String id : ids) {
+                    if (!sortType.equals("Latest")) {
+                        userPlaylistIds.add(id);
+                    }
+                }
             }
+            // End Sort Playlists ***************************************************************
+        } else if(type == 1) {
+            // Software Top 40 Playlist ******************************************
+            JsonObject obj = PlaylistManager.getTracksByPlaylistId(topSpotifyPlaylistId); // API call
+            if (obj != null && obj.has("tracks"))
+                topSpotifyTracks = obj.get("tracks").getAsJsonObject();
+            // End Software Top 40 ***************************************************************
+        } else if(type == 2) {
+            // My AI Top 40 ******************************************************
+            myAITopTracks = getAITopTracks(); // API call
+            // End My AI Top 40 ***************************************************************
+        } else if(type == 3) {
+            // Liked Songs Playlist **********************************************
+            likedTracks = getLikedSpotifyTracks(); // API call
+            // End Liked Songs ***************************************************************
+        } else if(type == 4 && playlistId != null) {
+            // User Playlists ****************************************************
+            userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId)); // API call
+            // End User Playlists ***************************************************************
         }
+
         MusicToolWindow.triggerRefresh();
     }
 
@@ -83,12 +111,12 @@ public class PlayListCommands {
 
     public static void sortAtoZ() {
         sortType = "Sort A-Z";
-        updatePlaylists();
+        updatePlaylists(0, null);
     }
 
     public static void sortLatest() {
         sortType = "Latest";
-        updatePlaylists();
+        updatePlaylists(0, null);
     }
 
     public static JsonObject getTopSpotifyTracks() {
@@ -134,6 +162,16 @@ public class PlayListCommands {
 
         SoftwareResponse resp = (SoftwareResponse) PlaylistController.generateAIPlaylist();
         if (resp.isOk()) {
+            PlaylistManager.getUserPlaylists();
+            String jwt = SoftwareCoSessionManager.getItem("jwt");
+            JsonObject obj = new JsonObject();
+            obj.addProperty("playlist_id", myAIPlaylistId);
+            obj.addProperty("playlistTypeId", 1);
+            obj.addProperty("name", "My AI Top 40");
+
+            PlaylistController.sendPlaylistToSoftware(obj.toString(), jwt);
+
+            refreshAIPlaylist();
             return resp.getJsonObj();
         }
         return null;
@@ -142,8 +180,11 @@ public class PlayListCommands {
     public static JsonObject refreshAIPlaylist() {
 
         if(myAIPlaylistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.refreshAIPlaylist(myAIPlaylistId);
+            String jwt = SoftwareCoSessionManager.getItem("jwt");
+            SoftwareResponse resp = (SoftwareResponse) PlaylistController.refreshAIPlaylist(myAIPlaylistId, jwt);
             if (resp.isOk()) {
+                myAITopTracks = getAITopTracks();
+                updatePlaylists(5, null);
                 return resp.getJsonObj();
             }
         }
@@ -159,10 +200,10 @@ public class PlayListCommands {
         return null;
     }
 
-    public static JsonObject addTracksInPlaylist(Set<String> tracks) {
+    public static JsonObject addTracksInPlaylist(String playlist_id, Set<String> tracks) {
 
-        if(myAIPlaylistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.addTracksInPlaylist(myAIPlaylistId, tracks);
+        if(playlist_id != null) {
+            SoftwareResponse resp = (SoftwareResponse) PlaylistController.addTracksInPlaylist(playlist_id, tracks);
             if (resp.isOk()) {
                 return resp.getJsonObj();
             }
@@ -170,11 +211,22 @@ public class PlayListCommands {
         return null;
     }
 
-    public static JsonObject removeTracksInPlaylist(Set<String> tracks) {
+    public static JsonObject updatePlaylist(String playlist_id, JsonObject tracks) {
 
-        if(myAIPlaylistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.removeTracksInPlaylist(myAIPlaylistId, tracks);
+        if(playlist_id != null) {
+            SoftwareResponse resp = (SoftwareResponse) PlaylistController.updatePlaylist(playlist_id, tracks);
             if (resp.isOk()) {
+                return resp.getJsonObj();
+            }
+        }
+        return null;
+    }
+
+    public static JsonObject removeTracksInPlaylist(String playlist_id, Set<String> tracks) {
+
+        if(playlist_id != null) {
+            SoftwareResponse resp = (SoftwareResponse) PlaylistController.removeTracksInPlaylist(playlist_id, tracks);
+            if (resp != null && resp.isOk()) {
                 return resp.getJsonObj();
             }
         }

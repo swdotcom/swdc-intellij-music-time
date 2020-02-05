@@ -14,7 +14,7 @@ public class MusicStore {
 
     public static List<String> playlistIds = new ArrayList<>();
     public static String currentPlaylistId = null;
-    public static List<String> currentPlaylistTracks = new ArrayList<>();
+    public static List<String> tracksByPlaylistId = new ArrayList<>();
     public static String currentTrackId = null;
     public static String currentTrackName = null;
     public static List<String> spotifyDeviceIds = new ArrayList<>();
@@ -112,12 +112,12 @@ public class MusicStore {
         MusicStore.currentPlaylistId = currentPlaylistId;
     }
 
-    public static List<String> getCurrentPlaylistTracks() {
-        return currentPlaylistTracks;
+    public static List<String> getTracksByPlaylistId() {
+        return tracksByPlaylistId;
     }
 
-    public static void setCurrentPlaylistTracks(List<String> currentPlaylistTracks) {
-        MusicStore.currentPlaylistTracks = currentPlaylistTracks;
+    public static void setTracksByPlaylistId(List<String> tracksByPlaylistId) {
+        MusicStore.tracksByPlaylistId = tracksByPlaylistId;
     }
 
     public static String getCurrentTrackId() {

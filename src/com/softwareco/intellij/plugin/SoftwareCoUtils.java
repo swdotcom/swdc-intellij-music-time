@@ -86,6 +86,7 @@ public class SoftwareCoUtils {
     private static int DASHBOARD_LABEL_WIDTH = 25;
     private static int DASHBOARD_VALUE_WIDTH = 25;
     private static int MARKER_WIDTH = 4;
+    private static int deviceCounter = 0;
 
     private static String SERVICE_NOT_AVAIL =
             "Our service is temporarily unavailable.\n\nPlease try again later.\n";
@@ -192,7 +193,8 @@ public class SoftwareCoUtils {
         SoftwareResponse softwareResponse = new SoftwareResponse();
 
         SoftwareHttpManager httpTask = null;
-        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard") || api.contains("/users/plugin/accounts")) {
+        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
+                || api.contains("/users/plugin/accounts")) {
             // if the server is having issues, we'll timeout within 5 seconds for these calls
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
         } else {
@@ -760,7 +762,7 @@ public class SoftwareCoUtils {
     }
 
     public static void submitGitIssue() {
-        BrowserUtil.browse("https://github.com/swdotcom/swdc-intellij/issues");
+        BrowserUtil.browse("https://github.com/swdotcom/swdc-intellij-music-time/issues");
     }
 
     public static void submitFeedback() {
@@ -769,13 +771,26 @@ public class SoftwareCoUtils {
 
     public static void updatePlayerControles() {
         if(MusicControlManager.spotifyCacheState) {
-            if((MusicControlManager.currentDeviceId == null && MusicControlManager.currentDeviceName == null) || MusicControlManager.userStatus == null) {
-                initialSetup();
+            MusicControlManager.getSpotifyDevices();
+            if(MusicControlManager.currentDeviceName == null || MusicControlManager.userStatus == null) {
+                if(MusicControlManager.userStatus == null) {
+                    JsonObject obj = MusicControlManager.getUserProfile();
+                    if (obj != null)
+                        MusicControlManager.userStatus = obj.get("product").getAsString();
+                }
+                MusicControlManager.currentTrackName = null;
+                MusicControlManager.defaultbtn = "play";
+
             } else if(MusicControlManager.playerType.equals("Web Player")){
                 PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
             } else {
-                PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar
+                if(SoftwareCoSessionManager.isServerOnline())
+                    PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
+                else
+                    PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar(offline)
             }
+
+            PlayListCommands.updatePlaylists(3, null);
 
             if(MusicControlManager.userStatus != null && !MusicControlManager.userStatus.equals("premium")) {
                 String headPhoneIcon = "headphone.png";
@@ -787,7 +802,7 @@ public class SoftwareCoUtils {
         } else {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
-            MusicToolWindow.triggerRefresh();
+            PlayListCommands.updatePlaylists(5, null);
         }
     }
 
@@ -797,9 +812,6 @@ public class SoftwareCoUtils {
             if (obj != null)
                 MusicControlManager.userStatus = obj.get("product").getAsString();
         }
-
-        MusicControlManager.currentPlaylistId = SoftwareCoSessionManager.getTempData("playlist_id");
-        MusicControlManager.currentTrackId = SoftwareCoSessionManager.getTempData("track_id");
 
         if(MusicControlManager.currentDeviceId == null) {
             MusicControlManager.getSpotifyDevices();
@@ -812,7 +824,6 @@ public class SoftwareCoUtils {
                 else
                     MusicControlManager.playerType = "Desktop Player";
 
-                PlayerControlManager.playSpotifyPlaylist(null, null); // play current playlist
             } else if(MusicControlManager.currentDeviceId != null) {
                 MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
 
@@ -821,7 +832,6 @@ public class SoftwareCoUtils {
                 else
                     MusicControlManager.playerType = "Desktop Player";
 
-                PlayerControlManager.playSpotifyPlaylist(null, null); // play current playlist
             } else {
                 MusicControlManager.currentTrackName = null;
             }
@@ -921,7 +931,7 @@ public class SoftwareCoUtils {
         if (serverIsOnline) {
             if(jwt != null) {
                 // To find user Details
-                LOG.log(Level.INFO, pluginName + ": JWT: " + jwt);
+                //LOG.log(Level.INFO, pluginName + ": JWT: " + jwt);
                 String api = "/auth/spotify/user";
                 SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
                 if (resp.isOk()) {
@@ -969,7 +979,9 @@ public class SoftwareCoUtils {
                                 SoftwareCoSessionManager.setItem("spotify_access_token", MusicControlManager.ACCESS_TOKEN);
                                 SoftwareCoSessionManager.setItem("spotify_refresh_token", MusicControlManager.REFRESH_TOKEN);
                             }
-                            jwt = userObj.get("plugin_token").getAsString();
+                            if(!userObj.get("plugin_token").isJsonNull())
+                                jwt = userObj.get("plugin_token").getAsString();
+
                             MusicControlManager.spotifyCacheState = true;
                         }
                     }
@@ -1044,17 +1056,20 @@ public class SoftwareCoUtils {
         }
     }
 
-    public static void sendSessionPayload(String songSession) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+    public static boolean sendSongSessionPayload(String songSession) {
         String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (serverIsOnline && jwt != null) {
+        if (jwt != null) {
+            LOG.info("Music Time: Sending payload: " + songSession);
 
             String api = "/music/session";
             SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, songSession, jwt);
             if (!resp.isOk()) {
-                LOG.log(Level.WARNING, pluginName + ": unable to send song session");
+                LOG.log(Level.WARNING, pluginName + ": Unable to send song session");
+                return false;
             }
+            return true;
         }
+        return false;
     }
 
     public static void sendBatchedLikedSongSessions(String tracksToSave) {
@@ -1069,6 +1084,23 @@ public class SoftwareCoUtils {
             SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString(), jwt);
             if (!resp.isOk()) {
                 LOG.log(Level.WARNING, pluginName + ": unable to send liked song sessions");
+            }
+        }
+    }
+
+    // sendLikedTrack(like: true|false, trackId, type: spotify|itunes)
+    public static void sendLikedTrack(boolean like, String trackId, String type) {
+        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        if (serverIsOnline && jwt != null) {
+
+            JsonObject payload = new JsonObject();
+            payload.addProperty("liked", like);
+
+            String api = "/music/liked/track/" + trackId + "?type=" + type;
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString(), jwt);
+            if (!resp.isOk()) {
+                LOG.log(Level.WARNING, "Music Time: unable to send liked song to software.com");
             }
         }
     }
@@ -1143,6 +1175,11 @@ public class SoftwareCoUtils {
             content += " ";
         }
         return content + "" + data;
+    }
+
+    public static void launchMusicWebDashboard() {
+        String url = SoftwareCoUtils.launch_url + "/music";
+        BrowserUtil.browse(url);
     }
 
 }

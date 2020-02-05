@@ -12,6 +12,7 @@ public class ListRenderer extends DefaultListCellRenderer {
         if(value instanceof JLabel)
         {
             this.setText(((JLabel)value).getText());
+            this.setToolTipText(((JLabel)value).getToolTipText());
             this.setIcon(((JLabel)value).getIcon());
             this.setBorder(new EmptyBorder(2, 10, 2, 0));
         }

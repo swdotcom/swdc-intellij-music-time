@@ -49,14 +49,16 @@ public class SpotifyHttpManager implements Callable<HttpResponse> {
                     }
                     break;
                 case HttpDelete.METHOD_NAME:
-                    req = new HttpDelete(Client.spotify_endpoint + "" + this.api);
-//                    if (payload != null) {
-//                        //
-//                        // add the json payload
-//                        //
-//                        StringEntity params = new StringEntity(payload);
-//                        //((HttpDelete)req).setEntity(params);
-//                    }
+                    if (payload != null) {
+                        req = new HttpDeleteWithBody(Client.spotify_endpoint + "" + this.api);
+                        //
+                        // add the json payload
+                        //
+                        StringEntity params = new StringEntity(payload);
+                        ((HttpDeleteWithBody)req).setEntity(params);
+                    } else {
+                        req = new HttpDelete(Client.spotify_endpoint + "" + this.api);
+                    }
                     break;
                 case HttpPut.METHOD_NAME:
                     req = new HttpPut(Client.spotify_endpoint + "" + this.api);

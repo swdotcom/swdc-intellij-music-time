@@ -1,10 +1,12 @@
 package com.softwareco.intellij.plugin.musicjava;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.net.util.Base64;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -59,10 +61,12 @@ public class Apis {
                 spotifyDeviceIds.clear();
                 for(JsonElement array : tracks.get("devices").getAsJsonArray()) {
                     JsonObject device = array.getAsJsonObject();
-                    spotifyDeviceIds.add(device.get("id").getAsString());
-                    if(device.get("is_active").getAsBoolean()) {
-                        MusicStore.setCurrentDeviceId(device.get("id").getAsString());
-                        MusicStore.setCurrentDeviceName(device.get("name").getAsString());
+                    if(device.get("type").getAsString().equals("Computer")) {
+                        spotifyDeviceIds.add(device.get("id").getAsString());
+                        if (device.get("is_active").getAsBoolean()) {
+                            MusicStore.setCurrentDeviceId(device.get("id").getAsString());
+                            MusicStore.setCurrentDeviceName(device.get("name").getAsString());
+                        }
                     }
                 }
             } else {
@@ -79,6 +83,25 @@ public class Apis {
             }
         }
         return resp;
+    }
+
+    public static boolean activateDevice(String accessToken, String deviceId) {
+
+        JsonObject obj = new JsonObject();
+        if(deviceId != null) {
+            JsonArray array = new JsonArray();
+            array.add(deviceId);
+            obj.add("device_ids", array);
+        }
+        obj.addProperty("play", true);
+
+        String api = "/v1/me/player";
+        SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+        if (resp.getCode() == 204) {
+            getSpotifyDevices(accessToken);
+            return true;
+        }
+        return false;
     }
 
     public static Object getUserProfile(String accessToken) {
@@ -154,10 +177,10 @@ public class Apis {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
                     JsonObject tracks = obj.get("tracks").getAsJsonObject();
-                    MusicStore.currentPlaylistTracks.clear();
+                    MusicStore.tracksByPlaylistId.clear();
                     for (JsonElement array : tracks.get("items").getAsJsonArray()) {
                         JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                        MusicStore.currentPlaylistTracks.add(track.get("id").getAsString());
+                        MusicStore.tracksByPlaylistId.add(track.get("id").getAsString());
                     }
                 } else {
                     LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
@@ -174,49 +197,18 @@ public class Apis {
             }
             return resp;
         }
-        return null;
+        return new SoftwareResponse();
     }
 
-    public static Object getCurrentPlaylistTracks() {
+    public static Object getTrackById(String trackId) {
 
-        if(MusicStore.currentPlaylistId == null) {
-            MusicStore.currentPlaylistId = MusicStore.playlistIds.get(0);
+        if(trackId != null) {
+            String api = "/v1/tracks/" + trackId;
+            SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+
+            return resp;
         }
-
-        String api = "/v1/playlists/" + MusicStore.currentPlaylistId + "/tracks";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
-        if (resp.isOk()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("items")) {
-                MusicStore.currentPlaylistTracks.clear();
-                for(JsonElement array : tracks.get("items").getAsJsonArray()) {
-                    JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                    MusicStore.currentPlaylistTracks.add(track.get("id").getAsString());
-                }
-            } else {
-                LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
-            }
-        }
-        return resp;
-    }
-
-    public static Object getTrackById() {
-
-        if(MusicStore.currentTrackId == null) {
-            MusicStore.currentTrackId = MusicStore.currentPlaylistTracks.get(0);
-        }
-
-        String api = "/v1/tracks/" + MusicStore.currentTrackId;
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
-        if (resp.isOk()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("name")) {
-                MusicStore.currentTrackName = tracks.get("name").getAsString();
-            } else {
-                LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
-            }
-        }
-        return resp;
+        return new SoftwareResponse();
     }
 
     public static Object getSpotifyWebRecentTrack(String accessToken) {
