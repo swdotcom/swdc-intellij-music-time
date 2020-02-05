@@ -140,26 +140,26 @@ public class MusicToolWindow {
             connectedState.setOpaque(true);
 
             listModel.add(0, connectedState);
-            JList<JLabel> list1 = new JList<>(listModel);
-            list1.setVisibleRowCount(1);
-            list1.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            list1.setCellRenderer(new ListRenderer());
-            list1.addMouseMotionListener(new MouseMotionAdapter() {
+            JList<JLabel> actionList = new JList<>(listModel);
+            actionList.setVisibleRowCount(1);
+            actionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            actionList.setCellRenderer(new ListRenderer());
+            actionList.addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseMoved(MouseEvent e) {
                     super.mouseMoved(e);
-                    int row = list1.locationToIndex(e.getPoint());
-                    list1.setSelectedIndex(row);
+                    int row = actionList.locationToIndex(e.getPoint());
+                    actionList.setSelectedIndex(row);
                 }
             });
-            list1.addMouseListener(new MouseAdapter() {
+            actionList.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     super.mouseClicked(e);
 
-                    JList lst = (JList) e.getSource();
-                    JLabel lbl = (JLabel) lst.getSelectedValue();
-                    if(lbl.getText().equals("Connect Spotify")) {
+                    JList list = (JList) e.getSource();
+                    JLabel label = (JLabel) list.getSelectedValue();
+                    if(label.getText().equals("Connect Spotify")) {
                         MusicControlManager.connectSpotify();
                     }
                 }
@@ -167,12 +167,12 @@ public class MusicToolWindow {
                 @Override
                 public void mouseExited(MouseEvent e) {
                     super.mouseExited(e);
-                    JList lst = (JList) e.getSource();
-                    lst.clearSelection();
+                    JList list = (JList) e.getSource();
+                    list.clearSelection();
                 }
             });
-            list1.updateUI();
-            dataPanel.add(list1, gridConstraints(dataPanel.getComponentCount(), 1, 2, 0, 3, 0));
+            actionList.updateUI();
+            dataPanel.add(actionList, gridConstraints(dataPanel.getComponentCount(), 1, 2, 0, 3, 0));
 
             // Add VSpacer at last
             dataPanel.add(component, gridConstraints(dataPanel.getComponentCount(), 6, 1, 0, 2, 0));
@@ -201,11 +201,11 @@ public class MusicToolWindow {
 
             Icon spotifyIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/spotify.png");
             if(MusicControlManager.spotifyDeviceIds.size() > 0) {
-                JLabel player = new JLabel();
-                player.setIcon(spotifyIcon);
+                JLabel deviceState = new JLabel();
+                deviceState.setIcon(spotifyIcon);
                 if(MusicControlManager.currentDeviceName != null) {
-                    player.setText("Listening on " + MusicControlManager.currentDeviceName);
-                    player.setToolTipText("Listening on a Spotify device");
+                    deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
+                    deviceState.setToolTipText("Listening on a Spotify device");
                 } else {
                     String devices = "Connected on ";
                     String toolTip = "";
@@ -218,40 +218,40 @@ public class MusicToolWindow {
                     else
                         toolTip = "Multiple Spotify devices connected";
 
-                    player.setText(devices);
-                    player.setToolTipText(toolTip);
+                    deviceState.setText(devices);
+                    deviceState.setToolTipText(toolTip);
                 }
-                listModel.add(listIndex, player);
+                listModel.add(listIndex, deviceState);
                 listIndex ++;
             }
 
             Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
-            JLabel web = new JLabel();
-            web.setIcon(pawIcon);
-            web.setText("See Web Analytics");
-            listModel.add(listIndex, web);
+            JLabel webAnalytics = new JLabel();
+            webAnalytics.setIcon(pawIcon);
+            webAnalytics.setText("See Web Analytics");
+            listModel.add(listIndex, webAnalytics);
             listIndex ++;
 
-            JList<JLabel> labellist1 = new JList<>(listModel);
-            labellist1.setVisibleRowCount(listIndex);
-            labellist1.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            labellist1.setCellRenderer(new ListRenderer());
-            labellist1.addMouseMotionListener(new MouseMotionAdapter() {
+            JList<JLabel> actionList = new JList<>(listModel);
+            actionList.setVisibleRowCount(listIndex);
+            actionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            actionList.setCellRenderer(new ListRenderer());
+            actionList.addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseMoved(MouseEvent e) {
                     super.mouseMoved(e);
-                    int row = labellist1.locationToIndex(e.getPoint());
-                    labellist1.setSelectedIndex(row);
+                    int row = actionList.locationToIndex(e.getPoint());
+                    actionList.setSelectedIndex(row);
                 }
             });
-            labellist1.addMouseListener(new MouseAdapter() {
+            actionList.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     super.mouseClicked(e);
 
-                    JList lst = (JList) e.getSource();
-                    JLabel lbl = (JLabel) lst.getSelectedValue();
-                    if(lbl.getText().equals("See Web Analytics")) {
+                    JList list = (JList) e.getSource();
+                    JLabel label = (JLabel) list.getSelectedValue();
+                    if(label.getText().equals("See Web Analytics")) {
                         //Code to call web analytics
                         SoftwareCoUtils.launchMusicWebDashboard();
                     }
@@ -260,20 +260,20 @@ public class MusicToolWindow {
                 @Override
                 public void mouseExited(MouseEvent e) {
                     super.mouseExited(e);
-                    JList lst = (JList) e.getSource();
-                    lst.clearSelection();
+                    JList list = (JList) e.getSource();
+                    list.clearSelection();
                 }
             });
-            labellist1.updateUI();
+            actionList.updateUI();
 
-            dataPanel.add(labellist1, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
-
-            JSeparator seperator = new JSeparator();
-            seperator.setAlignmentY(0.0f);
-            seperator.setForeground(new Color(58, 86, 187));
-            dataPanel.add(seperator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
-
-            DefaultListModel listModel1 = new DefaultListModel();
+            dataPanel.add(actionList, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
+//*********************************************************************************************************************************************
+            JSeparator softwarePlaylistSeparator = new JSeparator();
+            softwarePlaylistSeparator.setAlignmentY(0.0f);
+            softwarePlaylistSeparator.setForeground(new Color(58, 86, 187));
+            dataPanel.add(softwarePlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
+//*********************************************************************************************************************************************
+            DefaultListModel refreshAIModel = new DefaultListModel();
             Icon gearIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/settings.png");
             JLabel aiPlaylist = new JLabel();
             aiPlaylist.setIcon(gearIcon);
@@ -282,33 +282,33 @@ public class MusicToolWindow {
             } else {
                 aiPlaylist.setText("Generate My AI Playlist");
             }
-            listModel1.add(0, aiPlaylist);
+            refreshAIModel.add(0, aiPlaylist);
 
-            JList<JLabel> labellist2 = new JList<>(listModel1);
-            labellist2.setVisibleRowCount(1);
-            labellist2.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-            labellist2.setCellRenderer(new ListRenderer());
-            labellist2.addMouseMotionListener(new MouseMotionAdapter() {
+            JList<JLabel> refreshAIList = new JList<>(refreshAIModel);
+            refreshAIList.setVisibleRowCount(1);
+            refreshAIList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            refreshAIList.setCellRenderer(new ListRenderer());
+            refreshAIList.addMouseMotionListener(new MouseMotionAdapter() {
                 @Override
                 public void mouseMoved(MouseEvent e) {
                     super.mouseMoved(e);
-                    int row = labellist2.locationToIndex(e.getPoint());
-                    labellist2.setSelectedIndex(row);
+                    int row = refreshAIList.locationToIndex(e.getPoint());
+                    refreshAIList.setSelectedIndex(row);
                 }
             });
-            labellist2.addMouseListener(new MouseAdapter() {
+            refreshAIList.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     super.mouseClicked(e);
 
                     if(refreshAIButtonState == 0) {
                         refreshAIButtonState = 1;
-                        JList lst = (JList) e.getSource();
-                        JLabel lbl = (JLabel) lst.getSelectedValue();
-                        if (lbl.getText().equals("Refresh My AI Playlist")) {
+                        JList list = (JList) e.getSource();
+                        JLabel label = (JLabel) list.getSelectedValue();
+                        if (label.getText().equals("Refresh My AI Playlist")) {
                             PlayListCommands.refreshAIPlaylist();
                             SoftwareCoUtils.showMsgPrompt("My AI Playlist Refreshed Successfully !!!");
-                        } else if (lbl.getText().equals("Generate My AI Playlist")) {
+                        } else if (label.getText().equals("Generate My AI Playlist")) {
                             PlayListCommands.generateAIPlaylist();
                             SoftwareCoUtils.showMsgPrompt("My AI Playlist Generated Successfully !!!");
                         }
@@ -326,120 +326,48 @@ public class MusicToolWindow {
                 @Override
                 public void mouseExited(MouseEvent e) {
                     super.mouseExited(e);
-                    JList lst = (JList) e.getSource();
-                    lst.clearSelection();
+                    JList list = (JList) e.getSource();
+                    list.clearSelection();
                 }
             });
-            labellist2.updateUI();
-            dataPanel.add(labellist2, gridConstraints(dataPanel.getComponentCount(), 1, 0, 8, 1, 0));
+            refreshAIList.updateUI();
+            dataPanel.add(refreshAIList, gridConstraints(dataPanel.getComponentCount(), 1, 0, 8, 1, 0));
 
-
-            // Software Top 40 Playlist ************************************************************
-            PlaylistTreeNode list = new PlaylistTreeNode("Software Top 40", PlayListCommands.topSpotifyPlaylistId);
-            DefaultTreeModel model = new DefaultTreeModel(list);
-            list.setModel(model);
+//*********************************************************************************************************************************************
+            // Software Top 40 Playlist
+            PlaylistTreeNode softwarePlaylist = new PlaylistTreeNode("Software Top 40", PlayListCommands.topSpotifyPlaylistId);
+            DefaultTreeModel softwarePlaylistModel = new DefaultTreeModel(softwarePlaylist);
+            softwarePlaylist.setModel(softwarePlaylistModel);
             JsonObject obj = PlayListCommands.topSpotifyTracks;
             if (obj != null && obj.has("items")) {
-                for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                    JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                    PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
-                    list.add(node);
-                }
-                if(obj.get("items").getAsJsonArray().size() == 0) {
+                JsonArray items = obj.get("items").getAsJsonArray();
+                if(items.size() == 0) {
                     PlaylistTreeNode node = new PlaylistTreeNode("No songs have been added to this playlist yet", null);
-                    list.add(node);
+                    softwarePlaylist.add(node);
+                } else {
+                    for (JsonElement array : items) {
+                        JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                        PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
+                        softwarePlaylist.add(node);
+                    }
                 }
             } else {
                 PlaylistTreeNode node = new PlaylistTreeNode("Loading...", null);
-                list.add(node);
+                softwarePlaylist.add(node);
             }
 
-            PlaylistTree tree;
+            PlaylistTree softwarePlaylistTree;
             if(playlists != null && playlists.containsKey(PlayListCommands.topSpotifyPlaylistId)) {
-                tree = playlists.get(PlayListCommands.topSpotifyPlaylistId);
-                tree.setModel(model);
+                softwarePlaylistTree = playlists.get(PlayListCommands.topSpotifyPlaylistId);
+                softwarePlaylistTree.setModel(softwarePlaylistModel);
             } else {
-                tree = new PlaylistTree(model);
-                tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                tree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
+                softwarePlaylistTree = new PlaylistTree(softwarePlaylistModel);
+                softwarePlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+                softwarePlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
-                tree.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        super.mouseClicked(e);
+                softwarePlaylistTree.addMouseListener(new PlaylistMouseListener(softwarePlaylistTree));
 
-                        PlaylistTreeNode node = (PlaylistTreeNode)
-                                tree.getLastSelectedPathComponent();
-
-                        /* if nothing is selected */
-                        if (node == null || node.getId() == null) return;
-
-                        boolean activate = false;
-                        if(MusicControlManager.currentTrackName == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                            activate = MusicControlManager.activateDevice(MusicControlManager.spotifyDeviceIds.get(0));
-                            SoftwareCoUtils.updatePlayerControles();
-                        }
-
-                        /* retrieve the node that was selected */
-                        if(node.isLeaf()) {
-                            PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-                            if(root.getId().equals(MusicControlManager.currentPlaylistId)
-                                    && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                                if(!activate) {
-                                    if (MusicControlManager.defaultbtn.equals("pause"))
-                                        PlayerControlManager.pauseSpotifyDevices();
-                                    else if (MusicControlManager.defaultbtn.equals("play"))
-                                        PlayerControlManager.playSpotifyDevices();
-                                }
-                            } else {
-                                if(!activate && MusicControlManager.currentTrackName == null &&
-                                        (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                    MusicControlManager.launchPlayer();
-                                    lazilyCheckPlayer(20, root.getId(), node.getId());
-                                } else {
-                                    PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                                }
-                            }
-                        } else {
-                            if(node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                                if(!activate) {
-                                    if (MusicControlManager.defaultbtn.equals("pause"))
-                                        PlayerControlManager.pauseSpotifyDevices();
-                                    else if (MusicControlManager.defaultbtn.equals("play"))
-                                        PlayerControlManager.playSpotifyDevices();
-                                }
-                            } else {
-                                PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
-
-                                if(child.getId() != null) {
-                                    if (!activate && MusicControlManager.currentTrackName == null &&
-                                            (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                        MusicControlManager.launchPlayer();
-                                        lazilyCheckPlayer(20, node.getId(), child.getId());
-                                    } else {
-                                        PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                                    }
-                                } else {
-                                    SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-                        super.mouseEntered(e);
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-                        super.mouseExited(e);
-                        JTree tree=(JTree) e.getSource();
-                        tree.clearSelection();
-                    }
-                });
-
-                tree.addTreeExpansionListener(new TreeExpansionListener() {
+                softwarePlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
                     @Override
                     public void treeExpanded(TreeExpansionEvent event) {
                         PlayListCommands.updatePlaylists(1, null);
@@ -451,129 +379,57 @@ public class MusicToolWindow {
                     }
                 });
 
-                tree.addMouseMotionListener(new TreeScanner());
+                softwarePlaylistTree.addMouseMotionListener(new TreeScanner());
 
-                playlists.put(PlayListCommands.topSpotifyPlaylistId, tree);
+                playlists.put(PlayListCommands.topSpotifyPlaylistId, softwarePlaylistTree);
             }
 
-            PlaylistTreeRenderer renderer = (PlaylistTreeRenderer) tree.getCellRenderer();
-            renderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
-            renderer.setBorderSelectionColor(new Color(0,0,0,0));
-            tree.setBackground((Color) null);
+            PlaylistTreeRenderer softwarePlaylistRenderer = (PlaylistTreeRenderer) softwarePlaylistTree.getCellRenderer();
+            softwarePlaylistRenderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
+            softwarePlaylistRenderer.setBorderSelectionColor(new Color(0,0,0,0));
+            softwarePlaylistTree.setBackground((Color) null);
 
-            tree.setExpandedState(new TreePath(model.getPathToRoot(list)), tree.expandState);
+            softwarePlaylistTree.setExpandedState(new TreePath(softwarePlaylistModel.getPathToRoot(softwarePlaylist)), softwarePlaylistTree.expandState);
 
-            dataPanel.add(tree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
+            dataPanel.add(softwarePlaylistTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
 
-            // My AI Top 40 Playlist ********************************************************
+//*********************************************************************************************************************************************
+            // My AI Top 40 Playlist
             if(PlayListCommands.myAIPlaylistId != null) {
-                PlaylistTreeNode list1 = new PlaylistTreeNode("My AI Top 40", PlayListCommands.myAIPlaylistId);
-                DefaultTreeModel model1 = new DefaultTreeModel(list1);
-                list1.setModel(model1);
+                PlaylistTreeNode myAIPlaylist = new PlaylistTreeNode("My AI Top 40", PlayListCommands.myAIPlaylistId);
+                DefaultTreeModel myAIPlaylistModel = new DefaultTreeModel(myAIPlaylist);
+                myAIPlaylist.setModel(myAIPlaylistModel);
                 JsonObject obj1 = PlayListCommands.myAITopTracks;
                 if (obj1 != null && obj1.has("tracks")) {
                     JsonObject tracks = obj1.get("tracks").getAsJsonObject();
-                    for (JsonElement array : tracks.get("items").getAsJsonArray()) {
-                        JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                        PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
-                        list1.add(node);
-                    }
-                    if(tracks.get("items").getAsJsonArray().size() == 0) {
+                    JsonArray items = tracks.get("items").getAsJsonArray();
+                    if(items.size() == 0) {
                         PlaylistTreeNode node = new PlaylistTreeNode("No songs have been added to this playlist yet, Refresh AI playlist", null);
-                        list1.add(node);
+                        myAIPlaylist.add(node);
+                    } else {
+                        for (JsonElement array : items) {
+                            JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                            PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
+                            myAIPlaylist.add(node);
+                        }
                     }
                 } else {
                     PlaylistTreeNode node = new PlaylistTreeNode("Loading...", null);
-                    list1.add(node);
+                    myAIPlaylist.add(node);
                 }
 
-                PlaylistTree tree1;
+                PlaylistTree myAIPlaylistTree;
                 if(playlists != null && playlists.containsKey(PlayListCommands.myAIPlaylistId)) {
-                    tree1 = playlists.get(PlayListCommands.myAIPlaylistId);
-                    tree1.setModel(model1);
+                    myAIPlaylistTree = playlists.get(PlayListCommands.myAIPlaylistId);
+                    myAIPlaylistTree.setModel(myAIPlaylistModel);
                 } else {
-                    tree1 = new PlaylistTree(model1);
-                    tree1.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                    tree1.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
+                    myAIPlaylistTree = new PlaylistTree(myAIPlaylistModel);
+                    myAIPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+                    myAIPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
-                    tree1.addMouseListener(new MouseAdapter() {
-                        @Override
-                        public void mouseClicked(MouseEvent e) {
-                            super.mouseClicked(e);
+                    myAIPlaylistTree.addMouseListener(new PlaylistMouseListener(myAIPlaylistTree));
 
-                            PlaylistTreeNode node = (PlaylistTreeNode)
-                                    tree1.getLastSelectedPathComponent();
-
-                            /* if nothing is selected */
-                            if (node == null || node.getId() == null) return;
-
-                            boolean activate = false;
-                            if(MusicControlManager.currentTrackName == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                                activate = MusicControlManager.activateDevice(MusicControlManager.spotifyDeviceIds.get(0));
-                                SoftwareCoUtils.updatePlayerControles();
-                            }
-
-                            /* retrieve the node that was selected */
-                            if(node.isLeaf()) {
-                                PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-                                if(root.getId().equals(MusicControlManager.currentPlaylistId)
-                                        && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                                    if(!activate) {
-                                        if (MusicControlManager.defaultbtn.equals("pause"))
-                                            PlayerControlManager.pauseSpotifyDevices();
-                                        else if (MusicControlManager.defaultbtn.equals("play"))
-                                            PlayerControlManager.playSpotifyDevices();
-                                    }
-                                } else {
-
-                                    if(!activate && MusicControlManager.currentTrackName == null &&
-                                            (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                        MusicControlManager.launchPlayer();
-                                        lazilyCheckPlayer(20, root.getId(), node.getId());
-                                    } else {
-                                        PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                                    }
-                                }
-                            } else {
-                                if(node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                                    if(!activate) {
-                                        if (MusicControlManager.defaultbtn.equals("pause"))
-                                            PlayerControlManager.pauseSpotifyDevices();
-                                        else if (MusicControlManager.defaultbtn.equals("play"))
-                                            PlayerControlManager.playSpotifyDevices();
-                                    }
-                                } else {
-                                    PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
-
-                                    if(child.getId() != null) {
-                                        if (!activate && MusicControlManager.currentTrackName == null &&
-                                                (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                            MusicControlManager.launchPlayer();
-                                            lazilyCheckPlayer(20, node.getId(), child.getId());
-                                        } else {
-                                            PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                                        }
-                                    } else {
-                                        SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
-                                    }
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void mouseEntered(MouseEvent e) {
-                            super.mouseEntered(e);
-                        }
-
-                        @Override
-                        public void mouseExited(MouseEvent e) {
-                            super.mouseExited(e);
-                            JTree tree=(JTree) e.getSource();
-                            tree.clearSelection();
-                        }
-                    });
-
-                    tree1.addTreeExpansionListener(new TreeExpansionListener() {
+                    myAIPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
                         @Override
                         public void treeExpanded(TreeExpansionEvent event) {
                             PlayListCommands.updatePlaylists(2, null);
@@ -585,117 +441,47 @@ public class MusicToolWindow {
                         }
                     });
 
-                    tree1.addMouseMotionListener(new TreeScanner());
+                    myAIPlaylistTree.addMouseMotionListener(new TreeScanner());
 
-                    playlists.put(PlayListCommands.myAIPlaylistId, tree1);
+                    playlists.put(PlayListCommands.myAIPlaylistId, myAIPlaylistTree);
                 }
-                PlaylistTreeRenderer renderer1 = (PlaylistTreeRenderer) tree1.getCellRenderer();
-                renderer1.setBackgroundNonSelectionColor(new Color(0,0,0,0));
-                renderer1.setBorderSelectionColor(new Color(0,0,0,0));
-                tree1.setBackground((Color)null);
+                PlaylistTreeRenderer myAIPlaylistRenderer = (PlaylistTreeRenderer) myAIPlaylistTree.getCellRenderer();
+                myAIPlaylistRenderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
+                myAIPlaylistRenderer.setBorderSelectionColor(new Color(0,0,0,0));
+                myAIPlaylistTree.setBackground((Color)null);
 
-                tree1.setExpandedState(new TreePath(model1.getPathToRoot(list1)), tree1.expandState);
+                myAIPlaylistTree.setExpandedState(new TreePath(myAIPlaylistModel.getPathToRoot(myAIPlaylist)), myAIPlaylistTree.expandState);
 
-                dataPanel.add(tree1, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
+                dataPanel.add(myAIPlaylistTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
             }
 
-            // Liked Songs Playlist *******************************************************
+//*********************************************************************************************************************************************
+            // Liked Songs Playlist
             if(MusicControlManager.likedTracks.size() > 0) {
-                PlaylistTreeNode list2 = new PlaylistTreeNode("Liked Songs", PlayListCommands.likedPlaylistId);
-                DefaultTreeModel model2 = new DefaultTreeModel(list2);
-                list2.setModel(model2);
+                PlaylistTreeNode likedPlaylist = new PlaylistTreeNode("Liked Songs", PlayListCommands.likedPlaylistId);
+                DefaultTreeModel likedPlaylistModel = new DefaultTreeModel(likedPlaylist);
+                likedPlaylist.setModel(likedPlaylistModel);
                 JsonObject obj2 = PlayListCommands.likedTracks;
                 if (obj2 != null && obj2.has("items")) {
                     for (JsonElement array : obj2.get("items").getAsJsonArray()) {
                         JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
                         PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
-                        list2.add(node);
+                        likedPlaylist.add(node);
                     }
                 }
 
-                PlaylistTree tree2;
+                PlaylistTree likedPlaylistTree;
                 if (playlists != null && playlists.containsKey(PlayListCommands.likedPlaylistId)) {
-                    tree2 = playlists.get(PlayListCommands.likedPlaylistId);
-                    tree2.setModel(model2);
+                    likedPlaylistTree = playlists.get(PlayListCommands.likedPlaylistId);
+                    likedPlaylistTree.setModel(likedPlaylistModel);
                 } else {
-                    tree2 = new PlaylistTree(model2);
-                    tree2.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                    tree2.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
+                    likedPlaylistTree = new PlaylistTree(likedPlaylistModel);
+                    likedPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+                    likedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
 
-                    tree2.addMouseListener(new MouseAdapter() {
-                        @Override
-                        public void mouseClicked(MouseEvent e) {
-                            super.mouseClicked(e);
+                    likedPlaylistTree.addMouseListener(new PlaylistMouseListener(likedPlaylistTree));
 
-                            PlaylistTreeNode node = (PlaylistTreeNode)
-                                    tree2.getLastSelectedPathComponent();
-
-                            /* if nothing is selected */
-                            if (node == null) return;
-
-                            boolean activate = false;
-                            if(MusicControlManager.currentTrackName == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                                activate = MusicControlManager.activateDevice(MusicControlManager.spotifyDeviceIds.get(0));
-                                SoftwareCoUtils.updatePlayerControles();
-                            }
-
-                            /* retrieve the node that was selected */
-                            if(node.isLeaf()) {
-                                PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-                                if(root.getId().equals(MusicControlManager.currentPlaylistId)
-                                        && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                                    if(!activate) {
-                                        if (MusicControlManager.defaultbtn.equals("pause"))
-                                            PlayerControlManager.pauseSpotifyDevices();
-                                        else if (MusicControlManager.defaultbtn.equals("play"))
-                                            PlayerControlManager.playSpotifyDevices();
-                                    }
-                                } else {
-
-                                    if(!activate && MusicControlManager.currentTrackName == null &&
-                                            (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                        MusicControlManager.launchPlayer();
-                                        lazilyCheckPlayer(20, root.getId(), node.getId());
-                                    } else {
-                                        PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                                    }
-                                }
-                            } else {
-                                if(node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                                    if(!activate) {
-                                        if (MusicControlManager.defaultbtn.equals("pause"))
-                                            PlayerControlManager.pauseSpotifyDevices();
-                                        else if (MusicControlManager.defaultbtn.equals("play"))
-                                            PlayerControlManager.playSpotifyDevices();
-                                    }
-                                } else {
-                                    PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
-
-                                    if(!activate && MusicControlManager.currentTrackName == null &&
-                                            (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                        MusicControlManager.launchPlayer();
-                                        lazilyCheckPlayer(20, node.getId(), child.getId());
-                                    } else {
-                                        PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                                    }
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void mouseEntered(MouseEvent e) {
-                            super.mouseEntered(e);
-                        }
-
-                        @Override
-                        public void mouseExited(MouseEvent e) {
-                            super.mouseExited(e);
-                            JTree tree=(JTree) e.getSource();
-                            tree.clearSelection();
-                        }
-                    });
-
-                    tree2.addTreeExpansionListener(new TreeExpansionListener() {
+                    likedPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
                         @Override
                         public void treeExpanded(TreeExpansionEvent event) {
                             PlayListCommands.updatePlaylists(3, null);
@@ -707,140 +493,68 @@ public class MusicToolWindow {
                         }
                     });
 
-                    tree2.addMouseMotionListener(new TreeScanner());
+                    likedPlaylistTree.addMouseMotionListener(new TreeScanner());
 
-                    playlists.put(PlayListCommands.likedPlaylistId, tree2);
+                    playlists.put(PlayListCommands.likedPlaylistId, likedPlaylistTree);
                 }
-                PlaylistTreeRenderer renderer2 = (PlaylistTreeRenderer) tree2.getCellRenderer();
-                renderer2.setBackgroundNonSelectionColor(new Color(0,0,0,0));
-                renderer2.setBorderSelectionColor(new Color(0,0,0,0));
-                tree2.setBackground((Color)null);
+                PlaylistTreeRenderer likedPlaylistRenderer = (PlaylistTreeRenderer) likedPlaylistTree.getCellRenderer();
+                likedPlaylistRenderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
+                likedPlaylistRenderer.setBorderSelectionColor(new Color(0,0,0,0));
+                likedPlaylistTree.setBackground((Color)null);
 
-                tree2.setExpandedState(new TreePath(model2.getPathToRoot(list2)), tree2.expandState);
+                likedPlaylistTree.setExpandedState(new TreePath(likedPlaylistModel.getPathToRoot(likedPlaylist)), likedPlaylistTree.expandState);
 
-                dataPanel.add(tree2, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
+                dataPanel.add(likedPlaylistTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
             } else if(counter == 0) {
                 PlayListCommands.likedTracks = PlayListCommands.getLikedSpotifyTracks(); // API call
                 counter++;
             }
 
-            // Get User Playlists *********************************************************
+//*********************************************************************************************************************************************
+            // Get User Playlists
             if(PlayListCommands.userPlaylistIds.size() > 0) {
-                JSeparator seperator1 = new JSeparator();
-                seperator1.setAlignmentY(0.0f);
-                seperator1.setForeground(new Color(58, 86, 187));
-                dataPanel.add(seperator1, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
-
+                //*****************************************************************************************************************************
+                JSeparator userPlaylistSeparator = new JSeparator();
+                userPlaylistSeparator.setAlignmentY(0.0f);
+                userPlaylistSeparator.setForeground(new Color(58, 86, 187));
+                dataPanel.add(userPlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
+                //*****************************************************************************************************************************
 
                 for(String playlistId : PlayListCommands.userPlaylistIds) {
-                    PlaylistTreeNode list3 = new PlaylistTreeNode(PlayListCommands.userPlaylists.get(playlistId), playlistId);
-                    DefaultTreeModel model3 = new DefaultTreeModel(list3);
-                    list3.setModel(model3);
+                    PlaylistTreeNode userPlaylist = new PlaylistTreeNode(PlayListCommands.userPlaylists.get(playlistId), playlistId);
+                    DefaultTreeModel userPlaylistModel = new DefaultTreeModel(userPlaylist);
+                    userPlaylist.setModel(userPlaylistModel);
                     JsonObject obj1 = PlayListCommands.userTracks.get(playlistId);
                     if (obj1 != null && obj1.has("tracks")) {
                         JsonObject tracks = obj1.get("tracks").getAsJsonObject();
-                        JsonArray arr = tracks.get("items").getAsJsonArray();
-                        if (arr.size() == 0) {
+                        JsonArray items = tracks.get("items").getAsJsonArray();
+                        if (items.size() == 0) {
                             PlaylistTreeNode node = new PlaylistTreeNode("No songs have been added to this playlist yet", null);
-                            list3.add(node);
-                        }
-                        for (JsonElement array : tracks.get("items").getAsJsonArray()) {
-                            JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                            PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
-                            list3.add(node);
+                            userPlaylist.add(node);
+                        } else {
+                            for (JsonElement array : items) {
+                                JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                                PlaylistTreeNode node = new PlaylistTreeNode(track.get("name").getAsString(), track.get("id").getAsString());
+                                userPlaylist.add(node);
+                            }
                         }
                     } else {
                         PlaylistTreeNode node = new PlaylistTreeNode("Loading...", null);
-                        list3.add(node);
+                        userPlaylist.add(node);
                     }
 
-                    PlaylistTree tree3;
+                    PlaylistTree userPlaylistTree;
                     if(playlists != null && playlists.containsKey(playlistId)) {
-                        tree3 = playlists.get(playlistId);
-                        tree3.setModel(model3);
+                        userPlaylistTree = playlists.get(playlistId);
+                        userPlaylistTree.setModel(userPlaylistModel);
                     } else {
-                        tree3 = new PlaylistTree(model3);
-                        tree3.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                        tree3.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
+                        userPlaylistTree = new PlaylistTree(userPlaylistModel);
+                        userPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+                        userPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
 
-                        tree3.addMouseListener(new MouseAdapter() {
-                            @Override
-                            public void mouseClicked(MouseEvent e) {
-                                super.mouseClicked(e);
+                        userPlaylistTree.addMouseListener(new PlaylistMouseListener(userPlaylistTree));
 
-                                PlaylistTreeNode node = (PlaylistTreeNode)
-                                        tree3.getLastSelectedPathComponent();
-
-                                /* if nothing is selected */
-                                if (node == null || node.getId() == null) return;
-
-                                boolean activate = false;
-                                if(MusicControlManager.currentTrackName == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                                    activate = MusicControlManager.activateDevice(MusicControlManager.spotifyDeviceIds.get(0));
-                                    SoftwareCoUtils.updatePlayerControles();
-                                }
-
-                                /* retrieve the node that was selected */
-                                if(node.isLeaf()) {
-                                    PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-                                    if(root.getId().equals(MusicControlManager.currentPlaylistId)
-                                            && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                                        if(!activate) {
-                                            if (MusicControlManager.defaultbtn.equals("pause"))
-                                                PlayerControlManager.pauseSpotifyDevices();
-                                            else if (MusicControlManager.defaultbtn.equals("play"))
-                                                PlayerControlManager.playSpotifyDevices();
-                                        }
-                                    } else {
-
-                                        if(!activate && MusicControlManager.currentTrackName == null &&
-                                                (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                            MusicControlManager.launchPlayer();
-                                            lazilyCheckPlayer(20, root.getId(), node.getId());
-                                        } else {
-                                            PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                                        }
-                                    }
-                                } else {
-                                    if(node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                                        if(!activate) {
-                                            if (MusicControlManager.defaultbtn.equals("pause"))
-                                                PlayerControlManager.pauseSpotifyDevices();
-                                            else if (MusicControlManager.defaultbtn.equals("play"))
-                                                PlayerControlManager.playSpotifyDevices();
-                                        }
-                                    } else {
-                                        PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
-
-                                        if(child.getId() != null) {
-                                            if (!activate && MusicControlManager.currentTrackName == null &&
-                                                    (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                                                MusicControlManager.launchPlayer();
-                                                lazilyCheckPlayer(20, node.getId(), child.getId());
-                                            } else {
-                                                PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                                            }
-                                        } else {
-                                            SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
-                                        }
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void mouseEntered(MouseEvent e) {
-                                super.mouseEntered(e);
-                            }
-
-                            @Override
-                            public void mouseExited(MouseEvent e) {
-                                super.mouseExited(e);
-                                JTree tree=(JTree) e.getSource();
-                                tree.clearSelection();
-                            }
-                        });
-
-                        tree3.addTreeExpansionListener(new TreeExpansionListener() {
+                        userPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
                             @Override
                             public void treeExpanded(TreeExpansionEvent event) {
                                 PlaylistTreeNode node = (PlaylistTreeNode) event.getPath().getPathComponent(0);
@@ -848,27 +562,25 @@ public class MusicToolWindow {
                             }
 
                             @Override
-                            public void treeCollapsed(TreeExpansionEvent event) {
-
-                            }
+                            public void treeCollapsed(TreeExpansionEvent event) { }
                         });
 
-                        tree3.addMouseMotionListener(new TreeScanner());
+                        userPlaylistTree.addMouseMotionListener(new TreeScanner());
 
-                        playlists.put(playlistId, tree3);
+                        playlists.put(playlistId, userPlaylistTree);
                     }
-                    PlaylistTreeRenderer renderer3 = (PlaylistTreeRenderer) tree3.getCellRenderer();
-                    renderer3.setBackgroundNonSelectionColor(new Color(0,0,0,0));
-                    renderer3.setBorderSelectionColor(new Color(0,0,0,0));
-                    tree3.setBackground((Color)null);
+                    PlaylistTreeRenderer userPlaylistRenderer = (PlaylistTreeRenderer) userPlaylistTree.getCellRenderer();
+                    userPlaylistRenderer.setBackgroundNonSelectionColor(new Color(0,0,0,0));
+                    userPlaylistRenderer.setBorderSelectionColor(new Color(0,0,0,0));
+                    userPlaylistTree.setBackground((Color)null);
 
-                    tree3.setExpandedState(new TreePath(model3.getPathToRoot(list3)), tree3.expandState);
+                    userPlaylistTree.setExpandedState(new TreePath(userPlaylistModel.getPathToRoot(userPlaylist)), userPlaylistTree.expandState);
 
-                    dataPanel.add(tree3, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
-
+                    dataPanel.add(userPlaylistTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
                 }
             }
 
+//*********************************************************************************************************************************************
             // Add VSpacer at last
             dataPanel.add(component, gridConstraints(dataPanel.getComponentCount(), 6, 1, 0, 2, 0));
 
@@ -907,7 +619,7 @@ public class MusicToolWindow {
         return playlistWindowContent;
     }
 
-    protected void lazilyCheckPlayer(int retryCount, String playlist, String track) {
+    public static void lazilyCheckPlayer(int retryCount, String playlist, String track) {
         if(MusicControlManager.currentTrackName == null) {
             if (MusicControlManager.playerType.equals("Desktop Player") && !SoftwareCoUtils.isSpotifyRunning() && retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
@@ -933,8 +645,6 @@ public class MusicToolWindow {
 
                     MusicControlManager.getSpotifyDevices();
                 } else {
-//                    MusicControlManager.currentPlaylistId = playlist;
-//                    MusicControlManager.currentTrackId = track;
                     PlayerControlManager.playSpotifyPlaylist(playlist, track);
                 }
             }
