@@ -45,9 +45,17 @@ public class TrackInfoManager {
         instance.setFeatures(new JsonObject());
         instance.setGenre(new JsonArray());
 
+        instance.setAdd(0);
+        instance.setPaste(0);
+        instance.setDelete(0);
+        instance.setNetkeys(0);
+        instance.setLinesAdded(0);
+        instance.setLinesRemoved(0);
+        instance.setOpen(0);
+        instance.setClose(0);
         instance.setVersion("");
         instance.setPluginId(0);
-        instance.setKeystrokes("0");
+        instance.setKeystrokes(0);
         instance.setStart(0L);
         instance.setLocal_start(0L);
         instance.setEnd(0L);

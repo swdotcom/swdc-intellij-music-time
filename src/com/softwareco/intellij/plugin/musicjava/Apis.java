@@ -112,6 +112,7 @@ public class Apis {
         if (resp.isOk()) {
             MusicStore.setSpotifyUserId(obj.get("id").getAsString());
             MusicStore.setSpotifyAccountType(obj.get("product").getAsString());
+            MusicStore.setSpotifyAccessToken(accessToken);
             return resp;
         } else if (obj != null && obj.has("error")) {
             JsonObject error = obj.get("error").getAsJsonObject();
@@ -168,11 +169,11 @@ public class Apis {
         return resp;
     }
 
-    public static Object getTracksByPlaylistId(String playlistId) {
+    public static Object getTracksByPlaylistId(String accessToken, String playlistId) {
 
         if(playlistId != null) {
             String api = "/v1/playlists/" + playlistId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+            SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
             if (resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {

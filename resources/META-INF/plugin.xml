@@ -76,7 +76,7 @@ We provide 90 days of data history for free, forever. In the future, we will pro
 
   <extensions defaultExtensionNs="com.intellij">
 <postStartupActivity implementation="com.softwareco.intellij.plugin.PluginPostStartupActivity"/>
-<toolWindow anchor="right" factoryClass="com.softwareco.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/softwareco/intellij/plugin/assets/playlist.png" id="PlayList"/>
+<toolWindow anchor="left" factoryClass="com.softwareco.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/softwareco/intellij/plugin/assets/playlist.png" id="Music Time"/>
 </extensions>
 
   <actions>

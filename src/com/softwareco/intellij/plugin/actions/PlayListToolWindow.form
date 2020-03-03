@@ -1,28 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.softwareco.intellij.plugin.actions.MusicToolWindow">
-  <grid id="27dc6" binding="playlistWindowContent" layout-manager="GridLayoutManager" row-count="9" column-count="6" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+  <grid id="27dc6" binding="playlistWindowContent" layout-manager="GridLayoutManager" row-count="21" column-count="7" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="0" y="0" width="296" height="541"/>
+      <xy x="0" y="0" width="363" height="541"/>
     </constraints>
     <properties>
       <focusable value="true"/>
     </properties>
     <border type="none"/>
     <children>
+      <component id="1a92c" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="0" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <alignmentX value="1.0"/>
+          <alignmentY value="1.0"/>
+          <text value="Playlists"/>
+        </properties>
+      </component>
+      <component id="3e429" class="javax.swing.JLabel" binding="refresh">
+        <constraints>
+          <grid row="0" column="5" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <icon value="com/softwareco/intellij/plugin/assets/refresh.png"/>
+          <text value=" "/>
+        </properties>
+      </component>
+      <component id="70086" class="javax.swing.JLabel" binding="menu">
+        <constraints>
+          <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <icon value="com/softwareco/intellij/plugin/assets/menu.png"/>
+          <iconTextGap value="0"/>
+          <text value=""/>
+        </properties>
+      </component>
+      <hspacer id="903e">
+        <constraints>
+          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+        </constraints>
+      </hspacer>
       <scrollpane id="scroll" binding="scrollPane">
         <constraints>
-          <grid row="1" column="1" row-span="3" col-span="4" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+          <grid row="1" column="1" row-span="18" col-span="5" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
         </constraints>
-        <properties/>
+        <properties>
+          <verticalScrollBarPolicy value="20"/>
+        </properties>
         <border type="none"/>
         <children>
           <grid id="ca01b" binding="dataPanel" layout-manager="GridLayoutManager" row-count="999" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints/>
-            <properties>
-              <autoscrolls value="true"/>
-            </properties>
+            <properties/>
             <border type="none"/>
             <children>
               <component id="6551a" class="javax.swing.JLabel" binding="spotifyState">
@@ -43,40 +77,73 @@
           </grid>
         </children>
       </scrollpane>
-      <component id="1a92c" class="javax.swing.JLabel">
+      <scrollpane id="2f3a9" binding="recommendScroll">
         <constraints>
-          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="20" column="1" row-span="1" col-span="5" vsize-policy="0" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <grid id="432ba" binding="recommendPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="cb252" class="javax.swing.JLabel" binding="spotifyConnect">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <icon value="com/softwareco/intellij/plugin/assets/spotify.png"/>
+                  <text value="Connect Spotify"/>
+                </properties>
+              </component>
+            </children>
+          </grid>
+        </children>
+      </scrollpane>
+      <component id="a7cd3" class="javax.swing.JLabel">
+        <constraints>
+          <grid row="19" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
         </constraints>
         <properties>
-          <alignmentX value="1.0"/>
-          <alignmentY value="1.0"/>
-          <text value="MUSIC TIME: MY PLAYLISTS"/>
+          <text value="Recommendations"/>
         </properties>
       </component>
-      <component id="3e429" class="javax.swing.JLabel" binding="refresh">
+      <hspacer id="9322f">
         <constraints>
-          <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <icon value="com/softwareco/intellij/plugin/assets/refresh.png"/>
-          <text value=""/>
-        </properties>
-      </component>
-      <component id="70086" class="javax.swing.JLabel" binding="menu">
-        <constraints>
-          <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
-        </constraints>
-        <properties>
-          <icon value="com/softwareco/intellij/plugin/assets/menu.png"/>
-          <iconTextGap value="0"/>
-          <text value=""/>
-        </properties>
-      </component>
-      <hspacer id="903e">
-        <constraints>
-          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+          <grid row="19" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
         </constraints>
       </hspacer>
+      <component id="517ab" class="javax.swing.JLabel" binding="category">
+        <constraints>
+          <grid row="19" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <icon value="com/softwareco/intellij/plugin/assets/beaker.png"/>
+          <text value=""/>
+        </properties>
+      </component>
+      <component id="a1255" class="javax.swing.JLabel" binding="genre">
+        <constraints>
+          <grid row="19" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <icon value="com/softwareco/intellij/plugin/assets/filter.png"/>
+          <text value=""/>
+        </properties>
+      </component>
+      <component id="1ed4d" class="javax.swing.JLabel" binding="recommendRefresh">
+        <constraints>
+          <grid row="19" column="5" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
+          <alignmentX value="0.0"/>
+          <icon value="com/softwareco/intellij/plugin/assets/refresh.png"/>
+          <text value=" "/>
+        </properties>
+      </component>
     </children>
   </grid>
 </form>

@@ -157,8 +157,7 @@ public class SoftwareCoEventManager {
                                     }
                                 }
 
-                                int incrementedCount = Integer.parseInt(keystrokeCount.getKeystrokes()) + 1;
-                                keystrokeCount.setKeystrokes(String.valueOf(incrementedCount));
+                                keystrokeCount.setKeystrokes(keystrokeCount.getKeystrokes() + 1);
 
                                 int documentLineCount = document.getLineCount();
                                 int savedLines = fileInfo.getLines();
@@ -173,6 +172,7 @@ public class SoftwareCoEventManager {
                                     }
                                 }
                                 fileInfo.setLines(documentLineCount);
+                                fileInfo.setLength(document.getTextLength());
                             }
                         }
                     }

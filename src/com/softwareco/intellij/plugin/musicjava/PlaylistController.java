@@ -50,10 +50,10 @@ public class PlaylistController {
         return resp;
     }
 
-    public static Object getLikedSpotifyTracks() {
+    public static Object getLikedSpotifyTracks(String accessToken) {
 
         String api = "/v1/me/tracks?limit=50&offset=0";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -171,7 +171,7 @@ public class PlaylistController {
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
             SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
-            if (resp.isOk()) {
+            if (resp.isOk() || resp.getCode() == 403) {
                 return resp;
             }
         }
@@ -216,16 +216,27 @@ public class PlaylistController {
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
             SoftwareResponse resp = Client.makeApiCall(api, HttpDelete.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
-            if (resp.isOk()) {
+            if (resp.isOk() || resp.getCode() == 403) {
                 return resp;
             }
         }
         return null;
     }
 
-    public static Object getAITopTracks(String playlistId) {
+    public static boolean removePlaylist(String playlistId) {
         if(playlistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(playlistId);
+            String api = "/v1/playlists/" + playlistId + "/followers";
+            SoftwareResponse resp = Client.makeApiCall(api, HttpDelete.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+            if (resp.isOk()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Object getAITopTracks(String accessToken, String playlistId) {
+        if(playlistId != null) {
+            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(accessToken, playlistId);
             if(resp != null) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
@@ -240,5 +251,26 @@ public class PlaylistController {
             }
         }
         return null;
+    }
+
+    public static Object getGenre(String accessToken) {
+        String api = "/v1/recommendations/available-genre-seeds";
+        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        return resp.getJsonObj();
+    }
+
+    public static Object getRecommendationForTracks(String accessToken, Map<String, String> queryParameter) {
+        String api = "/v1/recommendations";
+        if(queryParameter != null && queryParameter.size() > 0) {
+            api += "?";
+            Set<String> keys = queryParameter.keySet();
+            for(String key : keys) {
+                api += key + "=" + queryParameter.get(key) + "&";
+            }
+            api = api.substring(0, api.lastIndexOf("&"));
+        }
+
+        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        return resp.getJsonObj();
     }
 }

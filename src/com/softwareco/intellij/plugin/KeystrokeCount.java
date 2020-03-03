@@ -4,8 +4,18 @@
  */
 package com.softwareco.intellij.plugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class KeystrokeCount {
@@ -15,9 +25,17 @@ public class KeystrokeCount {
 
     // non-hardcoded attributes
     // Coding data
+    public int add = 0;
+    public int paste = 0;
+    public int delete = 0;
+    public int netkeys = 0;
+    public int linesAdded = 0;
+    public int linesRemoved = 0;
+    public int open = 0;
+    public int close = 0;
     private String version;
     private int pluginId;
-    private String keystrokes = "0"; // keystroke count
+    private int keystrokes = 0; // keystroke count
     // start and end are in seconds
     private long start;
     private long local_start;
@@ -27,6 +45,70 @@ public class KeystrokeCount {
     private String timezone;
     private KeystrokeProject project;
     private Map<String, FileInfo> source = new HashMap<>();
+
+    public int getAdd() {
+        return add;
+    }
+
+    public void setAdd(int add) {
+        this.add = add;
+    }
+
+    public int getPaste() {
+        return paste;
+    }
+
+    public void setPaste(int paste) {
+        this.paste = paste;
+    }
+
+    public int getDelete() {
+        return delete;
+    }
+
+    public void setDelete(int delete) {
+        this.delete = delete;
+    }
+
+    public int getNetkeys() {
+        return netkeys;
+    }
+
+    public void setNetkeys(int netkeys) {
+        this.netkeys = netkeys;
+    }
+
+    public int getLinesAdded() {
+        return linesAdded;
+    }
+
+    public void setLinesAdded(int linesAdded) {
+        this.linesAdded = linesAdded;
+    }
+
+    public int getLinesRemoved() {
+        return linesRemoved;
+    }
+
+    public void setLinesRemoved(int linesRemoved) {
+        this.linesRemoved = linesRemoved;
+    }
+
+    public int getOpen() {
+        return open;
+    }
+
+    public void setOpen(int open) {
+        this.open = open;
+    }
+
+    public int getClose() {
+        return close;
+    }
+
+    public void setClose(int close) {
+        this.close = close;
+    }
 
     public String getVersion() {
         return version;
@@ -130,7 +212,15 @@ public class KeystrokeCount {
     }
 
     public void resetData() {
-        this.keystrokes = "0";
+        this.add = 0;
+        this.paste = 0;
+        this.delete = 0;
+        this.netkeys = 0;
+        this.linesAdded = 0;
+        this.linesRemoved = 0;
+        this.open = 0;
+        this.close = 0;
+        this.keystrokes = 0;
         this.source = new HashMap<>();
         if (this.project != null) {
             this.project.resetData();
@@ -172,6 +262,8 @@ public class KeystrokeCount {
         public long end = 0;
         public long local_start = 0;
         public long local_end = 0;
+        public Integer repoFileContributorCount = 0;
+        public long fileAgeDays = 0;
 
         public FileInfo() { }
 
@@ -294,6 +386,22 @@ public class KeystrokeCount {
         public void setLocal_end(long local_end) {
             this.local_end = local_end;
         }
+
+        public Integer getRepoFileContributorCount() {
+            return repoFileContributorCount;
+        }
+
+        public void setRepoFileContributorCount(Integer repoFileContributorCount) {
+            this.repoFileContributorCount = repoFileContributorCount;
+        }
+
+        public long getFileAgeDays() {
+            return fileAgeDays;
+        }
+
+        public void setFileAgeDays(long fileAgeDays) {
+            this.fileAgeDays = fileAgeDays;
+        }
     }
 
     public FileInfo getSourceByFileName(String fileName) {
@@ -363,7 +471,7 @@ public class KeystrokeCount {
     }
 
     public boolean hasData() {
-        if (Integer.parseInt(this.getKeystrokes()) > 0 || this.hasOpenOrCloseMetrics()) {
+        if (this.getKeystrokes() > 0 || this.hasOpenOrCloseMetrics()) {
             return true;
         }
 
@@ -379,6 +487,33 @@ public class KeystrokeCount {
             // end the file end times
             this.endUnendedFiles();
 
+            for(String key : this.source.keySet()) {
+                FileInfo fileInfo = this.source.get(key);
+                this.add += fileInfo.getAdd();
+                this.paste += fileInfo.getPaste();
+                this.delete += fileInfo.getDelete();
+                this.netkeys += fileInfo.getNetkeys();
+                this.linesAdded += fileInfo.getLinesAdded();
+                this.linesRemoved += fileInfo.getLinesRemoved();
+                this.open += fileInfo.getOpen();
+                this.close += fileInfo.getClose();
+
+                int fileContributorCount = SoftwareCoRepoManager.getInstance().getFileContributorCount(SoftwareCoMusic.getRootPath(), key);
+                fileInfo.setRepoFileContributorCount(fileContributorCount);
+
+                BasicFileAttributes attributes = null;
+                try {
+                    attributes = Files.readAttributes(Paths.get(key), BasicFileAttributes.class);
+                } catch (IOException ex) {}
+                assert attributes != null;
+                Instant fileInstant = attributes.creationTime().toInstant();
+                Instant now = Clock.systemUTC().instant();
+                Duration difference = Duration.between(fileInstant, now);
+                long fileAgeDays = difference.toDays();
+
+                fileInfo.setFileAgeDays(fileAgeDays);
+            }
+
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
             this.end = timesData.now;
             this.local_end = timesData.local_now;
@@ -393,11 +528,11 @@ public class KeystrokeCount {
         this.resetData();
     }
 
-    public String getKeystrokes() {
+    public int getKeystrokes() {
         return keystrokes;
     }
 
-    public void setKeystrokes(String keystrokes) {
+    public void setKeystrokes(int keystrokes) {
         this.keystrokes = keystrokes;
     }
 

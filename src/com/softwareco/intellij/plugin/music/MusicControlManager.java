@@ -11,6 +11,7 @@ import com.softwareco.intellij.plugin.actions.MusicToolWindow;
 import com.softwareco.intellij.plugin.musicjava.Apis;
 import com.softwareco.intellij.plugin.musicjava.MusicStore;
 import com.softwareco.intellij.plugin.musicjava.Util;
+import com.softwareco.intellij.plugin.slack.SlackControlManager;
 import org.apache.http.client.methods.HttpPut;
 
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class MusicControlManager {
     public static String previousDeviceName = null;
 
     public static int playerCounter = 0;
+    public static int deviceCounter = 0;
     public static String spotifyStatus = "Not Connected"; // Connected or Not Connected
     public static String playerState = "End"; // End or Resume
     public static String playerType = "Web Player"; // Web Player or Desktop Player
@@ -77,6 +79,10 @@ public class MusicControlManager {
         myAITopTracks.clear();
         PlayListCommands.counter = 0;
         MusicToolWindow.reset();
+    }
+
+    public static synchronized boolean spotifyState() {
+        return spotifyCacheState;
     }
 
     public static void disConnectSpotify() {
@@ -150,7 +156,7 @@ public class MusicControlManager {
 
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        spotifyCacheState = isSpotifyConncted(serverIsOnline);
+        MusicControlManager.spotifyCacheState = isSpotifyConncted(serverIsOnline);
 
         if (!spotifyCacheState && retryCount > 0) {
             final int newRetryCount = retryCount - 1;
@@ -170,6 +176,10 @@ public class MusicControlManager {
                 userStatus = obj.get("product").getAsString();
 
             PlaylistManager.getUserPlaylists(); // API call
+            PlayListCommands.updatePlaylists(3, null);
+            PlayListCommands.getGenre(); // API call
+            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+
             lazyUpdatePlayer();
         }
     }
@@ -195,7 +205,7 @@ public class MusicControlManager {
             } else if (currentTrackId != null) {
                 BrowserUtil.browse("https://open.spotify.com/track/" + currentTrackId);
             } else {
-                BrowserUtil.browse("https://open.spotify.com/browse");
+                BrowserUtil.browse("https://open.spotify.com");
             }
         } else if(userStatus != null && playerType.equals("Desktop Player")) {
             Apis.startDesktopPlayer("Spotify");
@@ -219,8 +229,8 @@ public class MusicControlManager {
     // Lazily update player controls
     public static void lazyUpdatePlayer() {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        spotifyCacheState = isSpotifyConncted(serverIsOnline);
-        if(spotifyCacheState) {
+        boolean spotifyState = isSpotifyConncted(serverIsOnline);
+        if(spotifyState) {
             // Update player controls for every 5 second
             new Thread(() -> {
                 try {
@@ -241,7 +251,38 @@ public class MusicControlManager {
         }
         MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, spotifyCacheState);
 
-        SoftwareCoUtils.updatePlayerControles();
+        SoftwareCoUtils.updatePlayerControls();
+    }
+
+    // Lazily update devices
+    public static void lazyUpdateDevices() {
+        //boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+        if(MusicControlManager.spotifyState()) {
+            // Update player controls for every 5 second
+            new Thread(() -> {
+                try {
+                    Thread.sleep(5000);
+                    lazyUpdateDevices();
+                }
+                catch (Exception e){
+                    System.err.println(e);
+                }
+            }).start();
+        }
+
+        MusicControlManager.getSpotifyDevices(); // API call
+
+//        if(serverIsOnline) {
+//            MusicControlManager.getSpotifyDevices(); // API call
+//            deviceCounter = 0;
+//        } else if(SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
+//            if(MusicControlManager.currentDeviceName == null) {
+//                MusicControlManager.currentDeviceName = "Desktop Player (Offline)";
+//            } else if(deviceCounter == 0) {
+//                deviceCounter = 1;
+//                MusicControlManager.currentDeviceName += " (Offline)";
+//            }
+//        }
     }
 
     private static boolean isSpotifyConncted(boolean serverIsOnline) {
@@ -260,16 +301,22 @@ public class MusicControlManager {
                             SoftwareCoSessionManager.setItem("spotify_access_token", ACCESS_TOKEN);
                             SoftwareCoSessionManager.setItem("spotify_refresh_token", REFRESH_TOKEN);
                         }
-                        SoftwareCoUtils.jwt = userObj.get("plugin_token").getAsString();
-                        spotifyCacheState = true;
+                        MusicControlManager.spotifyCacheState = true;
                         MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, true);
-                        return true;
                     }
+
+                    if(array.getAsJsonObject().get("type").getAsString().equals("slack")) {
+                        if(SlackControlManager.ACCESS_TOKEN == null) {
+                            SlackControlManager.ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
+                            SoftwareCoSessionManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
+                        }
+                        SlackControlManager.slackCacheState = true;
+                    }
+                    SoftwareCoUtils.jwt = userObj.get("plugin_token").getAsString();
                 }
-                return false;
             }
         }
-        return spotifyCacheState;
+        return MusicControlManager.spotifyState();
     }
 
     public static void refreshAccessToken() {

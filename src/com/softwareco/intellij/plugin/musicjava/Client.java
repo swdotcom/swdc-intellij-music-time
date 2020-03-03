@@ -67,7 +67,7 @@ public class Client {
 
         if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
                 || api.contains("/users/plugin/accounts") || api.contains("/disconnect")
-                || api.contains("/generated") || api.contains("/recommendations")) {
+                || api.contains("/generated") || api.contains("/music/recommendations")) {
             // if the server is having issues, we'll timeout within 5 seconds for these calls
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);

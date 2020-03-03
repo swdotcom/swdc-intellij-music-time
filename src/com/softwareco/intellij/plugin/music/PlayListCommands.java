@@ -1,5 +1,6 @@
 package com.softwareco.intellij.plugin.music;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
@@ -17,6 +18,10 @@ public class PlayListCommands {
     public static String topSpotifyPlaylistId = "6jCkTED0V5NEuM8sKbGG1Z"; // Software Top 40 playlist_id
     public static JsonObject likedTracks = null;
     public static String likedPlaylistId = "2";
+    public static List<String> genres = new ArrayList<>();
+    public static String selectedGenre = null;
+    public static JsonObject recommendedTracks = new JsonObject();
+    public static String recommendedPlaylistId = "3";
     public static JsonObject myAITopTracks = null;
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();
@@ -68,7 +73,9 @@ public class PlayListCommands {
             // End My AI Top 40 ***************************************************************
         } else if(type == 3) {
             // Liked Songs Playlist **********************************************
-            likedTracks = getLikedSpotifyTracks(); // API call
+            JsonObject tracks = getLikedSpotifyTracks(); // API call
+            if(tracks != null)
+                likedTracks = tracks;
             // End Liked Songs ***************************************************************
         } else if(type == 4 && playlistId != null) {
             // User Playlists ****************************************************
@@ -76,7 +83,11 @@ public class PlayListCommands {
             // End User Playlists ***************************************************************
         }
 
-        MusicToolWindow.triggerRefresh();
+        if(genres.size() == 0) {
+            getGenre();
+        }
+
+        MusicToolWindow.refresh();
     }
 
     public static LinkedHashMap<String, String> sortHashMapByValues(
@@ -91,12 +102,12 @@ public class PlayListCommands {
 
         Iterator<String> valueIt = mapValues.iterator();
         while (valueIt.hasNext()) {
-            String val = valueIt.next();
+            String val = valueIt.next().toLowerCase();
             Iterator<String> keyIt = mapKeys.iterator();
 
             while (keyIt.hasNext()) {
                 String key = keyIt.next();
-                String comp1 = passedMap.get(key);
+                String comp1 = passedMap.get(key).toLowerCase();
                 String comp2 = val;
 
                 if (comp1.equals(comp2)) {
@@ -117,6 +128,104 @@ public class PlayListCommands {
     public static void sortLatest() {
         sortType = "Latest";
         updatePlaylists(0, null);
+    }
+
+    public static void updateRecommendation(String type, String selected) {
+        if(type.equals("genre")) {
+            selectedGenre = selected;
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("limit", "10");
+            queryParams.put("min_popularity", "20");
+            queryParams.put("target_popularity", "90");
+
+            queryParams.put("seed_genres", selected);
+            PlayListCommands.getRecommendationForTracks(queryParams);
+        } else if(type.equals("category")) {
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("limit", "10");
+            queryParams.put("min_popularity", "20");
+            queryParams.put("target_popularity", "90");
+
+            String trackIds = "";
+            int categoryCounter = 0;
+            if(MusicControlManager.likedTracks.size() > 0) {
+                Set<String> ids = MusicControlManager.likedTracks.keySet();
+                for(String id : ids) {
+                    if(categoryCounter < 5)
+                        trackIds += id + ",";
+                    else
+                        break;
+
+                    categoryCounter++;
+                }
+                trackIds = trackIds.substring(0, trackIds.lastIndexOf(","));
+            } else if(userPlaylistIds.size() > 0){
+                /* if no liked tracks */
+                JsonObject obj = null;
+                for(String id : userPlaylistIds) {
+                    if(userTracks.containsKey(id)) {
+                        obj = userTracks.get(id);
+                        break;
+                    }
+                }
+                if(obj == null) {
+                    obj = PlaylistManager.getTracksByPlaylistId(userPlaylistIds.get(0));
+                }
+                if(obj != null) {
+                    JsonObject tracks = obj.get("tracks").getAsJsonObject();
+                    JsonArray items = tracks.get("items").getAsJsonArray();
+                    for (JsonElement array : items) {
+                        JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                        if(categoryCounter < 5)
+                            trackIds += track.get("id").getAsString() + ",";
+                        else
+                            break;
+
+                        categoryCounter++;
+                    }
+                    trackIds = trackIds.substring(0, trackIds.lastIndexOf(","));
+                }
+            } else {
+                updatePlaylists(1, null); // Update software playlist
+                JsonObject obj = topSpotifyTracks;
+                if (obj != null && obj.has("items")) {
+                    JsonArray items = obj.get("items").getAsJsonArray();
+                    for (JsonElement array : items) {
+                        JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                        if(categoryCounter < 5)
+                            trackIds += track.get("id").getAsString() + ",";
+                        else
+                            break;
+
+                        categoryCounter++;
+                    }
+                    trackIds = trackIds.substring(0, trackIds.lastIndexOf(","));
+                }
+            }
+            if(trackIds.length() > 0) {
+                queryParams.put("seed_tracks", trackIds);
+            }
+
+            if(selected.equals("Happy")) {
+                queryParams.put("min_valence", "0.7");
+                queryParams.put("target_valence", "1");
+            } else if(selected.equals("Energetic")) {
+                queryParams.put("min_energy", "0.7");
+                queryParams.put("target_energy", "1");
+            } else if(selected.equals("Danceable")) {
+                queryParams.put("min_danceability", "0.7");
+                queryParams.put("target_danceability", "1");
+            } else if(selected.equals("Instrumental")) {
+                queryParams.put("min_instrumentalness", "0.8");
+                queryParams.put("target_instrumentalness", "1");
+            } else if(selected.equals("Quiet music")) {
+                queryParams.put("max_loudness", "-13");
+                queryParams.put("target_loudness", "-50");
+            }
+
+            PlayListCommands.getRecommendationForTracks(queryParams);
+        }
+        MusicToolWindow.refresh();
     }
 
     public static JsonObject getTopSpotifyTracks() {
@@ -140,7 +249,8 @@ public class PlayListCommands {
 
     public static JsonObject getLikedSpotifyTracks() {
 
-        SoftwareResponse resp = (SoftwareResponse) PlaylistController.getLikedSpotifyTracks();
+        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+        SoftwareResponse resp = (SoftwareResponse) PlaylistController.getLikedSpotifyTracks(accessToken);
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -163,6 +273,8 @@ public class PlayListCommands {
         SoftwareResponse resp = (SoftwareResponse) PlaylistController.generateAIPlaylist();
         if (resp.isOk()) {
             PlaylistManager.getUserPlaylists();
+            refreshAIPlaylist();
+
             String jwt = SoftwareCoSessionManager.getItem("jwt");
             JsonObject obj = new JsonObject();
             obj.addProperty("playlist_id", myAIPlaylistId);
@@ -170,8 +282,6 @@ public class PlayListCommands {
             obj.addProperty("name", "My AI Top 40");
 
             PlaylistController.sendPlaylistToSoftware(obj.toString(), jwt);
-
-            refreshAIPlaylist();
             return resp.getJsonObj();
         }
         return null;
@@ -206,6 +316,8 @@ public class PlayListCommands {
             SoftwareResponse resp = (SoftwareResponse) PlaylistController.addTracksInPlaylist(playlist_id, tracks);
             if (resp.isOk()) {
                 return resp.getJsonObj();
+            } else if(resp.getCode() == 403) {
+                return resp.getJsonObj();
             }
         }
         return null;
@@ -226,7 +338,9 @@ public class PlayListCommands {
 
         if(playlist_id != null) {
             SoftwareResponse resp = (SoftwareResponse) PlaylistController.removeTracksInPlaylist(playlist_id, tracks);
-            if (resp != null && resp.isOk()) {
+            if (resp.isOk()) {
+                return resp.getJsonObj();
+            } else if(resp.getCode() == 403) {
                 return resp.getJsonObj();
             }
         }
@@ -235,7 +349,8 @@ public class PlayListCommands {
 
     public static JsonObject getAITopTracks() {
         if(myAIPlaylistId != null) {
-            JsonObject obj = (JsonObject) PlaylistController.getAITopTracks(myAIPlaylistId);
+            String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+            JsonObject obj = (JsonObject) PlaylistController.getAITopTracks(accessToken, myAIPlaylistId);
             if (obj != null && obj.has("tracks")) {
                 JsonObject tracks = obj.get("tracks").getAsJsonObject();
                 MusicControlManager.myAITopTracks.clear();
@@ -250,4 +365,33 @@ public class PlayListCommands {
     }
 
 
+    public static boolean removePlaylist(String playlistId) {
+        boolean state = PlaylistController.removePlaylist(playlistId);
+        if(state)
+            updatePlaylists(0, null);
+
+        return state;
+    }
+
+    public static JsonObject getGenre() {
+        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+        JsonObject obj = (JsonObject) PlaylistController.getGenre(accessToken);
+        if(obj != null && obj.has("genres")) {
+            JsonArray genre = obj.getAsJsonArray("genres");
+            PlayListCommands.genres.clear();
+            for(JsonElement element : genre) {
+                PlayListCommands.genres.add(element.getAsString());
+            }
+        }
+        return obj;
+    }
+
+    public static JsonObject getRecommendationForTracks(Map<String, String> queryParameter) {
+        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+        JsonObject obj = (JsonObject) PlaylistController.getRecommendationForTracks(accessToken, queryParameter);
+        if(obj != null && obj.has("tracks")) {
+            PlayListCommands.recommendedTracks = obj;
+        }
+        return obj;
+    }
 }

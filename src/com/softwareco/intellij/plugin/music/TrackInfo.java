@@ -35,16 +35,25 @@ public class TrackInfo {
     private JsonArray genre = new JsonArray();
 
     // Coding data
-    private String version = "";
+    private int add = 0;
+    private int paste = 0;
+    private int delete = 0;
+    private int netkeys = 0;
+    private int linesAdded = 0;
+    private int linesRemoved = 0;
+    private int open = 0;
+    private int close = 0;
+    private int keystrokes = 0; // keystroke count
     private int pluginId = 0;
-    private String keystrokes = "0"; // keystroke count
+    private String version = "";
     // start and end are in seconds
     private long start = 0L;
     private long local_start = 0L;
     private long end = 0L;
     private long local_end = 0L;
-    private String os = "";
+    private int offset = 0;
     private String timezone = "";
+    private String os = "";
     private Map<String, JsonObject> source = new HashMap<>();
 
     public JsonObject getAlbum() {
@@ -223,6 +232,70 @@ public class TrackInfo {
         this.genre = genre;
     }
 
+    public int getAdd() {
+        return add;
+    }
+
+    public void setAdd(int add) {
+        this.add = add;
+    }
+
+    public int getPaste() {
+        return paste;
+    }
+
+    public void setPaste(int paste) {
+        this.paste = paste;
+    }
+
+    public int getDelete() {
+        return delete;
+    }
+
+    public void setDelete(int delete) {
+        this.delete = delete;
+    }
+
+    public int getNetkeys() {
+        return netkeys;
+    }
+
+    public void setNetkeys(int netkeys) {
+        this.netkeys = netkeys;
+    }
+
+    public int getLinesAdded() {
+        return linesAdded;
+    }
+
+    public void setLinesAdded(int linesAdded) {
+        this.linesAdded = linesAdded;
+    }
+
+    public int getLinesRemoved() {
+        return linesRemoved;
+    }
+
+    public void setLinesRemoved(int linesRemoved) {
+        this.linesRemoved = linesRemoved;
+    }
+
+    public int getOpen() {
+        return open;
+    }
+
+    public void setOpen(int open) {
+        this.open = open;
+    }
+
+    public int getClose() {
+        return close;
+    }
+
+    public void setClose(int close) {
+        this.close = close;
+    }
+
     public String getVersion() {
         return version;
     }
@@ -239,11 +312,11 @@ public class TrackInfo {
         this.pluginId = pluginId;
     }
 
-    public String getKeystrokes() {
+    public int getKeystrokes() {
         return keystrokes;
     }
 
-    public void setKeystrokes(String keystrokes) {
+    public void setKeystrokes(int keystrokes) {
         this.keystrokes = keystrokes;
     }
 
@@ -285,6 +358,14 @@ public class TrackInfo {
 
     public void setOs(String os) {
         this.os = os;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
     }
 
     public String getTimezone() {

@@ -1,11 +1,15 @@
 package com.softwareco.intellij.plugin.music;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.musicjava.MusicController;
 import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -19,8 +23,27 @@ public class PlayerControlManager {
             playlistId = MusicControlManager.currentPlaylistId;
         } else if(playlistId.length() < 5) {
             if (MusicControlManager.currentDeviceId != null) {
+                JsonObject obj;
+                List<String> tracks = new ArrayList<>();
+                if(playlistId.equals("2")) {
+                    obj = PlayListCommands.likedTracks;
+                    if (obj != null && obj.has("items")) {
+                        for(JsonElement array : obj.get("items").getAsJsonArray()) {
+                            JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                            tracks.add(track.get("id").getAsString());
+                        }
+                    }
+                } else if(playlistId.equals("3")) {
+                    obj = PlayListCommands.recommendedTracks;
+                    if (obj != null && obj.has("tracks")) {
+                        for(JsonElement array : obj.getAsJsonArray("tracks")) {
+                            JsonObject track = array.getAsJsonObject();
+                            tracks.add(track.get("id").getAsString());
+                        }
+                    }
+                }
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                boolean resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, playlistId, trackId, PlayListCommands.likedTracks, accessToken);
+                boolean resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, playlistId, trackId, tracks, accessToken);
                 if (resp) {
                     String finalTrackId = trackId;
                     String finalPlaylistId = playlistId;
@@ -29,8 +52,7 @@ public class PlayerControlManager {
                             Thread.sleep(1000);
                             MusicControlManager.currentPlaylistId = finalPlaylistId;
                             MusicControlManager.currentTrackId = finalTrackId;
-                            SoftwareCoUtils.updatePlayerControles();
-                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoUtils.updatePlayerControls();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -55,8 +77,7 @@ public class PlayerControlManager {
                             Thread.sleep(1000);
                             MusicControlManager.currentPlaylistId = finalPlaylistId;
                             MusicControlManager.currentTrackId = finalTrackId;
-                            SoftwareCoUtils.updatePlayerControles();
-                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoUtils.updatePlayerControls();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -75,8 +96,7 @@ public class PlayerControlManager {
 
             MusicControlManager.currentPlaylistId = playlistId;
             MusicControlManager.currentTrackId = trackId;
-            SoftwareCoUtils.updatePlayerControles();
-            PlayListCommands.updatePlaylists(5, null);
+            SoftwareCoUtils.updatePlayerControls();
             return true;
         }
         return false;
@@ -94,8 +114,7 @@ public class PlayerControlManager {
                     new Thread(() -> {
                         try {
                             Thread.sleep(1000);
-                            SoftwareCoUtils.updatePlayerControles();
-                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoUtils.updatePlayerControls();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -115,8 +134,7 @@ public class PlayerControlManager {
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.playSpotifyDesktop();
-            SoftwareCoUtils.updatePlayerControles();
-            PlayListCommands.updatePlaylists(5, null);
+            SoftwareCoUtils.updatePlayerControls();
             return true;
         }
         return false;
@@ -134,8 +152,7 @@ public class PlayerControlManager {
                     new Thread(() -> {
                         try {
                             Thread.sleep(1000);
-                            SoftwareCoUtils.updatePlayerControles();
-                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoUtils.updatePlayerControls();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -155,8 +172,7 @@ public class PlayerControlManager {
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.pauseSpotifyDesktop();
-            SoftwareCoUtils.updatePlayerControles();
-            PlayListCommands.updatePlaylists(5, null);
+            SoftwareCoUtils.updatePlayerControls();
             return true;
         }
         return false;
@@ -174,8 +190,7 @@ public class PlayerControlManager {
                     new Thread(() -> {
                         try {
                             Thread.sleep(1000);
-                            SoftwareCoUtils.updatePlayerControles();
-                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoUtils.updatePlayerControls();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -199,8 +214,7 @@ public class PlayerControlManager {
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.previousSpotifyDesktop();
-            SoftwareCoUtils.updatePlayerControles();
-            PlayListCommands.updatePlaylists(5, null);
+            SoftwareCoUtils.updatePlayerControls();
             return true;
         }
         return false;
@@ -218,8 +232,7 @@ public class PlayerControlManager {
                     new Thread(() -> {
                         try {
                             Thread.sleep(1000);
-                            SoftwareCoUtils.updatePlayerControles();
-                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoUtils.updatePlayerControls();
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -243,8 +256,7 @@ public class PlayerControlManager {
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.nextSpotifyDesktop();
-            SoftwareCoUtils.updatePlayerControles();
-            PlayListCommands.updatePlaylists(5, null);
+            SoftwareCoUtils.updatePlayerControls();
             return true;
         }
         return false;
@@ -253,7 +265,6 @@ public class PlayerControlManager {
     public static boolean likeSpotifyTrack(boolean like, String trackId) {
 
         if(trackId != null) {
-
             String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
             SoftwareResponse resp = (SoftwareResponse) MusicController.likeSpotifyWeb(like, trackId, accessToken);
             if (resp.isOk()) {
@@ -262,7 +273,7 @@ public class PlayerControlManager {
                     try {
                         Thread.sleep(1000);
                         PlayListCommands.updatePlaylists(3, null);
-                        SoftwareCoUtils.updatePlayerControles();
+                        SoftwareCoUtils.updatePlayerControls();
                         SoftwareCoUtils.sendLikedTrack(like, trackId, "spotify");
                     } catch (Exception e) {
                         System.err.println(e);
