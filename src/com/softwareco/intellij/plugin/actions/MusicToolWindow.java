@@ -163,7 +163,11 @@ public class MusicToolWindow {
                 if(recommendRefreshState == 0) {
                     recommendRefreshState = 1;
                     if (MusicControlManager.spotifyCacheState) {
-                        PlayListCommands.updateRecommendation(PopupMenuBuilder.selectedType, PopupMenuBuilder.selectedValue);
+                        if(PlayListCommands.currentBatch < 10) {
+                            PlayListCommands.currentBatch += 1;
+                        } else {
+                            PlayListCommands.currentBatch = 1;
+                        }
                     }
                     refresh();
                     new Thread(() -> {
@@ -812,15 +816,21 @@ public class MusicToolWindow {
             recommendedPlaylist.setModel(recommendedPlaylistModel);
             JsonObject obj = PlayListCommands.recommendedTracks;
             if (obj != null && obj.has("tracks")) {
-                for (JsonElement array : obj.get("tracks").getAsJsonArray()) {
-                    JsonObject track = array.getAsJsonObject();
+                JsonArray tracks = obj.getAsJsonArray("tracks");
+                int index = (PlayListCommands.currentBatch * 10) - 10;
+                for (int i = 0; i < 10; i++) {
+                    JsonObject track = tracks.get(index).getAsJsonObject();
                     String trackName = track.get("name").getAsString();
                     if (trackName.length() > 50) {
                         trackName = trackName.substring(0, 46) + "...";
                     }
                     PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                     recommendedPlaylist.add(node);
+                    index++;
                 }
+            } else {
+                PlaylistTreeNode node = new PlaylistTreeNode("Your tracks will appear here", null);
+                recommendedPlaylist.add(node);
             }
 
             PlaylistTree recommendedPlaylistTree;

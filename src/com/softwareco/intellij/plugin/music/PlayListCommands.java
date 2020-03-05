@@ -20,7 +20,9 @@ public class PlayListCommands {
     public static String likedPlaylistId = "2";
     public static List<String> genres = new ArrayList<>();
     public static String selectedGenre = null;
-    public static JsonObject recommendedTracks = new JsonObject();
+    public static JsonObject recommendedTracks = new JsonObject(); // All recommended tracks (limit 100)
+    public static JsonObject currentRecommendedTracks = new JsonObject(); // 50 recommended tracks to play
+    public static int currentBatch = 1; // range 1-10 for 100 tracks (max 10 batches)
     public static String recommendedPlaylistId = "3";
     public static JsonObject myAITopTracks = null;
     public static String myAIPlaylistId = null;
@@ -134,7 +136,7 @@ public class PlayListCommands {
         if(type.equals("genre")) {
             selectedGenre = selected;
             Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("limit", "10");
+            queryParams.put("limit", "100");
             queryParams.put("min_popularity", "20");
             queryParams.put("target_popularity", "90");
 
@@ -142,7 +144,7 @@ public class PlayListCommands {
             PlayListCommands.getRecommendationForTracks(queryParams);
         } else if(type.equals("category")) {
             Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("limit", "10");
+            queryParams.put("limit", "100");
             queryParams.put("min_popularity", "20");
             queryParams.put("target_popularity", "90");
 
@@ -206,26 +208,55 @@ public class PlayListCommands {
                 queryParams.put("seed_tracks", trackIds);
             }
 
-            if(selected.equals("Happy")) {
-                queryParams.put("min_valence", "0.7");
-                queryParams.put("target_valence", "1");
-            } else if(selected.equals("Energetic")) {
-                queryParams.put("min_energy", "0.7");
-                queryParams.put("target_energy", "1");
-            } else if(selected.equals("Danceable")) {
-                queryParams.put("min_danceability", "0.7");
-                queryParams.put("target_danceability", "1");
-            } else if(selected.equals("Instrumental")) {
-                queryParams.put("min_instrumentalness", "0.8");
-                queryParams.put("target_instrumentalness", "1");
-            } else if(selected.equals("Quiet music")) {
-                queryParams.put("max_loudness", "-13");
-                queryParams.put("target_loudness", "-50");
+            switch (selected) {
+                case "Happy":
+                    queryParams.put("min_valence", "0.7");
+                    queryParams.put("target_valence", "1");
+                    break;
+                case "Energetic":
+                    queryParams.put("min_energy", "0.7");
+                    queryParams.put("target_energy", "1");
+                    break;
+                case "Danceable":
+                    queryParams.put("min_danceability", "0.7");
+                    queryParams.put("target_danceability", "1");
+                    break;
+                case "Instrumental":
+                    queryParams.put("min_instrumentalness", "0.8");
+                    queryParams.put("target_instrumentalness", "1");
+                    break;
+                case "Quiet music":
+                    queryParams.put("max_loudness", "-13");
+                    queryParams.put("target_loudness", "-50");
+                    break;
             }
 
             PlayListCommands.getRecommendationForTracks(queryParams);
         }
+        currentBatch = 1;
+        updateCurrentRecommended();
         MusicToolWindow.refresh();
+    }
+
+    public static void updateCurrentRecommended() {
+        if(recommendedTracks != null) {
+            JsonArray recommendArray = recommendedTracks.getAsJsonArray("tracks");
+            if (currentBatch < 6) {
+                currentRecommendedTracks = new JsonObject();
+                JsonArray array = new JsonArray();
+                for(int i = 0; i < 50; i++) {
+                    array.add(recommendArray.get(i));
+                }
+                currentRecommendedTracks.add("tracks", array);
+            } else {
+                currentRecommendedTracks = new JsonObject();
+                JsonArray array = new JsonArray();
+                for(int i = 50; i < recommendArray.size(); i++) {
+                    array.add(recommendArray.get(i));
+                }
+                currentRecommendedTracks.add("tracks", array);
+            }
+        }
     }
 
     public static JsonObject getTopSpotifyTracks() {

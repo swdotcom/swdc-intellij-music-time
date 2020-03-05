@@ -34,7 +34,8 @@ public class PlayerControlManager {
                         }
                     }
                 } else if(playlistId.equals("3")) {
-                    obj = PlayListCommands.recommendedTracks;
+                    PlayListCommands.updateCurrentRecommended();
+                    obj = PlayListCommands.currentRecommendedTracks;
                     if (obj != null && obj.has("tracks")) {
                         for(JsonElement array : obj.getAsJsonArray("tracks")) {
                             JsonObject track = array.getAsJsonObject();

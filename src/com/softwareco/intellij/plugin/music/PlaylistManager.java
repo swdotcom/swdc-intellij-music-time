@@ -38,7 +38,8 @@ public class PlaylistManager {
                 PlayListCommands.myAIPlaylistId = null;
                 PlayListCommands.userPlaylistIds.clear();
                 for(JsonElement array : obj.get("items").getAsJsonArray()) {
-                    if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
+                    if(array.getAsJsonObject().get("type").getAsString().equals("playlist")
+                            && !array.getAsJsonObject().get("id").getAsString().equals("6jCkTED0V5NEuM8sKbGG1Z")) {
                         MusicControlManager.playlistids.add(array.getAsJsonObject().get("id").getAsString());
                         if(array.getAsJsonObject().get("name").getAsString().equals("My AI Top 40")) {
                             PlayListCommands.myAIPlaylistId = array.getAsJsonObject().get("id").getAsString();
