@@ -850,12 +850,7 @@ public class SoftwareCoSessionManager {
             MusicControlManager.playerCounter = 0;
             PlayerControlManager.nextSpotifyTrack();
         } else if(id.equals(songtrackId)) {
-            if(MusicControlManager.spotifyDeviceIds.size() > 0 && MusicControlManager.playerType.equals("Web Player")) {
-                String msg = "Your Spotify device is already open on Web Browser: " + MusicControlManager.playerType;
-                SoftwareCoUtils.showMsgPrompt(msg);
-            } else {
-                MusicControlManager.launchPlayer();
-            }
+            MusicControlManager.launchPlayer();
         } else if(id.equals(unlikeiconId)) {
             PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
             PlayListCommands.updatePlaylists(3, null);

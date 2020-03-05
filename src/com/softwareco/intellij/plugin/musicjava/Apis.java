@@ -18,6 +18,10 @@ public class Apis {
 
     private static String regex = "^\\S+@\\S+\\.\\S+$";
     private static Pattern pattern = Pattern.compile(regex);
+    private static JsonObject userPlaylists = new JsonObject();
+    private static JsonArray userPlaylistArray = new JsonArray();
+    private static boolean recursiveCall = false;
+    private static int offset = 0;
 
     public static boolean validateEmail(String email) {
         return pattern.matcher(email).matches();
@@ -133,25 +137,43 @@ public class Apis {
             spotifyUserId = MusicStore.getSpotifyUserId();
         }
 
-        String api = "/v1/users/" + spotifyUserId + "/playlists";
+        String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if (resp.isOk()) {
-            JsonObject obj = resp.getJsonObj();
-            if (obj != null && obj.has("items")) {
+            userPlaylists = resp.getJsonObj();
+            if (userPlaylists != null && userPlaylists.has("items")) {
                 List<String> playlistIds = MusicStore.getPlaylistIds();
                 List<String> userPlaylistIds = MusicStore.getUserPlaylistIds();
-                playlistIds.clear();
-                userPlaylistIds.clear();
-                MusicStore.setMyAIPlaylistId(null);
-                for(JsonElement array : obj.get("items").getAsJsonArray()) {
+                if(recursiveCall) {
+                    userPlaylistArray = new JsonArray();
+                    playlistIds.clear();
+                    userPlaylistIds.clear();
+                    MusicStore.setMyAIPlaylistId(null);
+                }
+                int counter = 0;
+                for(JsonElement array : userPlaylists.get("items").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
+                        userPlaylistArray.add(array);
                         playlistIds.add(array.getAsJsonObject().get("id").getAsString());
                         if(array.getAsJsonObject().get("name").getAsString().equals("My AI Top 40")) {
                             MusicStore.setMyAIPlaylistId(array.getAsJsonObject().get("id").getAsString());
                         } else {
                             userPlaylistIds.add(array.getAsJsonObject().get("id").getAsString());
                         }
+                        counter++;
                     }
+                }
+                if(counter > 48) {
+                    offset += 50;
+                    recursiveCall = true;
+                    getUserPlaylists(spotifyUserId, accessToken);
+                } else {
+                    offset = 0;
+                    recursiveCall = false;
+                    userPlaylists.add("items", userPlaylistArray);
+                    resp.setJsonObj(userPlaylists);
+                    userPlaylistArray = new JsonArray();
+                    userPlaylists = new JsonObject();
                 }
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to get Playlists, null response");

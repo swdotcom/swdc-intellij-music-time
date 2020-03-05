@@ -36,7 +36,6 @@ public class PlaylistManager {
                 MusicControlManager.playlistids.clear();
                 PlayListCommands.userPlaylists.clear();
                 PlayListCommands.myAIPlaylistId = null;
-                //PlayListCommands.likedPlaylistId = "2";
                 PlayListCommands.userPlaylistIds.clear();
                 for(JsonElement array : obj.get("items").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {

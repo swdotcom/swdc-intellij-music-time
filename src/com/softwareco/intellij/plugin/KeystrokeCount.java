@@ -4,6 +4,8 @@
  */
 package com.softwareco.intellij.plugin;
 
+import com.softwareco.intellij.plugin.music.MusicControlManager;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -480,7 +482,7 @@ public class KeystrokeCount {
 
     public void processKeystrokes() {
 
-        if (this.hasData()) {
+        if (this.hasData() && MusicControlManager.spotifyState()) {
 
             SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
 

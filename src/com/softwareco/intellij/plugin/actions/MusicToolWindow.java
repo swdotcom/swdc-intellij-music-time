@@ -7,6 +7,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.uiDesigner.core.GridConstraints;
+import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.music.*;
 
@@ -88,7 +89,7 @@ public class MusicToolWindow {
         refresh.setIcon(refreshIcon);
 
         // Sorting menu ********************************************************
-        Icon menuIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/menu.png");
+        Icon menuIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/sort.png");
         menu.setIcon(menuIcon);
 
         JMenuItem sort1 = new JMenuItem("Sort A-Z");
@@ -236,6 +237,7 @@ public class MusicToolWindow {
         if(!SoftwareCoUtils.isSpotifyConncted()) {
             dataPanel.removeAll();
             menu.setVisible(false);
+            refresh.setVisible(false);
             DefaultListModel listModel = new DefaultListModel();
 
             Icon icon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/spotify.png");
@@ -292,16 +294,33 @@ public class MusicToolWindow {
             dataPanel.setBackground((Color) null);
             dataPanel.setFocusable(true);
             menu.setVisible(true);
+            refresh.setVisible(true);
             listIndex = 0;
 
             /* Spotify state */
             DefaultListModel listModel = new DefaultListModel();
-            Icon towerIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/tower.png");
+            Icon towerIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/connected.png");
             JLabel connectedState = new JLabel();
             connectedState.setText("Spotify Connected");
             connectedState.setIcon(towerIcon);
             connectedState.setOpaque(true);
             listModel.add(listIndex, connectedState);
+            listIndex ++;
+
+            /* Web analytics */
+            Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
+            JLabel webAnalytics = new JLabel();
+            webAnalytics.setIcon(pawIcon);
+            webAnalytics.setText("See web analytics");
+            listModel.add(listIndex, webAnalytics);
+            listIndex ++;
+
+            /* Open dashboard */
+            Icon dashboardIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/dashboard.png");
+            JLabel openDashboard = new JLabel();
+            openDashboard.setIcon(dashboardIcon);
+            openDashboard.setText("Open dashboard");
+            listModel.add(listIndex, openDashboard);
             listIndex ++;
 
             /* Device section */
@@ -331,14 +350,6 @@ public class MusicToolWindow {
                 listIndex ++;
             }
 
-            /* Web Analytics */
-            Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
-            JLabel webAnalytics = new JLabel();
-            webAnalytics.setIcon(pawIcon);
-            webAnalytics.setText("See web analytics");
-            listModel.add(listIndex, webAnalytics);
-            listIndex ++;
-
             JList<JLabel> actionList = new JList<>(listModel);
             actionList.setVisibleRowCount(listIndex);
             actionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -361,6 +372,9 @@ public class MusicToolWindow {
                     if(label.getText().equals("See web analytics")) {
                         //Code to call web analytics
                         SoftwareCoUtils.launchMusicWebDashboard();
+                    } else if(label.getText().equals("Open dashboard")) {
+                        //Code to open web dashboard
+                        SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
                     }
                 }
 
@@ -382,7 +396,7 @@ public class MusicToolWindow {
             dataPanel.add(softwarePlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
 //*********************************************************************************************************************************************
             DefaultListModel refreshAIModel = new DefaultListModel();
-            Icon gearIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/settings.png");
+            Icon gearIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/generate.png");
             JLabel aiPlaylist = new JLabel();
             aiPlaylist.setIcon(gearIcon);
             if(PlayListCommands.myAIPlaylistId != null) {
@@ -444,6 +458,7 @@ public class MusicToolWindow {
 
 //*********************************************************************************************************************************************
             // Software Top 40 Playlist
+            Icon pawPurpleIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw-purple.png");
             PlaylistTreeNode softwarePlaylist = new PlaylistTreeNode("Software Top 40", PlayListCommands.topSpotifyPlaylistId);
             DefaultTreeModel softwarePlaylistModel = new DefaultTreeModel(softwarePlaylist);
             softwarePlaylist.setModel(softwarePlaylistModel);
@@ -476,7 +491,7 @@ public class MusicToolWindow {
             } else {
                 softwarePlaylistTree = new PlaylistTree(softwarePlaylistModel);
                 softwarePlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                softwarePlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
+                softwarePlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawPurpleIcon));
 
                 softwarePlaylistTree.addMouseListener(new PlaylistMouseListener(softwarePlaylistTree));
 
@@ -575,6 +590,7 @@ public class MusicToolWindow {
 //*********************************************************************************************************************************************
             // Liked Songs Playlist
             if(MusicControlManager.likedTracks.size() > 0) {
+                Icon likeIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/heart-filled.png");
                 PlaylistTreeNode likedPlaylist = new PlaylistTreeNode("Liked Songs", PlayListCommands.likedPlaylistId);
                 DefaultTreeModel likedPlaylistModel = new DefaultTreeModel(likedPlaylist);
                 likedPlaylist.setModel(likedPlaylistModel);
@@ -598,7 +614,7 @@ public class MusicToolWindow {
                 } else {
                     likedPlaylistTree = new PlaylistTree(likedPlaylistModel);
                     likedPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                    likedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
+                    likedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(likeIcon));
 
                     likedPlaylistTree.addMouseListener(new PlaylistMouseListener(likedPlaylistTree));
 
@@ -634,6 +650,7 @@ public class MusicToolWindow {
 //*********************************************************************************************************************************************
             // Get User Playlists
             if(PlayListCommands.userPlaylistIds.size() > 0) {
+                Icon playlistIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/playlist.png");
                 //*****************************************************************************************************************************
                 JSeparator userPlaylistSeparator = new JSeparator();
                 userPlaylistSeparator.setAlignmentY(0.0f);
@@ -675,7 +692,7 @@ public class MusicToolWindow {
                     } else {
                         userPlaylistTree = new PlaylistTree(userPlaylistModel);
                         userPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                        userPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
+                        userPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(playlistIcon));
 
                         userPlaylistTree.addMouseListener(new PlaylistMouseListener(userPlaylistTree));
 
@@ -728,6 +745,7 @@ public class MusicToolWindow {
             recommendPanel.removeAll();
             category.setVisible(false);
             genre.setVisible(false);
+            recommendRefresh.setVisible(false);
             DefaultListModel listModel = new DefaultListModel();
 
             Icon icon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/spotify.png");
@@ -782,12 +800,13 @@ public class MusicToolWindow {
             recommendPanel.removeAll();
             category.setVisible(true);
             genre.setVisible(true);
+            recommendRefresh.setVisible(true);
             recommendPanel.setBackground((Color) null);
             recommendPanel.setFocusable(true);
 
 //*********************************************************************************************************************************************
             // Recommended Songs List
-            Icon spotifyIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
+            Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
             PlaylistTreeNode recommendedPlaylist = new PlaylistTreeNode(PopupMenuBuilder.selectedValue, PlayListCommands.recommendedPlaylistId);
             DefaultTreeModel recommendedPlaylistModel = new DefaultTreeModel(recommendedPlaylist);
             recommendedPlaylist.setModel(recommendedPlaylistModel);
@@ -811,7 +830,7 @@ public class MusicToolWindow {
             } else {
                 recommendedPlaylistTree = new PlaylistTree(recommendedPlaylistModel);
                 recommendedPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                recommendedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(spotifyIcon));
+                recommendedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
                 recommendedPlaylistTree.addMouseListener(new PlaylistMouseListener(recommendedPlaylistTree));
 

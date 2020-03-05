@@ -495,10 +495,12 @@ public class SoftwareCoUtils {
                                     statusBar.updateWidget(nexticonId);
                                 }
 
-                                SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                        musicMsgVal, musicToolTipVal, songtrackId);
-                                statusBar.addWidget(kpmWidget, songtrackId);
-                                statusBar.updateWidget(songtrackId);
+                                if(!musicMsgVal.equals("Current Track")) {
+                                    SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+                                            musicMsgVal, musicToolTipVal, songtrackId);
+                                    statusBar.addWidget(kpmWidget, songtrackId);
+                                    statusBar.updateWidget(songtrackId);
+                                }
 
                             }
                         }
