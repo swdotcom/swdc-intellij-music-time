@@ -607,37 +607,6 @@ public class SoftwareCoUtils {
         return runCommand(args, null);
     }
 
-    public static String startPlayer(String playerName) {
-        String[] args = { "open", "-a", playerName + ".app" };
-        return runCommand(args, null);
-    }
-
-    public static String playPlayer(String playerName) {
-        String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to play" };
-        return runCommand(args, null);
-    }
-
-    public static String pausePlayer(String playerName) {
-        String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to pause" };
-        return runCommand(args, null);
-    }
-
-    public static String previousTrack(String playerName) {
-        String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to play (previous track)" };
-        return runCommand(args, null);
-    }
-
-    public static String nextTrack(String playerName) {
-        String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to play (next track)" };
-        return runCommand(args, null);
-    }
-
-    protected static String stopPlayer(String playerName) {
-        // `ps -ef | grep "${appName}" | grep -v grep | awk '{print $2}' | xargs kill`;
-        String[] args = { "ps", "-ef", "|", "grep", "\"" + playerName + ".app\"", "|", "grep", "-v", "grep", "|", "awk", "'{print $2}'", "|", "xargs", "kill" };
-        return runCommand(args, null);
-    }
-
     public static JsonObject getCurrentMusicTrack() {
         JsonObject jsonObj = new JsonObject();
         if (!SoftwareCoUtils.isMac()) {
@@ -767,22 +736,13 @@ public class SoftwareCoUtils {
 
     public static synchronized void updatePlayerControls() {
         if(MusicControlManager.spotifyCacheState) {
-            if(deviceCounter == 0) {
-                MusicControlManager.getSpotifyDevices(); // API call
-                deviceCounter = 2;
-            } else {
-                deviceCounter--;
-            }
-            if(MusicControlManager.currentDeviceName == null || MusicControlManager.userStatus == null) {
-                if(MusicControlManager.userStatus == null) {
-                    JsonObject obj = MusicControlManager.getUserProfile(); // API call
-                    if (obj != null)
-                        MusicControlManager.userStatus = obj.get("product").getAsString();
-                }
-                MusicControlManager.currentTrackName = null;
-                MusicControlManager.defaultbtn = "play";
-
-            } else if(MusicControlManager.playerType.equals("Web Player")){
+//            if(deviceCounter == 0) {
+//                MusicControlManager.getSpotifyDevices(); // API call
+//                deviceCounter = 2;
+//            } else {
+//                deviceCounter--;
+//            }
+            if(MusicControlManager.playerType.equals("Web Player") || isWindows()){
                 PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
             } else {
                 PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar

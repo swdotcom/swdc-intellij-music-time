@@ -20,7 +20,6 @@ public class Apis {
     private static Pattern pattern = Pattern.compile(regex);
     private static JsonObject userPlaylists = new JsonObject();
     private static JsonArray userPlaylistArray = new JsonArray();
-    private static boolean recursiveCall = false;
     private static int offset = 0;
 
     public static boolean validateEmail(String email) {
@@ -136,48 +135,65 @@ public class Apis {
             getUserProfile(accessToken);
             spotifyUserId = MusicStore.getSpotifyUserId();
         }
+        int initial = 0;
+        boolean recursiveCall = true;
+        SoftwareResponse response = new SoftwareResponse();
 
-        String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
-        if (resp.isOk()) {
-            userPlaylists = resp.getJsonObj();
-            if (userPlaylists != null && userPlaylists.has("items")) {
-                List<String> playlistIds = MusicStore.getPlaylistIds();
-                List<String> userPlaylistIds = MusicStore.getUserPlaylistIds();
-                if(recursiveCall) {
-                    userPlaylistArray = new JsonArray();
-                    playlistIds.clear();
-                    userPlaylistIds.clear();
-                    MusicStore.setMyAIPlaylistId(null);
-                }
-                int counter = 0;
-                for(JsonElement array : userPlaylists.get("items").getAsJsonArray()) {
-                    if(array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
-                        userPlaylistArray.add(array);
-                        playlistIds.add(array.getAsJsonObject().get("id").getAsString());
-                        if(array.getAsJsonObject().get("name").getAsString().equals("My AI Top 40")) {
-                            MusicStore.setMyAIPlaylistId(array.getAsJsonObject().get("id").getAsString());
-                        } else {
-                            userPlaylistIds.add(array.getAsJsonObject().get("id").getAsString());
-                        }
-                        counter++;
+        while(recursiveCall) {
+            SoftwareResponse resp = (SoftwareResponse) getPlaylists(spotifyUserId, accessToken);
+            if (resp.isOk()) {
+                userPlaylists = resp.getJsonObj();
+                if (userPlaylists != null && userPlaylists.has("items")) {
+
+                    if (initial == 0) {
+                        userPlaylistArray = new JsonArray();
+                        MusicStore.playlistIds.clear();
+                        MusicStore.userPlaylistIds.clear();
+                        MusicStore.setMyAIPlaylistId(null);
+                        initial = 1;
                     }
-                }
-                if(counter > 48) {
-                    offset += 50;
-                    recursiveCall = true;
-                    getUserPlaylists(spotifyUserId, accessToken);
+                    int counter = 0;
+                    for (JsonElement array : userPlaylists.get("items").getAsJsonArray()) {
+                        if (array.getAsJsonObject().get("type").getAsString().equals("playlist")) {
+                            userPlaylistArray.add(array);
+                            MusicStore.playlistIds.add(array.getAsJsonObject().get("id").getAsString());
+                            if (array.getAsJsonObject().get("name").getAsString().equals("My AI Top 40")) {
+                                MusicStore.setMyAIPlaylistId(array.getAsJsonObject().get("id").getAsString());
+                            } else {
+                                MusicStore.userPlaylistIds.add(array.getAsJsonObject().get("id").getAsString());
+                            }
+                            counter++;
+                        }
+                    }
+                    if (counter == 50) {
+                        offset += 50;
+                        recursiveCall = true;
+                    } else {
+                        offset = 0;
+                        recursiveCall = false;
+                        userPlaylists.add("items", userPlaylistArray);
+                        response.setIsOk(resp.isOk());
+                        response.setCode(resp.getCode());
+                        response.setJsonObj(userPlaylists);
+                        userPlaylistArray = new JsonArray();
+                        userPlaylists = new JsonObject();
+                    }
                 } else {
-                    offset = 0;
+                    LOG.log(Level.INFO, "Music Time: Unable to get Playlists, null response");
                     recursiveCall = false;
-                    userPlaylists.add("items", userPlaylistArray);
-                    resp.setJsonObj(userPlaylists);
-                    userPlaylistArray = new JsonArray();
-                    userPlaylists = new JsonObject();
                 }
             } else {
-                LOG.log(Level.INFO, "Music Time: Unable to get Playlists, null response");
+                recursiveCall = false;
             }
+        }
+        return response;
+    }
+
+    public static Object getPlaylists(String spotifyUserId, String accessToken) {
+        String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
+        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        if(resp.isOk()) {
+            return resp;
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
@@ -266,7 +282,7 @@ public class Apis {
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if (resp.isOk() && resp.getCode() == 200) {
             JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("item")) {
+            if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
                 JsonObject track = tracks.get("item").getAsJsonObject();
                 MusicStore.setCurrentTrackId(track.get("id").getAsString());
                 MusicStore.setCurrentTrackName(track.get("name").getAsString());

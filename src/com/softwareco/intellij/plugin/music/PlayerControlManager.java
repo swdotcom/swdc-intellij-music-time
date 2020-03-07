@@ -66,7 +66,7 @@ public class PlayerControlManager {
             trackId = MusicControlManager.currentTrackId;
         }
 
-        if(MusicControlManager.playerType.equals("Web Player")) {
+        if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if (MusicControlManager.currentDeviceId != null) {
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
                 boolean resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId, accessToken);
@@ -105,7 +105,7 @@ public class PlayerControlManager {
 
     public static boolean playSpotifyDevices() {
 
-        if(MusicControlManager.playerType.equals("Web Player")) {
+        if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
@@ -131,7 +131,7 @@ public class PlayerControlManager {
                     }
                 }
             } else {
-                MusicControlManager.launchPlayer();
+                MusicControlManager.getSpotifyDevices();
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.playSpotifyDesktop();
@@ -143,7 +143,7 @@ public class PlayerControlManager {
 
     public static boolean pauseSpotifyDevices() {
 
-        if(MusicControlManager.playerType.equals("Web Player")) {
+        if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
@@ -169,7 +169,7 @@ public class PlayerControlManager {
                     }
                 }
             } else {
-                MusicControlManager.launchPlayer();
+                MusicControlManager.getSpotifyDevices();
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.pauseSpotifyDesktop();
@@ -181,7 +181,7 @@ public class PlayerControlManager {
 
     public static boolean previousSpotifyTrack() {
 
-        if(MusicControlManager.playerType.equals("Web Player")) {
+        if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
@@ -211,7 +211,7 @@ public class PlayerControlManager {
                     }
                 }
             } else {
-                MusicControlManager.launchPlayer();
+                MusicControlManager.getSpotifyDevices();
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.previousSpotifyDesktop();
@@ -223,7 +223,7 @@ public class PlayerControlManager {
 
     public static boolean nextSpotifyTrack() {
 
-        if(MusicControlManager.playerType.equals("Web Player")) {
+        if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
@@ -253,7 +253,7 @@ public class PlayerControlManager {
                     }
                 }
             } else {
-                MusicControlManager.launchPlayer();
+                MusicControlManager.getSpotifyDevices();
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.nextSpotifyDesktop();

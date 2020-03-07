@@ -301,15 +301,7 @@ public class MusicToolWindow {
             refresh.setVisible(true);
             listIndex = 0;
 
-            /* Spotify state */
             DefaultListModel listModel = new DefaultListModel();
-            Icon towerIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/connected.png");
-            JLabel connectedState = new JLabel();
-            connectedState.setText("Spotify Connected");
-            connectedState.setIcon(towerIcon);
-            connectedState.setOpaque(true);
-            listModel.add(listIndex, connectedState);
-            listIndex ++;
 
             /* Web analytics */
             Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
@@ -329,30 +321,23 @@ public class MusicToolWindow {
 
             /* Device section */
             Icon spotifyIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/spotify.png");
+            JLabel deviceState = new JLabel();
+            deviceState.setIcon(spotifyIcon);
             if(MusicControlManager.spotifyDeviceIds.size() > 0) {
-                JLabel deviceState = new JLabel();
-                deviceState.setIcon(spotifyIcon);
                 if(MusicControlManager.currentDeviceName != null) {
                     deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
                     deviceState.setToolTipText("Listening on a Spotify device");
                 } else {
-                    String devices = "Connected on ";
-                    String toolTip = "";
-                    for(String id : MusicControlManager.spotifyDeviceIds) {
-                        devices += MusicControlManager.spotifyDevices.get(id) + ",";
-                    }
-                    devices = devices.substring(0, devices.lastIndexOf(","));
-                    if(MusicControlManager.spotifyDeviceIds.size() == 1)
-                        toolTip = "Spotify devices connected";
-                    else
-                        toolTip = "Multiple Spotify devices connected";
-
-                    deviceState.setText(devices);
-                    deviceState.setToolTipText(toolTip);
+                    deviceState.setText("Connect to a Spotify device");
+                    deviceState.setToolTipText("Connect to a Spotify device");
                 }
-                listModel.add(listIndex, deviceState);
-                listIndex ++;
+
+            } else {
+                deviceState.setText("Connect to a Spotify device");
+                deviceState.setToolTipText("Connect to a Spotify device");
             }
+            listModel.add(listIndex, deviceState);
+            listIndex ++;
 
             JList<JLabel> actionList = new JList<>(listModel);
             actionList.setVisibleRowCount(listIndex);
@@ -379,6 +364,8 @@ public class MusicToolWindow {
                     } else if(label.getText().equals("Open dashboard")) {
                         //Code to open web dashboard
                         SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
+                    } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to")) {
+                        MusicControlManager.launchPlayer(false, false);
                     }
                 }
 
@@ -894,7 +881,7 @@ public class MusicToolWindow {
 
     public static void lazilyCheckPlayer(int retryCount, String playlist, String track) {
         if(MusicControlManager.currentTrackName == null) {
-            if (MusicControlManager.playerType.equals("Desktop Player") && !SoftwareCoUtils.isSpotifyRunning() && retryCount > 0) {
+            if (!MusicControlManager.deviceActivated && retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
                 new Thread(() -> {
                     try {
@@ -904,22 +891,9 @@ public class MusicToolWindow {
                         System.err.println(ex);
                     }
                 }).start();
-            } else if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isSpotifyRunning()) {
-                if (MusicControlManager.currentDeviceId == null) {
-                    final int newRetryCount = retryCount - 1;
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(3000);
-                            lazilyCheckPlayer(newRetryCount, playlist, track);
-                        } catch (Exception ex) {
-                            System.err.println(ex);
-                        }
-                    }).start();
-
-                    MusicControlManager.getSpotifyDevices();
-                } else {
-                    PlayerControlManager.playSpotifyPlaylist(playlist, track);
-                }
+            } else if(MusicControlManager.deviceActivated) {
+                PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                MusicControlManager.deviceActivated = false;
             }
         }
     }

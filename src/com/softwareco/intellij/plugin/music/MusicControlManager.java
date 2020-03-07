@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.util.IconLoader;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
@@ -14,6 +15,7 @@ import com.softwareco.intellij.plugin.musicjava.Util;
 import com.softwareco.intellij.plugin.slack.SlackControlManager;
 import org.apache.http.client.methods.HttpPut;
 
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +49,7 @@ public class MusicControlManager {
     public static String previousDeviceName = null;
 
     public static int playerCounter = 0;
-    public static int deviceCounter = 0;
+    public static boolean deviceActivated = false;
     public static String spotifyStatus = "Not Connected"; // Connected or Not Connected
     public static String playerState = "End"; // End or Resume
     public static String playerType = "Web Player"; // Web Player or Desktop Player
@@ -179,51 +181,123 @@ public class MusicControlManager {
             PlayListCommands.updatePlaylists(3, null);
             PlayListCommands.getGenre(); // API call
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+            MusicControlManager.getSpotifyDevices(); // API call
 
             lazyUpdatePlayer();
         }
     }
 
-    public static void launchPlayer() {
+    public static void launchPlayer(boolean skipPopup, boolean activateDevice) {
 
-        if(SoftwareCoUtils.isMac() && userStatus != null && userStatus.equals("premium")) {
-            String infoMsg = "Spotify is currently not running, would you like to launch the \n" +
-                    "desktop instead of the web player?";
-            int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Not Now", "Yes", Messages.getInformationIcon());
-            if(response == 0) {
-                playerType = "Web Player";
-            } else if(response == 2) {
-                playerType = "Desktop Player";
+        if(!skipPopup) {
+            boolean webPlayer = false;
+            boolean desktopPlayer = false;
+            int size = 0;
+            List<String> devices = new ArrayList<>();
+            MusicControlManager.getSpotifyDevices(); // API call
+            for(String id : spotifyDeviceIds) {
+                String deviceName = spotifyDevices.get(id);
+                if(deviceName.contains("Web Player")) {
+                    webPlayer = true;
+                } else {
+                    desktopPlayer = true;
+                }
+                devices.add(deviceName);
             }
-        } else if(SoftwareCoUtils.isMac()) {
-            playerType = "Desktop Player";
-        }
-
-        if(userStatus != null && userStatus.equals("premium") && playerType.equals("Web Player")) {
-            if (currentPlaylistId != null && currentPlaylistId.length() > 5) {
-                BrowserUtil.browse("https://open.spotify.com/playlist/" + currentPlaylistId);
-            } else if (currentTrackId != null) {
-                BrowserUtil.browse("https://open.spotify.com/track/" + currentTrackId);
-            } else {
-                BrowserUtil.browse("https://open.spotify.com");
+            if(!webPlayer) {
+                devices.add(0, "Launch web player");
+                size++;
             }
-        } else if(userStatus != null && playerType.equals("Desktop Player")) {
-            Apis.startDesktopPlayer("Spotify");
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                    if(!SoftwareCoUtils.isSpotifyRunning()) {
-                        if (userStatus.equals("premium"))
-                            SoftwareCoUtils.showMsgPrompt("Spotify Desktop Player is required, Please Install Spotify");
-                        else
-                            SoftwareCoUtils.showMsgPrompt("Spotify Desktop Player is required for Non-Premium account, Please Install Spotify");
+            if(!desktopPlayer) {
+                devices.add(0, "Launch Spotify desktop");
+                size++;
+            }
+            String[] deviceList = new String[devices.size()];
+            for(int i = 0; i < devices.size(); i++) {
+                deviceList[i] = devices.get(i);
+            }
+            Icon spotifyIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/spotify.png");
+            int index = SoftwareCoUtils.showMsgInputPrompt("Connect to a Spotify device", "Spotify", spotifyIcon, deviceList);
+            if(index >= 0) {
+                if(size > 0 && index < size) {
+                    if(deviceList[index].equals("Launch web player")) {
+                        launchWebPlayer(activateDevice);
+                        return;
+                    } else if(deviceList[index].equals("Launch Spotify desktop")) {
+                        launchDesktopPlayer(activateDevice);
+                        return;
+                    }
+                } else {
+                    String deviceId = spotifyDeviceIds.get(index - size);
+                    String deviceName = spotifyDevices.get(deviceId);
+                    activateDevice(deviceId);
+                    if(deviceName.contains("Web Player")) {
+                        playerType = "Web Player";
+                        MusicControlManager.getSpotifyDevices(); // API call
+                        return;
+                    } else {
+                        playerType = "Desktop Player";
+                        MusicControlManager.getSpotifyDevices(); // API call
+                        return;
                     }
                 }
-                catch (Exception e){
-                    System.err.println(e);
-                }
-            }).start();
+            } else {
+                return;
+            }
         }
+
+        if(playerType.equals("Web Player")) {
+            launchWebPlayer(activateDevice);
+        } else if(playerType.equals("Desktop Player")) {
+            launchDesktopPlayer(activateDevice);
+        }
+    }
+
+    public static void launchWebPlayer(boolean activateDevice) {
+        if (currentPlaylistId != null && currentPlaylistId.length() > 5) {
+            BrowserUtil.browse("https://open.spotify.com/playlist/" + currentPlaylistId);
+        } else if (currentTrackId != null) {
+            BrowserUtil.browse("https://open.spotify.com/track/" + currentTrackId);
+        } else {
+            BrowserUtil.browse("https://open.spotify.com");
+        }
+        lazyUpdateDevices(5, activateDevice, true);
+    }
+
+    public static void launchDesktopPlayer(boolean activateDevice) {
+        Apis.startDesktopPlayer("Spotify");
+        new Thread(() -> {
+            try {
+                if(SoftwareCoUtils.isMac()) {
+                    Thread.sleep(2000);
+                    if (!SoftwareCoUtils.isSpotifyRunning()) {
+                        SoftwareCoUtils.showMsgPrompt("Desktop app is not detected, Launching web player");
+                        launchWebPlayer(activateDevice);
+                    } else {
+                        lazyUpdateDevices(1, activateDevice, false);
+                    }
+                } else if(SoftwareCoUtils.isWindows()) {
+                    Thread.sleep(10000);
+                    MusicControlManager.getSpotifyDevices(); // API call
+                    boolean desktopPlayer = false;
+                    for(String id : spotifyDeviceIds) {
+                        String deviceName = spotifyDevices.get(id);
+                        if(!deviceName.contains("Web Player")) {
+                            desktopPlayer = true;
+                        }
+                    }
+                    if (!desktopPlayer) {
+                        SoftwareCoUtils.showMsgPrompt("Desktop app is not detected, Launching web player");
+                        launchWebPlayer(activateDevice);
+                    } else {
+                        lazyUpdateDevices(1, activateDevice, false);
+                    }
+                }
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
     }
 
     // Lazily update player controls
@@ -255,14 +329,14 @@ public class MusicControlManager {
     }
 
     // Lazily update devices
-    public static void lazyUpdateDevices() {
-        //boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        if(MusicControlManager.spotifyState()) {
-            // Update player controls for every 5 second
+    public static void lazyUpdateDevices(int retryCount, boolean activateDevice, boolean isWeb) {
+        if(MusicControlManager.spotifyState() && retryCount > 0) {
+            final int newRetryCount = retryCount - 1;
+            // Update devices for every 3 second
             new Thread(() -> {
                 try {
-                    Thread.sleep(5000);
-                    lazyUpdateDevices();
+                    Thread.sleep(3000);
+                    lazyUpdateDevices(newRetryCount, activateDevice, isWeb);
                 }
                 catch (Exception e){
                     System.err.println(e);
@@ -271,18 +345,22 @@ public class MusicControlManager {
         }
 
         MusicControlManager.getSpotifyDevices(); // API call
-
-//        if(serverIsOnline) {
-//            MusicControlManager.getSpotifyDevices(); // API call
-//            deviceCounter = 0;
-//        } else if(SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
-//            if(MusicControlManager.currentDeviceName == null) {
-//                MusicControlManager.currentDeviceName = "Desktop Player (Offline)";
-//            } else if(deviceCounter == 0) {
-//                deviceCounter = 1;
-//                MusicControlManager.currentDeviceName += " (Offline)";
-//            }
-//        }
+        if(activateDevice && !deviceActivated) {
+            for(String id : spotifyDeviceIds) {
+                String deviceName = spotifyDevices.get(id);
+                if(isWeb) {
+                    if(deviceName.contains("Web Player")) {
+                        deviceActivated = true;
+                        break;
+                    }
+                } else {
+                    if(!deviceName.contains("Web Player")) {
+                        deviceActivated = true;
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private static boolean isSpotifyConncted(boolean serverIsOnline) {
@@ -389,11 +467,7 @@ public class MusicControlManager {
 
     public static boolean activateDevice(String deviceId) {
         String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        boolean active = Apis.activateDevice(accessToken, deviceId);
-        if(active)
-            getSpotifyDevices();
-
-        return active;
+        return Apis.activateDevice(accessToken, deviceId);
     }
 
     public static JsonObject getUserProfile() {

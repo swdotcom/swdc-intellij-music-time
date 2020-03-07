@@ -850,7 +850,7 @@ public class SoftwareCoSessionManager {
             MusicControlManager.playerCounter = 0;
             PlayerControlManager.nextSpotifyTrack();
         } else if(id.equals(songtrackId)) {
-            MusicControlManager.launchPlayer();
+            MusicControlManager.launchPlayer(true, false);
         } else if(id.equals(unlikeiconId)) {
             PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
             PlayListCommands.updatePlaylists(3, null);

@@ -182,6 +182,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
             PlayListCommands.updatePlaylists(3, null);
             PlayListCommands.getGenre(); // API call
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+            MusicControlManager.getSpotifyDevices(); // API call
 
             MusicControlManager.lazyUpdatePlayer();
         }

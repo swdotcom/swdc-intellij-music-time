@@ -113,7 +113,7 @@ public class PlaylistManager {
         SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack(accessToken);
         if (resp.isOk() && resp.getCode() == 200) {
             JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("item")) {
+            if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
                 JsonObject track = tracks.get("item").getAsJsonObject();
                 MusicControlManager.currentTrackId = track.get("id").getAsString();
                 MusicControlManager.currentTrackName = track.get("name").getAsString();
@@ -132,6 +132,7 @@ public class PlaylistManager {
                 if(tracks.get("is_playing").getAsBoolean()) {
                     if(MusicControlManager.defaultbtn.equals("play")) {
                         MusicControlManager.defaultbtn = "pause";
+                        MusicControlManager.getSpotifyDevices(); // API call
                         PlayListCommands.updatePlaylists(5, null);
                     }
                     PlaylistManager.pauseTriggerTime = 0;
@@ -145,6 +146,7 @@ public class PlaylistManager {
                 } else {
                     if(MusicControlManager.defaultbtn.equals("pause")) {
                         MusicControlManager.defaultbtn = "play";
+                        MusicControlManager.getSpotifyDevices(); // API call
                         PlayListCommands.updatePlaylists(5, null);
                     }
                     SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
@@ -175,7 +177,8 @@ public class PlaylistManager {
                 PlaylistManager.previousTrackData = tracks;
             } else {
                 MusicControlManager.defaultbtn = "play";
-                MusicControlManager.getSpotifyDevices();
+                MusicControlManager.currentTrackName = null;
+                SoftwareCoSessionManager.playerState = 0;
             }
             return resp.getJsonObj();
         } else if(resp.getCode() == 204) {
@@ -197,7 +200,7 @@ public class PlaylistManager {
     }
 
     public static JsonObject getSpotifyDesktopCurrentTrack() {
-        if(SoftwareCoUtils.isSpotifyRunning()) {
+        if(SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             try {
                 JsonObject obj = Util.getCurrentMusicTrack();
                 if (!obj.isJsonNull()) {

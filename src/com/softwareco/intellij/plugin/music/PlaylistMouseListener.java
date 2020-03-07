@@ -59,7 +59,7 @@ public class PlaylistMouseListener extends MouseAdapter {
                 } else {
                     if (!activate && MusicControlManager.currentTrackName == null &&
                             (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                        MusicControlManager.launchPlayer();
+                        MusicControlManager.launchPlayer(false, true);
                         MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
                     } else {
                         PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
@@ -79,7 +79,7 @@ public class PlaylistMouseListener extends MouseAdapter {
                     if (child.getId() != null) {
                         if (!activate && MusicControlManager.currentTrackName == null &&
                                 (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                            MusicControlManager.launchPlayer();
+                            MusicControlManager.launchPlayer(false, true);
                             MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
                         } else {
                             PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());

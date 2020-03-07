@@ -39,6 +39,10 @@ public class Util {
         return appAvailable;
     }
 
+    public static String getUserHomeDir() {
+        return System.getProperty("user.home");
+    }
+
     public synchronized static boolean isServerOnline() {
         long nowInSec = Math.round(System.currentTimeMillis() / 1000);
         // 5 min threshold
@@ -137,8 +141,15 @@ public class Util {
     }
 
     public static String startPlayer(String playerName) {
-        String[] args = { "open", "-a", playerName + ".app" };
-        return runCommand(args, null);
+        if(isMac()) {
+            String[] args = {"open", "-a", playerName + ".app"};
+            return runCommand(args, null);
+        } else if(isWindows()) {
+            String home = getUserHomeDir();
+            String[] args = {home + "\\AppData\\Roaming\\Spotify\\Spotify.exe"};
+            return runCmd(args, null);
+        }
+        return null;
     }
 
     public static String playPlayer(String playerName) {
@@ -254,6 +265,23 @@ public class Util {
 
         } catch (Exception e) {
             Thread.currentThread().interrupt();
+            return null;
+        }
+    }
+
+    public static String runCmd(String[] command, String dir) {
+        try
+        {
+            // Running the above command
+            Runtime run  = Runtime.getRuntime();
+            Process process = run.exec(command);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            return baos.toString().trim();
+
+        } catch (IOException e) {
+            e.printStackTrace();
             return null;
         }
     }
