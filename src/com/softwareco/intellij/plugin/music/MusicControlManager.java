@@ -187,7 +187,7 @@ public class MusicControlManager {
         }
     }
 
-    public static void launchPlayer(boolean skipPopup, boolean activateDevice) {
+    public static synchronized void launchPlayer(boolean skipPopup, boolean activateDevice) {
 
         if(!skipPopup) {
             boolean webPlayer = false;
@@ -233,11 +233,13 @@ public class MusicControlManager {
                     activateDevice(deviceId);
                     if(deviceName.contains("Web Player")) {
                         playerType = "Web Player";
-                        MusicControlManager.getSpotifyDevices(); // API call
+                        MusicControlManager.currentDeviceId = deviceId;
+                        MusicControlManager.currentDeviceName = deviceName;
                         return;
                     } else {
                         playerType = "Desktop Player";
-                        MusicControlManager.getSpotifyDevices(); // API call
+                        MusicControlManager.currentDeviceId = deviceId;
+                        MusicControlManager.currentDeviceName = deviceName;
                         return;
                     }
                 }

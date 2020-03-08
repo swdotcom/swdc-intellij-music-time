@@ -39,26 +39,17 @@ public class PlaylistMouseListener extends MouseAdapter {
             }
         } else if(e.getButton() == 1) {
 
-            boolean activate = false;
-            if (MusicControlManager.currentTrackName == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                activate = MusicControlManager.activateDevice(MusicControlManager.spotifyDeviceIds.get(0));
-                SoftwareCoUtils.updatePlayerControls();
-            }
-
             /* retrieve the node that was selected */
             if (node.isLeaf()) {
                 PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
                 if (root.getId().equals(MusicControlManager.currentPlaylistId)
                         && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                    if (!activate) {
-                        if (MusicControlManager.defaultbtn.equals("pause"))
-                            PlayerControlManager.pauseSpotifyDevices();
-                        else if (MusicControlManager.defaultbtn.equals("play"))
-                            PlayerControlManager.playSpotifyDevices();
-                    }
+                    if (MusicControlManager.defaultbtn.equals("pause"))
+                        PlayerControlManager.pauseSpotifyDevices();
+                    else if (MusicControlManager.defaultbtn.equals("play"))
+                        PlayerControlManager.playSpotifyDevices();
                 } else {
-                    if (!activate && MusicControlManager.currentTrackName == null &&
-                            (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
+                    if (MusicControlManager.currentTrackName == null) {
                         MusicControlManager.launchPlayer(false, true);
                         MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
                     } else {
@@ -67,18 +58,15 @@ public class PlaylistMouseListener extends MouseAdapter {
                 }
             } else {
                 if (node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                    if (!activate) {
-                        if (MusicControlManager.defaultbtn.equals("pause"))
-                            PlayerControlManager.pauseSpotifyDevices();
-                        else if (MusicControlManager.defaultbtn.equals("play"))
-                            PlayerControlManager.playSpotifyDevices();
-                    }
+                    if (MusicControlManager.defaultbtn.equals("pause"))
+                        PlayerControlManager.pauseSpotifyDevices();
+                    else if (MusicControlManager.defaultbtn.equals("play"))
+                        PlayerControlManager.playSpotifyDevices();
                 } else {
                     PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
 
                     if (child.getId() != null) {
-                        if (!activate && MusicControlManager.currentTrackName == null &&
-                                (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
+                        if (MusicControlManager.currentTrackName == null) {
                             MusicControlManager.launchPlayer(false, true);
                             MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
                         } else {
