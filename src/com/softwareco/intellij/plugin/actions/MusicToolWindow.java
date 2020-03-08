@@ -596,6 +596,9 @@ public class MusicToolWindow {
                         PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         likedPlaylist.add(node);
                     }
+                } else {
+                    PlaylistTreeNode node = new PlaylistTreeNode("Your tracks will appear here", null);
+                    likedPlaylist.add(node);
                 }
 
                 PlaylistTree likedPlaylistTree;
