@@ -7,15 +7,12 @@ package com.softwareco.intellij.plugin;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.softwareco.intellij.plugin.music.*;
@@ -28,8 +25,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class SoftwareCoSessionManager {
@@ -37,14 +36,27 @@ public class SoftwareCoSessionManager {
     private static SoftwareCoSessionManager instance = null;
     public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
     private static Map<String, String> sessionMap = new HashMap<>();
-    private static Map<String, JsonObject> musicData = new HashMap<>();
+
     private static JsonArray keystrokeData = new JsonArray();
     public static int playerState = 0; // 0 = inactive & 1 = active
     public static boolean isServerActive = false;
+
+    /* cache data*/
     private static int keyStrokes = 0;
+    private static int add = 0;
+    private static int paste = 0;
+    private static int delete = 0;
+    private static int netkeys = 0;
+    private static int linesAdded = 0;
+    private static int linesRemoved = 0;
+    private static int open = 0;
+    private static int close = 0;
+    private static Map<String, JsonObject> musicData = new HashMap<>();
+
     public static long start = 0L;
     public static long local_start = 0L;
     private static long lastAppAvailableCheck = 0;
+    private static long lastServerCheck = 0;
 
     private static String SERVICE_NOT_AVAIL =
             "Our service is temporarily unavailable.\n\nPlease try again later.\n";
@@ -54,6 +66,19 @@ public class SoftwareCoSessionManager {
             instance = new SoftwareCoSessionManager();
         }
         return instance;
+    }
+
+    public static void resetCacheData() {
+        add = 0;
+        paste = 0;
+        delete = 0;
+        netkeys = 0;
+        linesAdded = 0;
+        linesRemoved = 0;
+        open = 0;
+        close = 0;
+        keyStrokes = 0;
+        musicData = new HashMap<>();
     }
 
     public static boolean softwareSessionFileExists() {
@@ -165,6 +190,24 @@ public class SoftwareCoSessionManager {
         return SoftwareCoUtils.isAppAvailable();
     }
 
+    public synchronized static boolean serverCheck() {
+        long nowInSec = Math.round(System.currentTimeMillis() / 1000);
+        // 10 second threshold
+        boolean pastThreshold = (nowInSec - lastServerCheck > (10)) ? true : false;
+        if (pastThreshold) {
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
+            SoftwareCoUtils.updateServerStatus(resp.isOk());
+            lastServerCheck = nowInSec;
+        }
+        return SoftwareCoUtils.isAppAvailable();
+    }
+
+    public synchronized static boolean directServerOnlineCheck() {
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
+        SoftwareCoUtils.updateServerStatus(resp.isOk());
+        return SoftwareCoUtils.isAppAvailable();
+    }
+
     public void storePayload(String payload) {
         if (payload == null || payload.length() == 0) {
             return;
@@ -190,7 +233,7 @@ public class SoftwareCoSessionManager {
         }
 
         // Storing kmp data in musicData.json
-        if(!isServerActive && playerState == 1) {
+        if(playerState == 1) {
             String dataStoreFile = getMusicDataFile(true);
             File f = new File(dataStoreFile);
             try {
@@ -202,10 +245,12 @@ public class SoftwareCoSessionManager {
             } catch (Exception e) {
                 log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
             }
-        } else if(playerState == 1) {
-            JsonObject obj = (JsonObject) SoftwareCoMusic.jsonParser.parse(payload);
-            keystrokeData.add(obj);
-        } else if(playerState == 0) {
+        }
+//        else if(playerState == 1) {
+//            JsonObject obj = (JsonObject) SoftwareCoMusic.jsonParser.parse(payload);
+//            keystrokeData.add(obj);
+//        }
+        else if(playerState == 0) {
             String dataStoreFile = getMusicDataFile(false);
             deleteFile(dataStoreFile);
             keystrokeData = new JsonArray();
@@ -338,7 +383,7 @@ public class SoftwareCoSessionManager {
             if (item.has("popularity"))
                 track.setPopularity(item.get("popularity").getAsInt());
 
-            if (item.has("preview_url"))
+            if (item.has("preview_url") && !item.get("preview_url").isJsonNull())
                 track.setPreview_url(item.get("preview_url").getAsString());
 
             if (item.has("track_number"))
@@ -415,7 +460,15 @@ public class SoftwareCoSessionManager {
             processMusicData();
             track.setVersion(kc.getVersion());
             track.setPluginId(kc.getPluginId());
-            track.setKeystrokes("" + keyStrokes);
+            track.setAdd(add);
+            track.setPaste(paste);
+            track.setDelete(delete);
+            track.setNetkeys(netkeys);
+            track.setLinesAdded(linesAdded);
+            track.setLinesRemoved(linesRemoved);
+            track.setOpen(open);
+            track.setClose(close);
+            track.setKeystrokes(keyStrokes);
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
             long end = timesData.now;
             long end_local = timesData.local_now;
@@ -428,16 +481,15 @@ public class SoftwareCoSessionManager {
             }
             track.setEnd(end);
             track.setLocal_end(end_local);
+            track.setOffset(timesData.offset);
             track.setTimezone(timesData.timezone);
             track.setOs(kc.getOs());
             track.setSource(musicData);
         }
 
         final String payload = SoftwareCoMusic.gson.toJson(track);
-        //storeSongSessionPayload(payload);
 
-        boolean isOnline = isServerOnline();
-        if(isOnline) {
+        if(isServerActive) {
             sendMusicOfflineData();
             SoftwareCoUtils.sendSongSessionPayload(payload);
         } else if(SoftwareCoUtils.isMac() && MusicControlManager.playerType.equals("Desktop Player")) {
@@ -445,8 +497,7 @@ public class SoftwareCoSessionManager {
         }
         // Reset song session payload
         TrackInfoManager.resetTrackInfo();
-        keyStrokes = 0;
-        musicData = new HashMap<>();
+        resetCacheData();
     }
 
     public static void storeSongSessionPayload(String payload) {
@@ -504,10 +555,12 @@ public class SoftwareCoSessionManager {
                     // delete the file
                     deleteFile(dataStoreFile);
 
-                    isServerActive = isServerOnline();
+                    isServerActive = directServerOnlineCheck();
+                    /* process keystroke data */
                     processKeystrokes(jsonArray);
 
                 } else {
+                    isServerActive = directServerOnlineCheck();
                     log.info("Music Time: No keystroke data to send");
                 }
             } catch (Exception e) {
@@ -515,10 +568,12 @@ public class SoftwareCoSessionManager {
             }
         } else {
             if(keystrokeData.size() > 0) {
+                /* process keystroke data */
                 processKeystrokes(keystrokeData);
                 keystrokeData = new JsonArray();
-                isServerActive = isServerOnline();
+                isServerActive = directServerOnlineCheck();
             } else {
+                isServerActive = directServerOnlineCheck();
                 log.info("Music Time: No keystroke data to send");
             }
         }
@@ -528,11 +583,17 @@ public class SoftwareCoSessionManager {
         // go through the array
         for (int i = 0; i < jsonArray.size(); i++) {
             JsonObject obj = jsonArray.get(i).getAsJsonObject();
-            if(keyStrokes == 0) {
-                keyStrokes = Integer.parseInt(obj.get("keystrokes").getAsString());
-            } else {
-                keyStrokes += Integer.parseInt(obj.get("keystrokes").getAsString());
-            }
+            add += obj.get("add").getAsInt();
+            paste += obj.get("paste").getAsInt();
+            delete += obj.get("delete").getAsInt();
+            netkeys += obj.get("netkeys").getAsInt();
+            linesAdded += obj.get("linesAdded").getAsInt();
+            linesRemoved += obj.get("linesRemoved").getAsInt();
+            open += obj.get("open").getAsInt();
+            close += obj.get("close").getAsInt();
+            keyStrokes += obj.get("keystrokes").getAsInt();
+
+            /* source data */
             JsonObject source = obj.get("source").getAsJsonObject();
             Set<String> keys = source.keySet();
             for(String key : keys) {
@@ -607,7 +668,7 @@ public class SoftwareCoSessionManager {
                         batch.add(jsonArray.get(i));
                         if (i > 0 && i % 50 == 0) {
                             String payloadData = SoftwareCoMusic.gson.toJson(batch);
-                            boolean resp = SoftwareCoUtils.sendSongSessionPayload(payloadData);;
+                            boolean resp = SoftwareCoUtils.sendSongSessionPayload(payloadData);
                             if (!resp) {
                                 // add these back to the offline file
                                 storeSongSessionPayload(jsonArray.get(i).getAsString());
@@ -618,7 +679,7 @@ public class SoftwareCoSessionManager {
                     }
                     if (batch.size() > 0) {
                         String payloadData = SoftwareCoMusic.gson.toJson(batch);
-                        boolean resp = SoftwareCoUtils.sendSongSessionPayload(payloadData);;
+                        boolean resp = SoftwareCoUtils.sendSongSessionPayload(payloadData);
                         if (!resp) {
                             // add these back to the offline file
                             for (int i = 0; i < jsonArray.size(); i++) {
@@ -763,47 +824,39 @@ public class SoftwareCoSessionManager {
     }
 
     public void statusBarClickHandler(MouseEvent mouseEvent, String id) {
-        if (SoftwareCoSessionManager.isServerOnline()) {
-            String headphoneiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_headphoneicon";
-            String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
-            String unlikeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_unlikeicon";
-            String preiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_preicon";
-            String stopiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_stopicon";
-            String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
-            String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
-            String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
-            String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
-            String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
-
-            log.warning("Music Time: Button ID: " + id);
-            if(id.equals(headphoneiconId) || id.equals(connectspotifyId)) {
-                MusicControlManager.connectSpotify();
-            } else if(id.equals(playiconId)) {
-                MusicControlManager.playerCounter = 0;
-                PlayerControlManager.playSpotifyDevices();
-            } else if(id.equals(pauseiconId)) {
-                MusicControlManager.playerCounter = 0;
-                PlayerControlManager.pauseSpotifyDevices();
-            } else if(id.equals(preiconId)) {
-                MusicControlManager.playerCounter = 0;
-                PlayerControlManager.previousSpotifyTrack();
-            } else if(id.equals(nexticonId)) {
-                MusicControlManager.playerCounter = 0;
-                PlayerControlManager.nextSpotifyTrack();
-            } else if(id.equals(songtrackId)) {
-                if(MusicControlManager.spotifyDeviceIds.size() > 0 && MusicControlManager.playerType.equals("Web Player")) {
-                    String msg = "Your Spotify device is already open on Web Browser: " + MusicControlManager.playerType;
-                    SoftwareCoUtils.showMsgPrompt(msg);
-                } else {
-                    MusicControlManager.launchPlayer();
-                }
-            } else if(id.equals(unlikeiconId)) {
-                PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
-            } else if(id.equals(likeiconId)) {
-                PlayerControlManager.likeSpotifyTrack(false, MusicControlManager.currentTrackId);
-            }
-        } else {
-            SoftwareCoUtils.showOfflinePrompt(false);
+        String headphoneiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_headphoneicon";
+        String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
+        String unlikeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_unlikeicon";
+        String preiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_preicon";
+        String stopiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_stopicon";
+        String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
+        String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
+        String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
+        String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
+        String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
+        
+        if(id.equals(headphoneiconId) || id.equals(connectspotifyId)) {
+            MusicControlManager.connectSpotify();
+        } else if(id.equals(playiconId)) {
+            MusicControlManager.playerCounter = 0;
+            PlayerControlManager.playSpotifyDevices();
+        } else if(id.equals(pauseiconId)) {
+            MusicControlManager.playerCounter = 0;
+            PlayerControlManager.pauseSpotifyDevices();
+        } else if(id.equals(preiconId)) {
+            MusicControlManager.playerCounter = 0;
+            PlayerControlManager.previousSpotifyTrack();
+        } else if(id.equals(nexticonId)) {
+            MusicControlManager.playerCounter = 0;
+            PlayerControlManager.nextSpotifyTrack();
+        } else if(id.equals(songtrackId)) {
+            MusicControlManager.launchPlayer(true, false);
+        } else if(id.equals(unlikeiconId)) {
+            PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
+            PlayListCommands.updatePlaylists(3, null);
+        } else if(id.equals(likeiconId)) {
+            PlayerControlManager.likeSpotifyTrack(false, MusicControlManager.currentTrackId);
+            PlayListCommands.updatePlaylists(3, null);
         }
     }
 }

@@ -39,6 +39,10 @@ public class Util {
         return appAvailable;
     }
 
+    public static String getUserHomeDir() {
+        return System.getProperty("user.home");
+    }
+
     public synchronized static boolean isServerOnline() {
         long nowInSec = Math.round(System.currentTimeMillis() / 1000);
         // 5 min threshold
@@ -127,11 +131,7 @@ public class Util {
             "set track_duration to duration of current track\n" +
             "set track_id to id of current track\n" +
             "set track_state to player state\n" +
-            "set disc_number to disc number of current track\n" +
-            "set track_popularity to popularity of current track\n" +
-            "set artwork_url to artwork url of current track\n" +
-            "set spotify_url to spotify url of current track\n" +
-            "set json to \"type='spotify';album='\" & track_album & \"';genre='';spotifyUrl='\" & spotify_url & \"';artworkUrl='\" & artwork_url & \"';popularity='\" & track_popularity & \"';discNumber='\" & disc_number & \"';artist='\" & track_artist & \"';id='\" & track_id & \"';name='\" & track_name & \"';state='\" & track_state & \"';duration='\" & track_duration & \"'\"\n" +
+            "set json to \"type='spotify';album='\" & track_album & \"';genre='';artist='\" & track_artist & \"';id='\" & track_id & \"';name='\" & track_name & \"';state='\" & track_state & \"';duration='\" & track_duration & \"'\"\n" +
             "end tell\n" +
             "return json\n";
 
@@ -141,8 +141,15 @@ public class Util {
     }
 
     public static String startPlayer(String playerName) {
-        String[] args = { "open", "-a", playerName + ".app" };
-        return runCommand(args, null);
+        if(isMac()) {
+            String[] args = {"open", "-a", playerName + ".app"};
+            return runCommand(args, null);
+        } else if(isWindows()) {
+            String home = getUserHomeDir();
+            String[] args = {home + "\\AppData\\Roaming\\Spotify\\Spotify.exe"};
+            return runCmd(args, null);
+        }
+        return null;
     }
 
     public static String playPlayer(String playerName) {
@@ -258,6 +265,23 @@ public class Util {
 
         } catch (Exception e) {
             Thread.currentThread().interrupt();
+            return null;
+        }
+    }
+
+    public static String runCmd(String[] command, String dir) {
+        try
+        {
+            // Running the above command
+            Runtime run  = Runtime.getRuntime();
+            Process process = run.exec(command);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            return baos.toString().trim();
+
+        } catch (IOException e) {
+            e.printStackTrace();
             return null;
         }
     }

@@ -80,7 +80,7 @@ public class MusicController {
         return false;
     }
 
-    public static boolean playSpotifyTracks(String deviceId, String playlistId, String trackId, JsonObject tracks, String accessToken) {
+    public static boolean playSpotifyTracks(String deviceId, String playlistId, String trackId, List<String> tracks, String accessToken) {
 
         if(deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
@@ -88,21 +88,16 @@ public class MusicController {
         }
 
         JsonObject obj = new JsonObject();
-        if(playlistId != null && playlistId.equals("2")) {
+        if(tracks != null && tracks.size() > 0) {
             if(trackId != null) {
                 JsonArray arr = new JsonArray();
-                List<String> trks = new ArrayList<>();
-                if (tracks != null && tracks.has("items")) {
 
-                    for(JsonElement array : tracks.get("items").getAsJsonArray()) {
-                        JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                        arr.add("spotify:track:" + track.get("id").getAsString());
-                        trks.add(track.get("id").getAsString());
-                    }
+                for(String track : tracks) {
+                    arr.add("spotify:track:" + track);
                 }
 
                 obj.add("uris", arr);
-                int index = trks.indexOf(trackId);
+                int index = tracks.indexOf(trackId);
                 if(index >= 0) {
                     JsonObject pos = new JsonObject();
                     pos.addProperty("position", index);

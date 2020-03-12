@@ -11,8 +11,8 @@ import java.awt.event.FocusEvent;
 public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
     Icon pauseIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/pause_new.png");
     Icon playIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/play_new.png");
-    Icon musicIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/music.png");
-    Icon emptyIcon = new ImageIcon(UIUtil.createImage(1, 1, 5));
+    Icon musicIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/track.png");
+    Icon emptyIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/empty.png");
     Icon playlistIcon;
 
     public PlaylistTreeRenderer(Icon playlistIcon) {

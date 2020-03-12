@@ -16,6 +16,10 @@ public class ListRenderer extends DefaultListCellRenderer {
             this.setIcon(((JLabel)value).getIcon());
             this.setBorder(new EmptyBorder(2, 10, 2, 0));
         }
+
+        if(!isSelected)
+            this.setBackground((Color) null);
+
         return this;
     }
 }

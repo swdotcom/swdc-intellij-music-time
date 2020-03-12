@@ -1,5 +1,6 @@
 package com.softwareco.intellij.plugin.music;
 
+import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.actions.MusicToolWindow;
 
@@ -24,53 +25,67 @@ public class PlaylistMouseListener extends MouseAdapter {
         /* if nothing is selected */
         if (node == null || node.getId() == null) return;
 
-        boolean activate = false;
-        if(MusicControlManager.currentTrackName == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-            activate = MusicControlManager.activateDevice(MusicControlManager.spotifyDeviceIds.get(0));
-            SoftwareCoUtils.updatePlayerControles();
-        }
-
-        /* retrieve the node that was selected */
-        if(node.isLeaf()) {
-            PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-            if(root.getId().equals(MusicControlManager.currentPlaylistId)
-                    && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                if(!activate) {
-                    if (MusicControlManager.defaultbtn.equals("pause"))
-                        PlayerControlManager.pauseSpotifyDevices();
-                    else if (MusicControlManager.defaultbtn.equals("play"))
-                        PlayerControlManager.playSpotifyDevices();
-                }
-            } else {
-                if(!activate && MusicControlManager.currentTrackName == null &&
-                        (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                    MusicControlManager.launchPlayer();
-                    MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
+        if(e.getButton() == 3) {
+            if(node.getId().length() > 5) {
+                JPopupMenu popupMenu;
+                if (node.isLeaf()) {
+                    PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
+                    popupMenu = PopupMenuBuilder.buildSongPopupMenu(node.getId(), root.getId());
                 } else {
-                    PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                    popupMenu = PopupMenuBuilder.buildPlaylistPopupMenu(node.getId());
                 }
+
+                popupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
-        } else {
-            if(node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                if(!activate) {
+        } else if(e.getButton() == 1) {
+
+            MusicControlManager.getSpotifyDevices();
+            /* retrieve the node that was selected */
+            if (node.isLeaf()) {
+                PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
+                if (root.getId().equals(MusicControlManager.currentPlaylistId)
+                        && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
                     if (MusicControlManager.defaultbtn.equals("pause"))
                         PlayerControlManager.pauseSpotifyDevices();
                     else if (MusicControlManager.defaultbtn.equals("play"))
                         PlayerControlManager.playSpotifyDevices();
+                } else {
+                    if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
+                        MusicControlManager.deviceActivated = false;
+                        boolean launchState = MusicControlManager.launchPlayer(false, true);
+                        if(launchState)
+                            MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
+                    } else {
+                        boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                        if(!isPlayed) {
+                            SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                        }
+                    }
                 }
             } else {
-                PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
-
-                if(child.getId() != null) {
-                    if (!activate && MusicControlManager.currentTrackName == null &&
-                            (MusicControlManager.playerType.equals("Web Player") || !SoftwareCoUtils.isSpotifyRunning())) {
-                        MusicControlManager.launchPlayer();
-                        MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
-                    } else {
-                        PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                    }
+                if (node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
+                    if (MusicControlManager.defaultbtn.equals("pause"))
+                        PlayerControlManager.pauseSpotifyDevices();
+                    else if (MusicControlManager.defaultbtn.equals("play"))
+                        PlayerControlManager.playSpotifyDevices();
                 } else {
-                    SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
+                    PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
+
+                    if (child.getId() != null) {
+                        if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
+                            MusicControlManager.deviceActivated = false;
+                            boolean launchState = MusicControlManager.launchPlayer(false, true);
+                            if(launchState)
+                                MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
+                        } else {
+                            boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
+                            if(!isPlayed) {
+                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                            }
+                        }
+                    } else {
+                        //SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
+                    }
                 }
             }
         }

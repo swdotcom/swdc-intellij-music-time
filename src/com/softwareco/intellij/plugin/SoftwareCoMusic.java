@@ -11,9 +11,11 @@ import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.util.messages.MessageBus;
 import com.intellij.util.messages.MessageBusConnection;
 import com.softwareco.intellij.plugin.music.MusicControlManager;
+import com.softwareco.intellij.plugin.music.PlayListCommands;
 import com.softwareco.intellij.plugin.music.PlaylistManager;
 
 import java.util.logging.Logger;
@@ -68,8 +70,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
     public void initComponent() {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
         SoftwareCoSessionManager.isServerActive = serverIsOnline;
+        boolean musicFileExist = SoftwareCoSessionManager.musicDataFileExists();
+        if(musicFileExist) {
+            String musicFile = SoftwareCoSessionManager.getMusicDataFile(false);
+            SoftwareCoSessionManager.deleteFile(musicFile);
+        }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
-        //boolean musicDataFileExists = SoftwareCoSessionManager.musicDataFileExists();
         boolean jwtExists = SoftwareCoSessionManager.jwtExists();
         if (!sessionFileExists || !jwtExists) {
             if (!serverIsOnline) {
@@ -125,11 +131,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
         log.info(plugName + ": Finished initializing SoftwareCoMusic plugin");
 
-        // run the music manager task every 15 seconds
-        final Runnable musicTrackRunner = () -> musicMgr.processMusicTrackInfo();
-        asyncManager.scheduleService(
-                musicTrackRunner, "musicTrackRunner", 30, 15);
-
         // check user status every 3 minute
         final Runnable userStatusRunner = () -> SoftwareCoUtils.getUserStatus();
         asyncManager.scheduleService(
@@ -164,6 +165,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     private void initializeUserInfo(boolean initializedUser) {
+        if(SoftwareCoUtils.jwt != null)
+            SoftwareCoUtils.getUserDetails(true);
 
         SoftwareCoUtils.getUserStatus();
 
@@ -176,10 +179,23 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 MusicControlManager.userStatus = obj.get("product").getAsString();
 
             PlaylistManager.getUserPlaylists(); // API call
+            PlayListCommands.updatePlaylists(3, null);
+            PlayListCommands.getGenre(); // API call
+            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+            MusicControlManager.getSpotifyDevices(); // API call
+
             MusicControlManager.lazyUpdatePlayer();
         }
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
+    }
+
+    public static String getRootPath() {
+        Project[] projects = ProjectManager.getInstance().getOpenProjects();
+        if (projects != null && projects.length > 0) {
+            return projects[0].getBasePath();
+        }
+        return null;
     }
 
     private void sendOfflineDataRunner() {

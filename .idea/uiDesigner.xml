@@ -81,7 +81,7 @@
           <preferred-size width="150" height="50" />
         </default-constraints>
       </item>
-      <item class="javax.swing.JTree" icon="/com/intellij/uiDesigner/icons/tree.png" removable="false" auto-create-binding="true" can-attach-label="false">
+      <item class="javax.swing.JTree" icon="com/softwareco/intellij/plugin/assets/spotify.png" removable="false" auto-create-binding="true" can-attach-label="false">
         <default-constraints vsize-policy="6" hsize-policy="6" anchor="0" fill="3">
           <preferred-size width="150" height="50" />
         </default-constraints>

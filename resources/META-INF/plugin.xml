@@ -76,13 +76,13 @@ We provide 90 days of data history for free, forever. In the future, we will pro
 
   <extensions defaultExtensionNs="com.intellij">
 <postStartupActivity implementation="com.softwareco.intellij.plugin.PluginPostStartupActivity"/>
-<toolWindow anchor="right" factoryClass="com.softwareco.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/softwareco/intellij/plugin/assets/playlist.png" id="PlayList"/>
+<toolWindow anchor="left" factoryClass="com.softwareco.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/softwareco/intellij/plugin/assets/paw-tab.png" id="Music Time"/>
 </extensions>
 
   <actions>
 <group class="com.softwareco.intellij.plugin.actions.CustomMusicActionGroup" description="Music Time menu actions" id="CustomMusicActionGroup" text="Music Time">
 <add-to-group anchor="before" group-id="MainMenu" relative-to-action="HelpMenu"/>
-<action class="com.softwareco.intellij.plugin.actions.MusicDashboardAction" description="View your latest music metrics on editor" id="MusicDashboardAction" text="Music Time Dashboard"/>
+<action class="com.softwareco.intellij.plugin.actions.MusicDashboardAction" description="View your latest music metrics on editor" id="MusicDashboardAction" text="Open dashboard"/>
 <action class="com.softwareco.intellij.plugin.actions.SubmitGitIssueAction" description="Encounter a bug? Submit an issue on our GitHub page" id="SubmitGitIssueAction" text="Submit an issue on GitHub"/>
 <action class="com.softwareco.intellij.plugin.actions.SubmitFeedbackAction" description="Send us an email at cody@software.com" id="SubmitFeedbackAction" text="Submit Feedback"/>
 <separator/>

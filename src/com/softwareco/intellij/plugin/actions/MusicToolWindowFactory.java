@@ -14,5 +14,6 @@ public class MusicToolWindowFactory implements ToolWindowFactory {
         ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
         Content content = contentFactory.createContent(toolWindow1.getContent(), "", false);
         toolWindow.getContentManager().addContent(content);
+        //toolWindow.show();
     }
 }
