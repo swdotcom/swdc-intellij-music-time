@@ -222,12 +222,12 @@ public class PlayListCommands {
                     queryParams.put("target_danceability", "1");
                     break;
                 case "Instrumental":
-                    queryParams.put("min_instrumentalness", "0.8");
-                    queryParams.put("target_instrumentalness", "1");
+                    queryParams.put("min_instrumentalness", "0.0");
+                    queryParams.put("target_instrumentalness", "0.1");
                     break;
                 case "Quiet music":
-                    queryParams.put("max_loudness", "-13");
-                    queryParams.put("target_loudness", "-50");
+                    queryParams.put("max_loudness", "-5");
+                    queryParams.put("target_loudness", "-10");
                     break;
             }
 
@@ -241,20 +241,22 @@ public class PlayListCommands {
     public static void updateCurrentRecommended() {
         if(recommendedTracks != null) {
             JsonArray recommendArray = recommendedTracks.getAsJsonArray("tracks");
-            if (currentBatch < 6) {
-                currentRecommendedTracks = new JsonObject();
-                JsonArray array = new JsonArray();
-                for(int i = 0; i < 50; i++) {
-                    array.add(recommendArray.get(i));
+            if(recommendArray.size() > 0 && recommendArray.size() == 100) {
+                if (currentBatch < 6) {
+                    currentRecommendedTracks = new JsonObject();
+                    JsonArray array = new JsonArray();
+                    for (int i = 0; i < 50; i++) {
+                        array.add(recommendArray.get(i));
+                    }
+                    currentRecommendedTracks.add("tracks", array);
+                } else {
+                    currentRecommendedTracks = new JsonObject();
+                    JsonArray array = new JsonArray();
+                    for (int i = 50; i < recommendArray.size(); i++) {
+                        array.add(recommendArray.get(i));
+                    }
+                    currentRecommendedTracks.add("tracks", array);
                 }
-                currentRecommendedTracks.add("tracks", array);
-            } else {
-                currentRecommendedTracks = new JsonObject();
-                JsonArray array = new JsonArray();
-                for(int i = 50; i < recommendArray.size(); i++) {
-                    array.add(recommendArray.get(i));
-                }
-                currentRecommendedTracks.add("tracks", array);
             }
         }
     }
@@ -336,6 +338,7 @@ public class PlayListCommands {
 
         SoftwareResponse resp = (SoftwareResponse) PlaylistController.createPlaylist(playlistName);
         if (resp.isOk()) {
+            updatePlaylists(0, null);
             return resp.getJsonObj();
         }
         return null;

@@ -182,7 +182,7 @@ public class PlaylistManager {
             }
             return resp.getJsonObj();
         } else if(resp.getCode() == 204) {
-            MusicControlManager.currentDeviceName = null;
+            //MusicControlManager.currentDeviceName = null;
             MusicControlManager.currentTrackName = null;
             SoftwareCoSessionManager.playerState = 0;
             MusicControlManager.defaultbtn = "play";
@@ -262,7 +262,7 @@ public class PlaylistManager {
                 LOG.warning("Music Time: Error trying to read and json parse the current track, error: " + e.getMessage());
             }
         } else {
-            MusicControlManager.currentDeviceName = null;
+            //MusicControlManager.currentDeviceName = null;
             MusicControlManager.currentTrackName = null;
             SoftwareCoSessionManager.playerState = 0;
             MusicControlManager.defaultbtn = "play";

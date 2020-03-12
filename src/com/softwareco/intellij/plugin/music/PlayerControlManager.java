@@ -59,6 +59,8 @@ public class PlayerControlManager {
                         }
                     }).start();
                     return true;
+                } else {
+                    return false;
                 }
             }
         }

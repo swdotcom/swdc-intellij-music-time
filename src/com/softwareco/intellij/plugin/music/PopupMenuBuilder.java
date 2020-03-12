@@ -2,8 +2,12 @@ package com.softwareco.intellij.plugin.music;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.ide.BrowserUtil;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.IconLoader;
+import com.softwareco.intellij.plugin.PopupNotifier;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.slack.SlackControlManager;
 
@@ -72,37 +76,63 @@ public class PopupMenuBuilder {
         addPlaylist.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String[] playlists;
                 if(PlayListCommands.userPlaylistIds.size() > 0) {
-                    String[] playlists = new String[PlayListCommands.userPlaylistIds.size()];
+                    playlists = new String[PlayListCommands.userPlaylistIds.size() + 1];
                     int counter = 0;
+                    playlists[counter] = "Create a new playlist";
+                    counter++;
                     for (String id : PlayListCommands.userPlaylistIds) {
                         playlists[counter] = PlayListCommands.userPlaylists.get(id);
                         counter++;
                     }
-                    int index = SoftwareCoUtils.showMsgInputPrompt("Select Playlist", "Spotify", spotifyIcon, playlists);
-                    if(index >= 0) {
-                        String playlistName = null;
-                        String error = null;
-                        Set<String> tracks = new HashSet<>();
-                        tracks.add(trackId);
-                        JsonObject resp = PlayListCommands.addTracksInPlaylist(PlayListCommands.userPlaylistIds.get(index), tracks);
+                } else {
+                    playlists = new String[] {"Create a new playlist"};
+                }
+                int index = SoftwareCoUtils.showMsgInputPrompt("Select Playlist", "Spotify", spotifyIcon, playlists);
+                if(index >= 0) {
+                    String playlistName = null;
+                    String error = null;
+                    Set<String> tracks = new HashSet<>();
+                    tracks.add(trackId);
+                    if(index == 0) {
+                        playlistName = SoftwareCoUtils.showInputPrompt("Enter playlist name", "Spotify", spotifyIcon);
+                        if (playlistName != null) {
+                            JsonObject status = PlayListCommands.createPlaylist(playlistName);
+                            if (status != null) {
+                                JsonObject resp = PlayListCommands.addTracksInPlaylist(status.get("id").getAsString(), tracks);
+                                if (resp != null) {
+                                    if (resp.has("error")) {
+                                        JsonObject err = resp.get("error").getAsJsonObject();
+                                        error = err.get("message").getAsString();
+                                    } else {
+                                        PlayListCommands.updatePlaylists(4, status.get("id").getAsString());
+                                    }
+                                }
+                            } else {
+                                playlistName = null;
+                                error = "Unable to create playlist, try again";
+                            }
+                        } else {
+                            error = "Try again";
+                        }
+                    } else {
+                        JsonObject resp = PlayListCommands.addTracksInPlaylist(PlayListCommands.userPlaylistIds.get(index - 1), tracks);
                         if (resp != null) {
-                            if(resp.has("error")) {
+                            if (resp.has("error")) {
                                 JsonObject err = resp.get("error").getAsJsonObject();
                                 error = err.get("message").getAsString();
                             } else {
-                                PlayListCommands.updatePlaylists(4, PlayListCommands.userPlaylistIds.get(index));
+                                PlayListCommands.updatePlaylists(4, PlayListCommands.userPlaylistIds.get(index - 1));
                                 playlistName = playlists[index];
                             }
                         }
-
-                        if (playlistName != null)
-                            SoftwareCoUtils.showMsgPrompt("Added to '" + playlistName + "'");
-                        else
-                            SoftwareCoUtils.showMsgPrompt("Failed to add: " + error);
                     }
-                } else {
-                    SoftwareCoUtils.showMsgPrompt("No user playlists found");
+
+                    if (playlistName != null)
+                        SoftwareCoUtils.showMsgPrompt("Added to '" + playlistName + "'");
+                    else
+                        SoftwareCoUtils.showMsgPrompt("Failed to add: " + error);
                 }
             }
         });

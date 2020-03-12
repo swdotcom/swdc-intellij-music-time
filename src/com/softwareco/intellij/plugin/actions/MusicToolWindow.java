@@ -50,10 +50,10 @@ public class MusicToolWindow {
     private static int refreshButtonState = 0;
     private static int recommendRefreshState = 0;
     private static int refreshAIButtonState = 0;
+    private static int createPlaylistButtonState = 0;
     private static int counter = 0;
     public static String[] rec_categories = {"Familiar", "Happy", "Energetic", "Danceable", "Instrumental", "Quiet music"};
     public static String[] rec_genres;
-    private static Rectangle scrollRect;
 
     public MusicToolWindow(ToolWindow toolWindow) {
         playlistWindowContent.setFocusable(true);
@@ -66,8 +66,10 @@ public class MusicToolWindow {
                     if (MusicControlManager.spotifyCacheState) {
                         Set<String> keys = playlists.keySet();
                         for(String key : keys) {
-                            PlaylistTree tree = playlists.get(key);
-                            tree.setExpandedState(tree.getPathForRow(0), false);
+                            if(!key.equals(PlayListCommands.recommendedPlaylistId)) {
+                                PlaylistTree tree = playlists.get(key);
+                                tree.setExpandedState(tree.getPathForRow(0), false);
+                            }
                         }
                         PlayListCommands.updatePlaylists(0, null);
                     } else {
@@ -192,7 +194,7 @@ public class MusicToolWindow {
         scrollPane.updateUI();
         scrollPane.setVisible(true);
         scrollPane.revalidate();
-        scrollRect = scrollPane.getBounds();
+        //scrollRect = scrollPane.getBounds();
         recommendScroll.updateUI();
         recommendScroll.setVisible(true);
         recommendScroll.revalidate();
@@ -234,7 +236,6 @@ public class MusicToolWindow {
     }
 
     public synchronized void rebuildPlaylistTreeView() {
-        scrollRect = scrollPane.getBounds();
         // Get VSpacer component
         Component component = dataPanel.getComponent(dataPanel.getComponentCount() - 1);
 
@@ -292,8 +293,12 @@ public class MusicToolWindow {
             dataPanel.updateUI();
             dataPanel.setVisible(true);
 
+            playlistWindowContent.updateUI();
+            playlistWindowContent.setVisible(true);
+            playlistWindowContent.revalidate();
+
         } else {
-            Rectangle rect = dataPanel.getBounds();
+            //Rectangle rect = dataPanel.getBounds();
             dataPanel.removeAll();
             dataPanel.setBackground((Color) null);
             dataPanel.setFocusable(true);
@@ -387,6 +392,8 @@ public class MusicToolWindow {
             dataPanel.add(softwarePlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
 //*********************************************************************************************************************************************
             DefaultListModel refreshAIModel = new DefaultListModel();
+
+            /* Generate or Refresh AI playlist */
             Icon gearIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/generate.png");
             JLabel aiPlaylist = new JLabel();
             aiPlaylist.setIcon(gearIcon);
@@ -396,6 +403,13 @@ public class MusicToolWindow {
                 aiPlaylist.setText("Generate my AI playlist");
             }
             refreshAIModel.add(0, aiPlaylist);
+
+            /* Create playlist */
+            Icon addIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/add.png");
+            JLabel createPlaylist = new JLabel();
+            createPlaylist.setIcon(addIcon);
+            createPlaylist.setText("Create Playlist");
+            refreshAIModel.add(1, createPlaylist);
 
             JList<JLabel> refreshAIList = new JList<>(refreshAIModel);
             refreshAIList.setVisibleRowCount(1);
@@ -414,10 +428,33 @@ public class MusicToolWindow {
                 public void mouseClicked(MouseEvent e) {
                     super.mouseClicked(e);
 
-                    if(refreshAIButtonState == 0) {
+                    JList list = (JList) e.getSource();
+                    JLabel label = (JLabel) list.getSelectedValue();
+
+                    if (label.getText().equals("Create Playlist")) {
+                        if(createPlaylistButtonState == 0) {
+                            createPlaylistButtonState = 1;
+                            String playlistName = SoftwareCoUtils.showInputPrompt("Enter playlist name", "Spotify", spotifyIcon);
+                            if (playlistName != null) {
+                                JsonObject status = PlayListCommands.createPlaylist(playlistName);
+                                if (status != null)
+                                    SoftwareCoUtils.showMsgPrompt("Your playlist was created successfully");
+                                else
+                                    SoftwareCoUtils.showMsgPrompt("Unable to create playlist, try again");
+                            }
+
+                            new Thread(() -> {
+                                try {
+                                    Thread.sleep(1000);
+                                    createPlaylistButtonState = 0;
+                                } catch (Exception ex) {
+                                    System.err.println(ex);
+                                }
+                            }).start();
+                        }
+                    } else if(refreshAIButtonState == 0) {
                         refreshAIButtonState = 1;
-                        JList list = (JList) e.getSource();
-                        JLabel label = (JLabel) list.getSelectedValue();
+
                         if (label.getText().equals("Refresh my AI playlist")) {
                             PlayListCommands.refreshAIPlaylist();
                             SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was refreshed successfully");
@@ -449,7 +486,6 @@ public class MusicToolWindow {
 
 //*********************************************************************************************************************************************
             // Software Top 40 Playlist
-            Icon pawPurpleIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw-purple.png");
             PlaylistTreeNode softwarePlaylist = new PlaylistTreeNode("Software Top 40", PlayListCommands.topSpotifyPlaylistId);
             DefaultTreeModel softwarePlaylistModel = new DefaultTreeModel(softwarePlaylist);
             softwarePlaylist.setModel(softwarePlaylistModel);
@@ -482,7 +518,7 @@ public class MusicToolWindow {
             } else {
                 softwarePlaylistTree = new PlaylistTree(softwarePlaylistModel);
                 softwarePlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                softwarePlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawPurpleIcon));
+                softwarePlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
                 softwarePlaylistTree.addMouseListener(new PlaylistMouseListener(softwarePlaylistTree));
 
@@ -641,17 +677,16 @@ public class MusicToolWindow {
                 counter++;
             }
 
-//*********************************************************************************************************************************************
-            // Get User Playlists
+ //*********************************************************************************************************************
+            // Add User Playlists
             if(PlayListCommands.userPlaylistIds.size() > 0) {
-                Icon playlistIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/playlist.png");
                 //*****************************************************************************************************************************
                 JSeparator userPlaylistSeparator = new JSeparator();
                 userPlaylistSeparator.setAlignmentY(0.0f);
                 userPlaylistSeparator.setForeground(new Color(58, 86, 187));
                 dataPanel.add(userPlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
                 //*****************************************************************************************************************************
-
+                Icon playlistIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/playlist.png");
                 for(String playlistId : PlayListCommands.userPlaylistIds) {
                     PlaylistTreeNode userPlaylist = new PlaylistTreeNode(PlayListCommands.userPlaylists.get(playlistId), playlistId);
                     DefaultTreeModel userPlaylistModel = new DefaultTreeModel(userPlaylist);
@@ -666,7 +701,7 @@ public class MusicToolWindow {
                         } else {
                             for (JsonElement array : items) {
                                 JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                                String trackName = track.get("name").getAsString();
+                                String trackName = track.get("name").getAsString(); // inside track we can check "available_markets": []
                                 if(trackName.length() > 50) {
                                     trackName = trackName.substring(0, 46) + "...";
                                 }
@@ -720,20 +755,22 @@ public class MusicToolWindow {
             // Add VSpacer at last
             dataPanel.add(component, gridConstraints(dataPanel.getComponentCount(), 6, 1, 0, 2, 0));
 
-            dataPanel.setBounds(rect);
+            //dataPanel.setBounds(rect);
             dataPanel.updateUI();
             dataPanel.setVisible(true);
-            scrollPane.setBounds(scrollRect);
+
             scrollPane.repaint();
             scrollPane.updateUI();
             scrollPane.revalidate();
+
+            playlistWindowContent.updateUI();
+            playlistWindowContent.setVisible(true);
+            playlistWindowContent.revalidate();
         }
 
     }
 
     public synchronized void rebuildRecommendedTreeView() {
-        // Get VSpacer component
-        //Component component = recommendPanel.getComponent(recommendPanel.getComponentCount() - 1);
 
         if(!SoftwareCoUtils.isSpotifyConncted()) {
             recommendPanel.removeAll();
@@ -784,12 +821,16 @@ public class MusicToolWindow {
             actionList.setBackground((Color)null);
             recommendPanel.add(actionList, gridConstraints(recommendPanel.getComponentCount(), 1, 2, 0, 3, 0));
 
-            // Add VSpacer at last
-            //recommendPanel.add(component, gridConstraints(recommendPanel.getComponentCount(), 6, 1, 0, 2, 0));
-
             recommendPanel.updateUI();
             recommendPanel.setVisible(true);
 
+            recommendScroll.repaint();
+            recommendScroll.updateUI();
+            recommendScroll.revalidate();
+
+            playlistWindowContent.updateUI();
+            playlistWindowContent.setVisible(true);
+            playlistWindowContent.revalidate();
         } else {
             recommendPanel.removeAll();
             category.setVisible(true);
@@ -805,7 +846,8 @@ public class MusicToolWindow {
             DefaultTreeModel recommendedPlaylistModel = new DefaultTreeModel(recommendedPlaylist);
             recommendedPlaylist.setModel(recommendedPlaylistModel);
             JsonObject obj = PlayListCommands.recommendedTracks;
-            if (obj != null && obj.has("tracks")) {
+            if (obj != null && obj.has("tracks") && obj.getAsJsonArray("tracks").size() > 0
+                    && obj.getAsJsonArray("tracks").size() == 100) {
                 JsonArray tracks = obj.getAsJsonArray("tracks");
                 int index = (PlayListCommands.currentBatch * 10) - 10;
                 for (int i = 0; i < 10; i++) {
@@ -833,8 +875,20 @@ public class MusicToolWindow {
                 recommendedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
                 recommendedPlaylistTree.addMouseListener(new PlaylistMouseListener(recommendedPlaylistTree));
+                recommendedPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
+                    @Override
+                    public void treeExpanded(TreeExpansionEvent event) {
+                        refresh();
+                    }
+
+                    @Override
+                    public void treeCollapsed(TreeExpansionEvent event) {
+                        refresh();
+                    }
+                });
 
                 recommendedPlaylistTree.addMouseMotionListener(new TreeScanner());
+                recommendedPlaylistTree.setExpandedState(new TreePath(recommendedPlaylistModel.getPathToRoot(recommendedPlaylist)), true);
 
                 playlists.put(PlayListCommands.recommendedPlaylistId, recommendedPlaylistTree);
             }
@@ -843,17 +897,22 @@ public class MusicToolWindow {
             recommendedPlaylistRenderer.setBorderSelectionColor(new Color(0, 0, 0, 0));
             recommendedPlaylistTree.setBackground((Color) null);
 
-            recommendedPlaylistTree.setExpandedState(new TreePath(recommendedPlaylistModel.getPathToRoot(recommendedPlaylist)), true);
+            recommendedPlaylistTree.setExpandedState(new TreePath(recommendedPlaylistModel.getPathToRoot(recommendedPlaylist)), recommendedPlaylistTree.expandState);
 
             recommendPanel.add(recommendedPlaylistTree, gridConstraints(recommendPanel.getComponentCount(), 1, 6, 0, 3, 0));
 
 //*********************************************************************************************************************************************
-            // Add VSpacer at last
-            //recommendPanel.add(component, gridConstraints(recommendPanel.getComponentCount(), 6, 1, 0, 2, 0));
 
             recommendPanel.updateUI();
             recommendPanel.setVisible(true);
 
+            recommendScroll.repaint();
+            recommendScroll.updateUI();
+            recommendScroll.revalidate();
+
+            playlistWindowContent.updateUI();
+            playlistWindowContent.setVisible(true);
+            playlistWindowContent.revalidate();
         }
 
     }
@@ -895,7 +954,10 @@ public class MusicToolWindow {
                     }
                 }).start();
             } else if(MusicControlManager.deviceActivated) {
-                PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                if(!isPlayed) {
+                    SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                }
                 MusicControlManager.deviceActivated = false;
             }
         }

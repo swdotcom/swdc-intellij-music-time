@@ -39,6 +39,7 @@ public class PlaylistMouseListener extends MouseAdapter {
             }
         } else if(e.getButton() == 1) {
 
+            MusicControlManager.getSpotifyDevices();
             /* retrieve the node that was selected */
             if (node.isLeaf()) {
                 PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
@@ -49,11 +50,16 @@ public class PlaylistMouseListener extends MouseAdapter {
                     else if (MusicControlManager.defaultbtn.equals("play"))
                         PlayerControlManager.playSpotifyDevices();
                 } else {
-                    if (MusicControlManager.currentTrackName == null) {
-                        MusicControlManager.launchPlayer(false, true);
-                        MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
+                    if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
+                        MusicControlManager.deviceActivated = false;
+                        boolean launchState = MusicControlManager.launchPlayer(false, true);
+                        if(launchState)
+                            MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
                     } else {
-                        PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                        boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                        if(!isPlayed) {
+                            SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                        }
                     }
                 }
             } else {
@@ -66,11 +72,16 @@ public class PlaylistMouseListener extends MouseAdapter {
                     PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
 
                     if (child.getId() != null) {
-                        if (MusicControlManager.currentTrackName == null) {
-                            MusicControlManager.launchPlayer(false, true);
-                            MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
+                        if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
+                            MusicControlManager.deviceActivated = false;
+                            boolean launchState = MusicControlManager.launchPlayer(false, true);
+                            if(launchState)
+                                MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
                         } else {
-                            PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
+                            boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
+                            if(!isPlayed) {
+                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                            }
                         }
                     } else {
                         //SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");

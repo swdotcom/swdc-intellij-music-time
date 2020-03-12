@@ -11,6 +11,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.SystemInfo;
@@ -47,6 +48,7 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class SoftwareCoUtils {
 
@@ -1061,6 +1063,33 @@ public class SoftwareCoUtils {
 
     public static int showMsgInputPrompt(String message, String title, Icon icon, String[] options) {
         return Messages.showChooseDialog(message, title, options, options[0], icon);
+    }
+
+    public static String showInputPrompt(String message, String title, Icon icon) {
+        return Messages.showInputDialog(message, title, icon, "", getRegexInputValidator());
+    }
+
+    private static InputValidator getRegexInputValidator() {
+        return new InputValidator() {
+            @Override
+            public boolean checkInput(String string) {
+                try {
+                    if (string == null || string.trim().isEmpty()) {
+                        //do not allow null or blank entries
+                        return false;
+                    }
+                    Pattern.compile(string);
+                    return true;
+                } catch (PatternSyntaxException e) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean canClose(String s) {
+                return true;
+            }
+        };
     }
 
     public static class TimesData {
