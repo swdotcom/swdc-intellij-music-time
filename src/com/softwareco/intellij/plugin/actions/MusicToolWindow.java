@@ -308,6 +308,14 @@ public class MusicToolWindow {
 
             DefaultListModel listModel = new DefaultListModel();
 
+            /* Learn more */
+            Icon readmeIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/readme.png");
+            JLabel learnMore = new JLabel();
+            learnMore.setIcon(readmeIcon);
+            learnMore.setText("Learn more");
+            listModel.add(listIndex, learnMore);
+            listIndex ++;
+
             /* Web analytics */
             Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
             JLabel webAnalytics = new JLabel();
@@ -369,6 +377,8 @@ public class MusicToolWindow {
                     } else if(label.getText().equals("Open dashboard")) {
                         //Code to open web dashboard
                         SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
+                    } else if(label.getText().equals("Learn more")) {
+                        SoftwareCoSessionManager.getInstance().launchReadMeFile();
                     } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to")) {
                         MusicControlManager.launchPlayer(false, false);
                     }

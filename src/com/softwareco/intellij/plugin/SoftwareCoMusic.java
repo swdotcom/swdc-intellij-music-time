@@ -47,8 +47,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
             IdeaPluginDescriptor pluginDescriptor = PluginManager.getPlugin(PluginId.getId("com.softwareco.intellij.plugin.musictime"));
 
             SoftwareCoUtils.VERSION = pluginDescriptor.getVersion();
-            //log.log(Level.INFO, "Root Path: " + pluginDescriptor.getPath().getAbsolutePath());
-            SoftwareCoSessionManager.pluginRootPath = pluginDescriptor.getPath().getAbsolutePath();
         }
         return SoftwareCoUtils.VERSION;
     }

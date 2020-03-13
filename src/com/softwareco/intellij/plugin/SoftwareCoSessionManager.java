@@ -23,6 +23,7 @@ import org.apache.http.client.methods.HttpPost;
 
 import java.awt.event.MouseEvent;
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -821,14 +822,15 @@ public class SoftwareCoSessionManager {
         FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
     }
 
-    public static void launchReadMeFile() {
+    public void launchReadMeFile() {
         Project p = getOpenProject();
         if (p == null) {
             return;
         }
 
-        String readMeFile = SoftwareCoSessionManager.getLocalREADMEFile();
-        File f = new File(readMeFile);
+        // Getting Resource as file object
+        URL url = getClass().getResource("/com/softwareco/intellij/plugin/assets/README.txt");
+        File f = new File(url.getFile());
 
         VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
         OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
