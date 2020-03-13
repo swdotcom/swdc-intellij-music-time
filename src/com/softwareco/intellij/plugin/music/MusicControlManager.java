@@ -260,13 +260,18 @@ public class MusicControlManager {
                 }
             } else {
                 if(spotifyDeviceIds.size() == 0) {
-                    String infoMsg = "Spotify is currently not running, would you like to launch the \n" +
-                            "desktop instead of the web player?";
-                    int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Not Now", "Yes", Messages.getInformationIcon());
-                    if (response == 0) {
-                        launchWebPlayer(true);
-                        return true;
-                    } else if (response == 2) {
+                    if(userStatus != null && userStatus.equals("premium")) {
+                        String infoMsg = "Spotify is currently not running, would you like to launch the \n" +
+                                "desktop instead of the web player?";
+                        int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Not Now", "Yes", Messages.getInformationIcon());
+                        if (response == 0) {
+                            launchWebPlayer(true);
+                            return true;
+                        } else if (response == 2) {
+                            launchDesktopPlayer(true);
+                            return true;
+                        }
+                    } else {
                         launchDesktopPlayer(true);
                         return true;
                     }

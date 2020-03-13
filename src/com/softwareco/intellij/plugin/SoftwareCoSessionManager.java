@@ -11,8 +11,10 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
+import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.softwareco.intellij.plugin.music.*;
@@ -29,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SoftwareCoSessionManager {
@@ -36,6 +39,7 @@ public class SoftwareCoSessionManager {
     private static SoftwareCoSessionManager instance = null;
     public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
     private static Map<String, String> sessionMap = new HashMap<>();
+    public static String pluginRootPath = null;
 
     private static JsonArray keystrokeData = new JsonArray();
     public static int playerState = 0; // 0 = inactive & 1 = active
@@ -160,11 +164,24 @@ public class SoftwareCoSessionManager {
     }
 
     private static String getMusicDashboardFile() {
+        String path = new File(".").getAbsolutePath();
+        log.log(Level.INFO, "Root Path: " + path);
         String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\musicTime.txt";
         } else {
             file += "/musicTime.txt";
+        }
+        return file;
+    }
+
+    private static String getLocalREADMEFile() {
+        //VirtualFile root = ModuleRootManager.getInstance(ModuleManager.getInstance(getOpenProject()).getModules()[0]).getContentRoots()[0];
+        String file = pluginRootPath;
+        if (SoftwareCoUtils.isWindows()) {
+            file += "\\README.txt";
+        } else {
+            file += "/README.txt";
         }
         return file;
     }
@@ -245,12 +262,7 @@ public class SoftwareCoSessionManager {
             } catch (Exception e) {
                 log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
             }
-        }
-//        else if(playerState == 1) {
-//            JsonObject obj = (JsonObject) SoftwareCoMusic.jsonParser.parse(payload);
-//            keystrokeData.add(obj);
-//        }
-        else if(playerState == 0) {
+        } else if(playerState == 0) {
             String dataStoreFile = getMusicDataFile(false);
             deleteFile(dataStoreFile);
             keystrokeData = new JsonArray();
@@ -803,6 +815,20 @@ public class SoftwareCoSessionManager {
 
         String musicTimeFile = SoftwareCoSessionManager.getMusicDashboardFile();
         File f = new File(musicTimeFile);
+
+        VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
+        OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
+        FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+    }
+
+    public static void launchReadMeFile() {
+        Project p = getOpenProject();
+        if (p == null) {
+            return;
+        }
+
+        String readMeFile = SoftwareCoSessionManager.getLocalREADMEFile();
+        File f = new File(readMeFile);
 
         VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
         OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);

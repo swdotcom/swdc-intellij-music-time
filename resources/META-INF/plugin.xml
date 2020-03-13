@@ -10,11 +10,11 @@
 <h1 id="musictimeforintellij">Music Time for IntelliJ</h1>
 
 <blockquote>
-<p><strong>Music Time</strong> is an open source plugin that provides music listening metrics right in your code editor.</p>
+<p><strong>Music Time</strong> is an IntelliJ plugin that discovers the most productive music to listen to as you code.</p>
 </blockquote>
 
 <p align="center" style="margin: 0 10%">
-<img src="https://raw.githubusercontent.com/swdotcom/swdc-intellij/master/resources/assets/intellij-dashboard.gif" alt="Code Time for IntelliJ" />
+<img src="https://raw.githubusercontent.com/swdotcom/swdc-intellij/master/resources/assets/intellij-dashboard.gif" alt="Music Time for IntelliJ" />
 </p>
 
 <h2 id="powerupyourdevelopment">Power up your development</h2>

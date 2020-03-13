@@ -18,6 +18,7 @@ public class PlaylistManager {
     public static final Logger LOG = Logger.getLogger("PlaylistManager");
     public static String previousTrack = "";
     public static JsonObject previousTrackData = null;
+    public static boolean skipPrevious = false;
 
     public static boolean pauseTrigger = false;
     public static long pauseTriggerTime = 0;
@@ -160,6 +161,16 @@ public class PlaylistManager {
                             SoftwareCoSessionManager.processMusicPayload(PlaylistManager.previousTrackData);
                         }
                         SoftwareCoSessionManager.playerState = 0;
+                    }
+                }
+
+                if(tracks.has("actions")) {
+                    JsonObject obj = tracks.getAsJsonObject("actions");
+                    JsonObject actions = obj.getAsJsonObject("disallows");
+                    if(actions.has("skipping_prev")) {
+                        skipPrevious = actions.get("skipping_prev").getAsBoolean();
+                    } else {
+                        skipPrevious = false;
                     }
                 }
 

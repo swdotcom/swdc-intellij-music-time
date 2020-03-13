@@ -381,7 +381,6 @@ public class SoftwareCoUtils {
                         String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
                         String unlikeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_unlikeicon";
                         String preiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_preicon";
-                        String stopiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_stopicon";
                         String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
                         String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
                         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
@@ -399,9 +398,6 @@ public class SoftwareCoUtils {
                         }
                         if (statusBar.getWidget(preiconId) != null) {
                             statusBar.removeWidget(preiconId);
-                        }
-                        if (statusBar.getWidget(stopiconId) != null) {
-                            statusBar.removeWidget(stopiconId);
                         }
                         if (statusBar.getWidget(pauseiconId) != null) {
                             statusBar.removeWidget(pauseiconId);
@@ -423,11 +419,6 @@ public class SoftwareCoUtils {
                             String headphoneIconVal = kpmIcon;
                             final String headphoneMsgVal = kpmMsg != null ? kpmMsg : pluginName;
                             if (headphoneIconVal != null) {
-//                                SoftwareCoStatusBarIconWidget headphoneIconWidget = buildStatusBarIconWidget(
-//                                        headphoneIconVal, tooltip, headphoneiconId);
-//                                statusBar.addWidget(headphoneIconWidget, headphoneiconId);
-//                                statusBar.updateWidget(headphoneiconId);
-
                                 SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
                                         headphoneMsgVal, tooltip, connectspotifyId);
                                 statusBar.addWidget(kpmWidget, connectspotifyId);
@@ -438,7 +429,6 @@ public class SoftwareCoUtils {
                             String likeIcon = "like.png";
                             String unlikeIcon = "unlike.png";
                             String preIcon = "previous.png";
-                            String stopIcon = "stop.png";
                             String pauseIcon = "pause.png";
                             String playIcon = "play.png";
                             String nextIcon = "next.png";
@@ -469,15 +459,12 @@ public class SoftwareCoUtils {
                                         statusBar.updateWidget(unlikeiconId);
                                     }
 
-                                    SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
-                                            preIcon, "previous", preiconId);
-                                    statusBar.addWidget(preIconWidget, preiconId);
-                                    statusBar.updateWidget(preiconId);
-
-//                                    SoftwareCoStatusBarIconWidget stopIconWidget = buildStatusBarIconWidget(
-//                                            stopIcon, "stop", stopiconId);
-//                                    statusBar.addWidget(stopIconWidget, stopiconId);
-//                                    statusBar.updateWidget(stopiconId);
+                                    if(!PlaylistManager.skipPrevious) {
+                                        SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
+                                                preIcon, "previous", preiconId);
+                                        statusBar.addWidget(preIconWidget, preiconId);
+                                        statusBar.updateWidget(preiconId);
+                                    }
 
                                     if (!MusicControlManager.defaultbtn.equals("play")) {
                                         SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
