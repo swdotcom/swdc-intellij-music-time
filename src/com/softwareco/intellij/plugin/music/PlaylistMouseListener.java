@@ -3,6 +3,7 @@ package com.softwareco.intellij.plugin.music;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.actions.MusicToolWindow;
+import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -56,8 +57,8 @@ public class PlaylistMouseListener extends MouseAdapter {
                         if(launchState)
                             MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
                     } else {
-                        boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                        if(!isPlayed) {
+                        SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                        if(response.getCode() == 403) {
                             SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                         }
                     }
@@ -78,8 +79,8 @@ public class PlaylistMouseListener extends MouseAdapter {
                             if(launchState)
                                 MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
                         } else {
-                            boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                            if(!isPlayed) {
+                            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
+                            if(response.getCode() == 403) {
                                 SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                             }
                         }

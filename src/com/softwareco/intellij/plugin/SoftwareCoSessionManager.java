@@ -165,8 +165,6 @@ public class SoftwareCoSessionManager {
     }
 
     private static String getMusicDashboardFile() {
-        String path = new File(".").getAbsolutePath();
-        log.log(Level.INFO, "Root Path: " + path);
         String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\musicTime.txt";

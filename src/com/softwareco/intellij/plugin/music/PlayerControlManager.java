@@ -17,7 +17,7 @@ public class PlayerControlManager {
 
     public static final Logger LOG = Logger.getLogger("PlayerControlManager");
 
-    public static boolean playSpotifyPlaylist(String playlistId, String trackId) {
+    public static SoftwareResponse playSpotifyPlaylist(String playlistId, String trackId) {
 
         if(playlistId == null) {
             playlistId = MusicControlManager.currentPlaylistId;
@@ -44,8 +44,8 @@ public class PlayerControlManager {
                     }
                 }
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                boolean resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, playlistId, trackId, tracks, accessToken);
-                if (resp) {
+                SoftwareResponse resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, playlistId, trackId, tracks, accessToken);
+                if (resp.isOk()) {
                     String finalTrackId = trackId;
                     String finalPlaylistId = playlistId;
                     new Thread(() -> {
@@ -58,10 +58,8 @@ public class PlayerControlManager {
                             System.err.println(e);
                         }
                     }).start();
-                    return true;
-                } else {
-                    return false;
                 }
+                return resp;
             }
         }
         if(trackId == null) {
@@ -71,8 +69,8 @@ public class PlayerControlManager {
         if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if (MusicControlManager.currentDeviceId != null) {
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                boolean resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId, accessToken);
-                if (resp) {
+                SoftwareResponse resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId, accessToken);
+                if (resp.isOk()) {
                     String finalTrackId = trackId;
                     String finalPlaylistId = playlistId;
                     new Thread(() -> {
@@ -85,8 +83,8 @@ public class PlayerControlManager {
                             System.err.println(e);
                         }
                     }).start();
-                    return true;
                 }
+                return resp;
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isSpotifyRunning() &&
                 MusicControlManager.currentDeviceId != null) {
@@ -100,9 +98,12 @@ public class PlayerControlManager {
             MusicControlManager.currentPlaylistId = playlistId;
             MusicControlManager.currentTrackId = trackId;
             SoftwareCoUtils.updatePlayerControls();
-            return true;
+            SoftwareResponse resp = new SoftwareResponse();
+            resp.setIsOk(true);
+            resp.setCode(200);
+            return resp;
         }
-        return false;
+        return new SoftwareResponse();
     }
 
     public static boolean playSpotifyDevices() {

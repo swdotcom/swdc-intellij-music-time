@@ -10,6 +10,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.music.*;
+import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -122,6 +123,7 @@ public class MusicToolWindow {
         this.rebuildPlaylistTreeView();
 
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
         scrollPane.repaint();
 
 //**********************************************************************************************************************
@@ -187,6 +189,7 @@ public class MusicToolWindow {
 
         this.rebuildRecommendedTreeView();
         recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
+        recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
         recommendScroll.repaint();
 
         playlistWindowContent.setBackground((Color) null);
@@ -964,8 +967,8 @@ public class MusicToolWindow {
                     }
                 }).start();
             } else if(MusicControlManager.deviceActivated) {
-                boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(playlist, track);
-                if(!isPlayed) {
+                SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                if(response.getCode() == 403) {
                     SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                 }
                 MusicControlManager.deviceActivated = false;
