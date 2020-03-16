@@ -72,6 +72,7 @@ public class MusicToolWindow {
                                 tree.setExpandedState(tree.getPathForRow(0), false);
                             }
                         }
+                        MusicControlManager.getSpotifyDevices(); // API call
                         PlayListCommands.updatePlaylists(0, null);
                     } else {
                         refreshButton();
@@ -511,9 +512,21 @@ public class MusicToolWindow {
                 } else {
                     for (JsonElement array : items) {
                         JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                        JsonArray artists = track.getAsJsonArray("artists");
+                        String artistNames = "";
+                        if(artists.size() > 0) {
+                            for(JsonElement artistArray : artists) {
+                                artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                            }
+                            artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
+                        }
                         String trackName = track.get("name").getAsString();
-                        if(trackName.length() > 50) {
-                            trackName = trackName.substring(0, 46) + "...";
+                        if(trackName.length() > 40) {
+                            trackName = trackName.substring(0, 36) + "...";
+                            if(artistNames.length() > 0)
+                                trackName += " (Artists: " + artistNames + ")";
+                        } else if(artistNames.length() > 0) {
+                            trackName += " (Artists: " + artistNames + ")";
                         }
                         PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         softwarePlaylist.add(node);
@@ -577,9 +590,21 @@ public class MusicToolWindow {
                     } else {
                         for (JsonElement array : items) {
                             JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                            JsonArray artists = track.getAsJsonArray("artists");
+                            String artistNames = "";
+                            if(artists.size() > 0) {
+                                for(JsonElement artistArray : artists) {
+                                    artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                                }
+                                artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
+                            }
                             String trackName = track.get("name").getAsString();
-                            if(trackName.length() > 50) {
-                                trackName = trackName.substring(0, 46) + "...";
+                            if(trackName.length() > 40) {
+                                trackName = trackName.substring(0, 36) + "...";
+                                if(artistNames.length() > 0)
+                                    trackName += " (Artists: " + artistNames + ")";
+                            } else if(artistNames.length() > 0) {
+                                trackName += " (Artists: " + artistNames + ")";
                             }
                             PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                             myAIPlaylist.add(node);
@@ -638,9 +663,21 @@ public class MusicToolWindow {
                 if (obj2 != null && obj2.has("items")) {
                     for (JsonElement array : obj2.get("items").getAsJsonArray()) {
                         JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
+                        JsonArray artists = track.getAsJsonArray("artists");
+                        String artistNames = "";
+                        if(artists.size() > 0) {
+                            for(JsonElement artistArray : artists) {
+                                artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                            }
+                            artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
+                        }
                         String trackName = track.get("name").getAsString();
-                        if(trackName.length() > 50) {
-                            trackName = trackName.substring(0, 46) + "...";
+                        if(trackName.length() > 40) {
+                            trackName = trackName.substring(0, 36) + "...";
+                            if(artistNames.length() > 0)
+                                trackName += " (Artists: " + artistNames + ")";
+                        } else if(artistNames.length() > 0) {
+                            trackName += " (Artists: " + artistNames + ")";
                         }
                         PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         likedPlaylist.add(node);
@@ -714,9 +751,21 @@ public class MusicToolWindow {
                         } else {
                             for (JsonElement array : items) {
                                 JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
+                                JsonArray artists = track.getAsJsonArray("artists");
+                                String artistNames = "";
+                                if(artists.size() > 0) {
+                                    for(JsonElement artistArray : artists) {
+                                        artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                                    }
+                                    artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
+                                }
                                 String trackName = track.get("name").getAsString(); // inside track we can check "available_markets": []
-                                if(trackName.length() > 50) {
-                                    trackName = trackName.substring(0, 46) + "...";
+                                if(trackName.length() > 40) {
+                                    trackName = trackName.substring(0, 36) + "...";
+                                    if(artistNames.length() > 0)
+                                        trackName += " (Artists: " + artistNames + ")";
+                                } else if(artistNames.length() > 0) {
+                                    trackName += " (Artists: " + artistNames + ")";
                                 }
                                 PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                                 userPlaylist.add(node);
@@ -865,9 +914,21 @@ public class MusicToolWindow {
                 int index = (PlayListCommands.currentBatch * 10) - 10;
                 for (int i = 0; i < 10; i++) {
                     JsonObject track = tracks.get(index).getAsJsonObject();
+                    JsonArray artists = track.getAsJsonArray("artists");
+                    String artistNames = "";
+                    if(artists.size() > 0) {
+                        for(JsonElement artistArray : artists) {
+                            artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                        }
+                        artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
+                    }
                     String trackName = track.get("name").getAsString();
-                    if (trackName.length() > 50) {
-                        trackName = trackName.substring(0, 46) + "...";
+                    if (trackName.length() > 40) {
+                        trackName = trackName.substring(0, 36) + "...";
+                        if(artistNames.length() > 0)
+                            trackName += " (Artists: " + artistNames + ")";
+                    } else if(artistNames.length() > 0) {
+                        trackName += " (Artists: " + artistNames + ")";
                     }
                     PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                     recommendedPlaylist.add(node);

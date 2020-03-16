@@ -261,9 +261,9 @@ public class MusicControlManager {
             } else {
                 if(spotifyDeviceIds.size() == 0) {
                     if(userStatus != null && userStatus.equals("premium")) {
-                        String infoMsg = "Spotify is currently not running, would you like to launch the \n" +
-                                "desktop instead of the web player?";
-                        int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Not Now", "Yes", Messages.getInformationIcon());
+                        String infoMsg = "Music Time requires a running Spotify player. \n" +
+                                "Choose a player to launch.";
+                        int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Web player", "Desktop player", Messages.getInformationIcon());
                         if (response == 0) {
                             launchWebPlayer(true);
                             return true;
@@ -315,6 +315,7 @@ public class MusicControlManager {
                     Thread.sleep(3000);
                     if(SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
                         desktopDeviceActive = true;
+                        lazyUpdateDevices(3, activateDevice, false);
                     } else if(SoftwareCoUtils.isWindows()) {
                         MusicControlManager.getSpotifyDevices(); // API call
                         boolean desktopPlayer = false;

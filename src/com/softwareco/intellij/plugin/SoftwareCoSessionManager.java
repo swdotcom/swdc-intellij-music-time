@@ -11,10 +11,8 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
-import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
-import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.softwareco.intellij.plugin.music.*;
@@ -32,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SoftwareCoSessionManager {
@@ -831,8 +828,10 @@ public class SoftwareCoSessionManager {
         File f = new File(url.getFile());
 
         VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
-        OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
-        FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+        if(vFile != null) {
+            OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
+            FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+        }
     }
 
     private Project getCurrentProject() {

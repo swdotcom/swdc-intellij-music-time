@@ -725,12 +725,6 @@ public class SoftwareCoUtils {
 
     public static synchronized void updatePlayerControls() {
         if(MusicControlManager.spotifyCacheState) {
-//            if(deviceCounter == 0) {
-//                MusicControlManager.getSpotifyDevices(); // API call
-//                deviceCounter = 2;
-//            } else {
-//                deviceCounter--;
-//            }
             if(MusicControlManager.playerType.equals("Web Player") || isWindows()){
                 PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
             } else {
