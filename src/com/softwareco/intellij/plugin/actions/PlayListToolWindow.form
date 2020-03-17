@@ -27,6 +27,7 @@
         <properties>
           <icon value="com/softwareco/intellij/plugin/assets/refresh.png"/>
           <text value=" "/>
+          <toolTipText value="Reconsile playlists"/>
         </properties>
       </component>
       <component id="70086" class="javax.swing.JLabel" binding="menu">
@@ -37,6 +38,7 @@
           <icon value="com/softwareco/intellij/plugin/assets/menu.png"/>
           <iconTextGap value="0"/>
           <text value=""/>
+          <toolTipText value="Sort"/>
         </properties>
       </component>
       <hspacer id="903e">
@@ -123,6 +125,7 @@
         <properties>
           <icon value="com/softwareco/intellij/plugin/assets/beaker.png"/>
           <text value=""/>
+          <toolTipText value="Mood selection"/>
         </properties>
       </component>
       <component id="a1255" class="javax.swing.JLabel" binding="genre">
@@ -132,6 +135,7 @@
         <properties>
           <icon value="com/softwareco/intellij/plugin/assets/filter.png"/>
           <text value=""/>
+          <toolTipText value="Genre selection"/>
         </properties>
       </component>
       <component id="1ed4d" class="javax.swing.JLabel" binding="recommendRefresh">
@@ -142,6 +146,7 @@
           <alignmentX value="0.0"/>
           <icon value="com/softwareco/intellij/plugin/assets/refresh.png"/>
           <text value=" "/>
+          <toolTipText value="Refresh recommendation"/>
         </properties>
       </component>
     </children>

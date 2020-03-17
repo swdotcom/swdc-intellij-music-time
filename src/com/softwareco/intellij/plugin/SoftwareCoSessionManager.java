@@ -15,6 +15,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.softwareco.intellij.plugin.fs.FileManager;
 import com.softwareco.intellij.plugin.music.*;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -171,13 +172,12 @@ public class SoftwareCoSessionManager {
         return file;
     }
 
-    private static String getLocalREADMEFile() {
-        //VirtualFile root = ModuleRootManager.getInstance(ModuleManager.getInstance(getOpenProject()).getModules()[0]).getContentRoots()[0];
-        String file = pluginRootPath;
+    public static String getReadmeFile() {
+        String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
-            file += "\\README.txt";
+            file += "\\jetbrainsMt_README.md";
         } else {
-            file += "/README.txt";
+            file += "/jetbrainsMt_README.md";
         }
         return file;
     }
@@ -817,20 +817,68 @@ public class SoftwareCoSessionManager {
         FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
     }
 
-    public void launchReadMeFile() {
+    public void openReadmeFile() {
         Project p = getOpenProject();
         if (p == null) {
             return;
         }
 
         // Getting Resource as file object
-        URL url = getClass().getResource("/com/softwareco/intellij/plugin/assets/README.txt");
-        File f = new File(url.getFile());
+//        URL url = getClass().getResource("/com/softwareco/intellij/plugin/assets/README.md");
+//        String fileContent = getFileContent(url.getFile());
+        String fileContent = FileManager.getReadmeMdContent();
 
+        String readmeFile = SoftwareCoSessionManager.getReadmeFile();
+        File f = new File(readmeFile);
+        if (!f.exists()) {
+            Writer writer = null;
+            // write the summary content
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(new File(readmeFile)), Charset.forName("UTF-8")));
+                writer.write(fileContent);
+            } catch (IOException ex) {
+                // Report
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception ex) {/*ignore*/}
+            }
+        }
         VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
         if(vFile != null) {
             OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
             FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+        }
+    }
+
+    public static String getFileContent(String file) {
+        String content = null;
+
+        File f = new File(file);
+        if (f.exists()) {
+            try {
+                byte[] encoded = Files.readAllBytes(Paths.get(f.getPath()));
+                content = new String(encoded, Charset.forName("UTF-8"));
+            } catch (Exception e) {
+                log.warning("Music Time: Error trying to read and parse: " + e.getMessage());
+            }
+        }
+        return content;
+    }
+
+    public static void saveFileContent(String file, String content) {
+        File f = new File(file);
+
+        Writer writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(f), Charset.forName("UTF-8")));
+            writer.write(content);
+        } catch (IOException ex) {
+            // Report
+        } finally {
+            try {writer.close();} catch (Exception ex) {/*ignore*/}
         }
     }
 
@@ -853,7 +901,6 @@ public class SoftwareCoSessionManager {
         String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
         String unlikeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_unlikeicon";
         String preiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_preicon";
-        String stopiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_stopicon";
         String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
         String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";

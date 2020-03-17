@@ -263,13 +263,16 @@ public class MusicControlManager {
                     if(userStatus != null && userStatus.equals("premium")) {
                         String infoMsg = "Music Time requires a running Spotify player. \n" +
                                 "Choose a player to launch.";
-                        int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Web player", "Desktop player", Messages.getInformationIcon());
+                        String[] options = new String[] {"Web player", "Desktop player"};
+                        int response = Messages.showDialog(infoMsg, SoftwareCoUtils.pluginName, options, 0, Messages.getInformationIcon());
                         if (response == 0) {
                             launchWebPlayer(true);
                             return true;
-                        } else if (response == 2) {
+                        } else if (response == 1) {
                             launchDesktopPlayer(true);
                             return true;
+                        } else {
+                            return false;
                         }
                     } else {
                         launchDesktopPlayer(true);
@@ -340,8 +343,12 @@ public class MusicControlManager {
                 }
             }).start();
         } else if(!desktopDeviceActive) {
-            SoftwareCoUtils.showMsgPrompt("Desktop app is not detected, Launching web player");
-            launchWebPlayer(activateDevice);
+            if(userStatus != null && userStatus.equals("premium")) {
+                SoftwareCoUtils.showMsgPrompt("Desktop app is not detected, Launching web player");
+                launchWebPlayer(activateDevice);
+            } else {
+                SoftwareCoUtils.showMsgPrompt("Desktop app is not detected, Web player not available");
+            }
         }
     }
 

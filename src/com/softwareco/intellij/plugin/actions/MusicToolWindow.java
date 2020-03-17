@@ -317,6 +317,7 @@ public class MusicToolWindow {
             JLabel learnMore = new JLabel();
             learnMore.setIcon(readmeIcon);
             learnMore.setText("Learn more");
+            learnMore.setToolTipText("View the Music Time Readme to learn more");
             listModel.add(listIndex, learnMore);
             listIndex ++;
 
@@ -325,6 +326,7 @@ public class MusicToolWindow {
             JLabel webAnalytics = new JLabel();
             webAnalytics.setIcon(pawIcon);
             webAnalytics.setText("See web analytics");
+            webAnalytics.setToolTipText("See music analytics in the web app");
             listModel.add(listIndex, webAnalytics);
             listIndex ++;
 
@@ -333,6 +335,7 @@ public class MusicToolWindow {
             JLabel openDashboard = new JLabel();
             openDashboard.setIcon(dashboardIcon);
             openDashboard.setText("Open dashboard");
+            openDashboard.setToolTipText("View your latest music matrix right here in your editor");
             listModel.add(listIndex, openDashboard);
             listIndex ++;
 
@@ -346,7 +349,7 @@ public class MusicToolWindow {
                     deviceState.setToolTipText("Listening on a Spotify device");
                 } else {
                     deviceState.setText("Connect to a Spotify device");
-                    deviceState.setToolTipText("Connect to a Spotify device");
+                    deviceState.setToolTipText("Click to launch the web player or desktop player");
                 }
 
             } else {
@@ -382,7 +385,7 @@ public class MusicToolWindow {
                         //Code to open web dashboard
                         SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
                     } else if(label.getText().equals("Learn more")) {
-                        SoftwareCoSessionManager.getInstance().launchReadMeFile();
+                        SoftwareCoSessionManager.getInstance().openReadmeFile();
                     } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to")) {
                         MusicControlManager.launchPlayer(false, false);
                     }
@@ -413,8 +416,10 @@ public class MusicToolWindow {
             aiPlaylist.setIcon(gearIcon);
             if(PlayListCommands.myAIPlaylistId != null) {
                 aiPlaylist.setText("Refresh my AI playlist");
+                aiPlaylist.setToolTipText("Refresh your personalized playlist (My AI Top 40)");
             } else {
                 aiPlaylist.setText("Generate my AI playlist");
+                aiPlaylist.setToolTipText("Generate your personalized playlist (My AI Top 40)");
             }
             refreshAIModel.add(0, aiPlaylist);
 
@@ -423,6 +428,7 @@ public class MusicToolWindow {
             JLabel createPlaylist = new JLabel();
             createPlaylist.setIcon(addIcon);
             createPlaylist.setText("Create Playlist");
+            createPlaylist.setToolTipText("Create your personalized playlist");
             refreshAIModel.add(1, createPlaylist);
 
             JList<JLabel> refreshAIList = new JList<>(refreshAIModel);
@@ -524,9 +530,9 @@ public class MusicToolWindow {
                         if(trackName.length() > 40) {
                             trackName = trackName.substring(0, 36) + "...";
                             if(artistNames.length() > 0)
-                                trackName += " (Artists: " + artistNames + ")";
+                                trackName += " (" + artistNames + ")";
                         } else if(artistNames.length() > 0) {
-                            trackName += " (Artists: " + artistNames + ")";
+                            trackName += " (" + artistNames + ")";
                         }
                         PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         softwarePlaylist.add(node);
@@ -602,9 +608,9 @@ public class MusicToolWindow {
                             if(trackName.length() > 40) {
                                 trackName = trackName.substring(0, 36) + "...";
                                 if(artistNames.length() > 0)
-                                    trackName += " (Artists: " + artistNames + ")";
+                                    trackName += " (" + artistNames + ")";
                             } else if(artistNames.length() > 0) {
-                                trackName += " (Artists: " + artistNames + ")";
+                                trackName += " (" + artistNames + ")";
                             }
                             PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                             myAIPlaylist.add(node);
@@ -675,9 +681,9 @@ public class MusicToolWindow {
                         if(trackName.length() > 40) {
                             trackName = trackName.substring(0, 36) + "...";
                             if(artistNames.length() > 0)
-                                trackName += " (Artists: " + artistNames + ")";
+                                trackName += " (" + artistNames + ")";
                         } else if(artistNames.length() > 0) {
-                            trackName += " (Artists: " + artistNames + ")";
+                            trackName += " (" + artistNames + ")";
                         }
                         PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         likedPlaylist.add(node);
@@ -763,9 +769,9 @@ public class MusicToolWindow {
                                 if(trackName.length() > 40) {
                                     trackName = trackName.substring(0, 36) + "...";
                                     if(artistNames.length() > 0)
-                                        trackName += " (Artists: " + artistNames + ")";
+                                        trackName += " (" + artistNames + ")";
                                 } else if(artistNames.length() > 0) {
-                                    trackName += " (Artists: " + artistNames + ")";
+                                    trackName += " (" + artistNames + ")";
                                 }
                                 PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                                 userPlaylist.add(node);
@@ -926,9 +932,9 @@ public class MusicToolWindow {
                     if (trackName.length() > 40) {
                         trackName = trackName.substring(0, 36) + "...";
                         if(artistNames.length() > 0)
-                            trackName += " (Artists: " + artistNames + ")";
+                            trackName += " (" + artistNames + ")";
                     } else if(artistNames.length() > 0) {
-                        trackName += " (Artists: " + artistNames + ")";
+                        trackName += " (" + artistNames + ")";
                     }
                     PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                     recommendedPlaylist.add(node);

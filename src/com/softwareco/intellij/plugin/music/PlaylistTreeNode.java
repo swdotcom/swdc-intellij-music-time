@@ -10,11 +10,13 @@ public class PlaylistTreeNode extends DefaultMutableTreeNode {
     private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
 
     private String id;
+    private String toolTip;
 
     public PlaylistTreeNode(String nodeName, String id) {
         super(nodeName);
         this.model = null;
         this.id = id;
+        this.toolTip = nodeName;
     }
 
     public void setModel(DefaultTreeModel model) {
@@ -43,5 +45,13 @@ public class PlaylistTreeNode extends DefaultMutableTreeNode {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getToolTip() {
+        return toolTip;
+    }
+
+    public void setToolTip(String toolTip) {
+        this.toolTip = toolTip;
     }
 }
