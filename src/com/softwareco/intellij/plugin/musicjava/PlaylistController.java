@@ -137,7 +137,7 @@ public class PlaylistController {
                 return resp;
             }
         }
-        return null;
+        return new SoftwareResponse();
     }
 
     public static Object createPlaylist(String playlistName) {
@@ -175,7 +175,7 @@ public class PlaylistController {
                 return resp;
             }
         }
-        return null;
+        return new SoftwareResponse();
     }
 
     public static Object updatePlaylist(String playlistId, JsonObject tracks) {
@@ -198,7 +198,7 @@ public class PlaylistController {
                 return resp;
             }
         }
-        return null;
+        return new SoftwareResponse();
     }
 
     public static Object removeTracksInPlaylist(String playlistId, Set<String> tracks) {
@@ -220,7 +220,7 @@ public class PlaylistController {
                 return resp;
             }
         }
-        return null;
+        return new SoftwareResponse();
     }
 
     public static boolean removePlaylist(String playlistId) {

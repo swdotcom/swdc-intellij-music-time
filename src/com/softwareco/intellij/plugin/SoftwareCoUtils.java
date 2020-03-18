@@ -725,11 +725,12 @@ public class SoftwareCoUtils {
 
     public static synchronized void updatePlayerControls() {
         if(MusicControlManager.spotifyCacheState) {
-            if(MusicControlManager.playerType.equals("Web Player") || isWindows()){
-                PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
-            } else {
-                PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar
-            }
+            PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
+//            if(MusicControlManager.playerType.equals("Web Player") || isWindows()){
+//                PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
+//            } else {
+//                PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar
+//            }
 
             PlayListCommands.updatePlaylists(5, null); // API call
 
