@@ -41,6 +41,10 @@ public class PlaylistMouseListener extends MouseAdapter {
         } else if(e.getButton() == 1) {
 
             MusicControlManager.getSpotifyDevices();
+            if(MusicControlManager.currentDeviceId == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
+                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+            }
             /* retrieve the node that was selected */
             if (node.isLeaf()) {
                 PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();

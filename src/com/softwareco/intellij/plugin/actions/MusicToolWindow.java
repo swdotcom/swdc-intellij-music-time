@@ -344,12 +344,17 @@ public class MusicToolWindow {
             JLabel deviceState = new JLabel();
             deviceState.setIcon(spotifyIcon);
             if(MusicControlManager.spotifyDeviceIds.size() > 0) {
-                if(MusicControlManager.currentDeviceName != null) {
-                    deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
-                    deviceState.setToolTipText("Listening on a Spotify device");
+                if(MusicControlManager.currentDeviceId != null) {
+                    if(MusicControlManager.currentDeviceName != null) {
+                        deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
+                        deviceState.setToolTipText("Listening on a Spotify device");
+                    } else {
+                        deviceState.setText("Available on " + MusicControlManager.cacheDeviceName);
+                        deviceState.setToolTipText("Available on a Spotify device");
+                    }
                 } else {
-                    deviceState.setText("Connect to a Spotify device");
-                    deviceState.setToolTipText("Click to launch the web player or desktop player");
+                    deviceState.setText("Available Spotify devices");
+                    deviceState.setToolTipText("Available Spotify devices");
                 }
 
             } else {
@@ -386,7 +391,7 @@ public class MusicToolWindow {
                         SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
                     } else if(label.getText().equals("Learn more")) {
                         SoftwareCoSessionManager.getInstance().openReadmeFile();
-                    } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to")) {
+                    } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to") || label.getText().contains("Available")) {
                         MusicControlManager.launchPlayer(false, false);
                     }
                 }
@@ -534,7 +539,13 @@ public class MusicToolWindow {
                         } else if(artistNames.length() > 0) {
                             trackName += " (" + artistNames + ")";
                         }
-                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                        String trackId;
+                        if(track.getAsJsonArray("available_markets").size() == 0) {
+                            trackId = "404";
+                        } else {
+                            trackId = track.get("id").getAsString();
+                        }
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                         softwarePlaylist.add(node);
                     }
                 }
@@ -612,7 +623,13 @@ public class MusicToolWindow {
                             } else if(artistNames.length() > 0) {
                                 trackName += " (" + artistNames + ")";
                             }
-                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                            String trackId;
+                            if(track.getAsJsonArray("available_markets").size() == 0) {
+                                trackId = "404";
+                            } else {
+                                trackId = track.get("id").getAsString();
+                            }
+                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                             myAIPlaylist.add(node);
                         }
                     }
@@ -685,7 +702,13 @@ public class MusicToolWindow {
                         } else if(artistNames.length() > 0) {
                             trackName += " (" + artistNames + ")";
                         }
-                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                        String trackId;
+                        if(track.getAsJsonArray("available_markets").size() == 0) {
+                            trackId = "404";
+                        } else {
+                            trackId = track.get("id").getAsString();
+                        }
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                         likedPlaylist.add(node);
                     }
                 } else {
@@ -773,7 +796,13 @@ public class MusicToolWindow {
                                 } else if(artistNames.length() > 0) {
                                     trackName += " (" + artistNames + ")";
                                 }
-                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                                String trackId;
+                                if(track.getAsJsonArray("available_markets").size() == 0) {
+                                    trackId = "404";
+                                } else {
+                                    trackId = track.get("id").getAsString();
+                                }
+                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                                 userPlaylist.add(node);
                             }
                         }
@@ -936,7 +965,13 @@ public class MusicToolWindow {
                     } else if(artistNames.length() > 0) {
                         trackName += " (" + artistNames + ")";
                     }
-                    PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                    String trackId;
+                    if(track.getAsJsonArray("available_markets").size() == 0) {
+                        trackId = "404";
+                    } else {
+                        trackId = track.get("id").getAsString();
+                    }
+                    PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                     recommendedPlaylist.add(node);
                     index++;
                 }
