@@ -19,7 +19,7 @@ public class MusicController {
 
     public static final Logger LOG = Logger.getLogger("Controller");
 
-    public static boolean playSpotifyPlaylist(String deviceId, String playlistId, String trackId, String accessToken) {
+    public static SoftwareResponse playSpotifyPlaylist(String deviceId, String playlistId, String trackId, String accessToken) {
 
         if(deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
@@ -39,15 +39,12 @@ public class MusicController {
 
             if (deviceId != null) {
                 String api = "/v1/me/player/play?device_id=" + deviceId;
-                SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
-                if (resp.isOk()) {
-                    return true;
-                }
+                return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
             }
         } else {
             return playSpotifyWebTrack(deviceId, trackId, accessToken);
         }
-        return false;
+        return new SoftwareResponse();
     }
 
     public static void playDesktopPlaylist(String playerName, String playlist) { Util.playPlaylist(playerName, playlist); }
@@ -56,7 +53,7 @@ public class MusicController {
 
     public static void playDesktopTrack(String playerName, String track) { Util.playTrack(playerName, track); }
 
-    public static boolean playSpotifyWebTrack(String deviceId, String trackId, String accessToken) {
+    public static SoftwareResponse playSpotifyWebTrack(String deviceId, String trackId, String accessToken) {
 
         if(deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
@@ -72,15 +69,12 @@ public class MusicController {
 
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
-            if (resp.isOk()) {
-                return true;
-            }
+            return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         }
-        return false;
+        return new SoftwareResponse();
     }
 
-    public static boolean playSpotifyTracks(String deviceId, String playlistId, String trackId, List<String> tracks, String accessToken) {
+    public static SoftwareResponse playSpotifyTracks(String deviceId, String playlistId, String trackId, List<String> tracks, String accessToken) {
 
         if(deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
@@ -108,23 +102,16 @@ public class MusicController {
 
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
-            if (resp.isOk()) {
-                return true;
-            }
+            return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         }
-        return false;
+        return new SoftwareResponse();
     }
 
     public static Object playSpotifyWeb(String deviceId, String accessToken) {
         if(deviceId != null) {
 
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
-            if (resp.isOk()) {
-                return resp;
-            }
-            return resp;
+            return Client.makeApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
         }
         return false;
     }
@@ -137,11 +124,7 @@ public class MusicController {
         if(deviceId != null) {
 
             String api = "/v1/me/player/pause?device_id=" + deviceId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
-            if (resp.isOk()) {
-                return resp;
-            }
-            return resp;
+            return Client.makeApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
         }
         return null;
     }
@@ -154,11 +137,7 @@ public class MusicController {
         if(deviceId != null) {
 
             String api = "/v1/me/player/previous?device_id=" + deviceId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, null, accessToken);
-            if (resp.isOk()) {
-                return resp;
-            }
-            return resp;
+            return Client.makeApiCall(api, HttpPost.METHOD_NAME, null, accessToken);
         }
         return null;
     }
@@ -171,11 +150,7 @@ public class MusicController {
         if(deviceId != null) {
 
             String api = "/v1/me/player/next?device_id=" + deviceId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, null, accessToken);
-            if (resp.isOk()) {
-                return resp;
-            }
-            return resp;
+            return Client.makeApiCall(api, HttpPost.METHOD_NAME, null, accessToken);
         }
         return null;
     }
@@ -195,20 +170,11 @@ public class MusicController {
             }
 
             String api = "/v1/me/tracks";
-            SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
-            if (resp.isOk()) {
-                return resp;
-            }
-            return resp;
+            return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         } else {
             // remove from liked playlist
-
             String api = "/v1/me/tracks?ids=" + trackId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpDelete.METHOD_NAME, null, accessToken);
-            if (resp.isOk()) {
-                return resp;
-            }
-            return resp;
+            return Client.makeApiCall(api, HttpDelete.METHOD_NAME, null, accessToken);
         }
     }
     //const api = `/music/liked/track/${track.id}?type=${type}`; type = spotify

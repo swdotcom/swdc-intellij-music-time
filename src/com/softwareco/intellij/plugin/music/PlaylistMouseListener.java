@@ -3,6 +3,7 @@ package com.softwareco.intellij.plugin.music;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.actions.MusicToolWindow;
+import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 
 import javax.swing.*;
 import java.awt.event.MouseAdapter;
@@ -40,6 +41,10 @@ public class PlaylistMouseListener extends MouseAdapter {
         } else if(e.getButton() == 1) {
 
             MusicControlManager.getSpotifyDevices();
+            if(MusicControlManager.currentDeviceId == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
+                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+            }
             /* retrieve the node that was selected */
             if (node.isLeaf()) {
                 PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
@@ -56,8 +61,8 @@ public class PlaylistMouseListener extends MouseAdapter {
                         if(launchState)
                             MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
                     } else {
-                        boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                        if(!isPlayed) {
+                        SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                        if(response.getCode() == 403) {
                             SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                         }
                     }
@@ -78,8 +83,8 @@ public class PlaylistMouseListener extends MouseAdapter {
                             if(launchState)
                                 MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
                         } else {
-                            boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                            if(!isPlayed) {
+                            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
+                            if(response.getCode() == 403) {
                                 SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                             }
                         }

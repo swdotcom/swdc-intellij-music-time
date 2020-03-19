@@ -18,6 +18,7 @@ import com.softwareco.intellij.plugin.music.MusicControlManager;
 import com.softwareco.intellij.plugin.music.PlayListCommands;
 import com.softwareco.intellij.plugin.music.PlaylistManager;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SoftwareCoMusic implements ApplicationComponent {
@@ -185,6 +186,15 @@ public class SoftwareCoMusic implements ApplicationComponent {
             MusicControlManager.getSpotifyDevices(); // API call
 
             MusicControlManager.lazyUpdatePlayer();
+        }
+
+        if(initializedUser) {
+            log.log(Level.INFO, "Initial launching README file");
+            ApplicationManager.getApplication().invokeLater(new Runnable() {
+                public void run() {
+                    sessionMgr.openReadmeFile();
+                }
+            });
         }
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");

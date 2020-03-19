@@ -38,6 +38,7 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
         PlaylistTreeNode node =
                 (PlaylistTreeNode)value;
         String id = node.getId();
+        setToolTipText(node.getToolTip() + " (Right click for more options)");
 
         if (leaf) {
             if(isCurrentTrack(value)) {

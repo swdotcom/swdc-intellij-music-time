@@ -18,9 +18,11 @@ public class PlaylistManager {
     public static final Logger LOG = Logger.getLogger("PlaylistManager");
     public static String previousTrack = "";
     public static JsonObject previousTrackData = null;
+    public static boolean skipPrevious = false;
 
     public static boolean pauseTrigger = false;
     public static long pauseTriggerTime = 0;
+    public static boolean isDeviceChecked = false;
 
     public static JsonObject getUserPlaylists() {
 
@@ -112,6 +114,10 @@ public class PlaylistManager {
         String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
         SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack(accessToken);
         if (resp.isOk() && resp.getCode() == 200) {
+            if(isDeviceChecked) {
+                MusicControlManager.getSpotifyDevices(); // API call
+                isDeviceChecked = false;
+            }
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
                 JsonObject track = tracks.get("item").getAsJsonObject();
@@ -163,6 +169,16 @@ public class PlaylistManager {
                     }
                 }
 
+                if(tracks.has("actions")) {
+                    JsonObject obj = tracks.getAsJsonObject("actions");
+                    JsonObject actions = obj.getAsJsonObject("disallows");
+                    if(actions.has("skipping_prev")) {
+                        skipPrevious = actions.get("skipping_prev").getAsBoolean();
+                    } else {
+                        skipPrevious = false;
+                    }
+                }
+
                 if(!MusicControlManager.currentTrackName.equals(PlaylistManager.previousTrack)) {
                     PlaylistManager.previousTrack = MusicControlManager.currentTrackName;
 
@@ -182,7 +198,19 @@ public class PlaylistManager {
             }
             return resp.getJsonObj();
         } else if(resp.getCode() == 204) {
-            //MusicControlManager.currentDeviceName = null;
+            if(!isDeviceChecked) {
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(5000);
+                        MusicControlManager.getSpotifyDevices(); // API call
+                        isDeviceChecked = true;
+                    }
+                    catch (Exception e){
+                        System.err.println(e);
+                    }
+                }).start();
+            }
+            MusicControlManager.currentDeviceName = null;
             MusicControlManager.currentTrackName = null;
             SoftwareCoSessionManager.playerState = 0;
             MusicControlManager.defaultbtn = "play";

@@ -15,12 +15,14 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.softwareco.intellij.plugin.fs.FileManager;
 import com.softwareco.intellij.plugin.music.*;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 
 import java.awt.event.MouseEvent;
 import java.io.*;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,6 +38,7 @@ public class SoftwareCoSessionManager {
     private static SoftwareCoSessionManager instance = null;
     public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
     private static Map<String, String> sessionMap = new HashMap<>();
+    public static String pluginRootPath = null;
 
     private static JsonArray keystrokeData = new JsonArray();
     public static int playerState = 0; // 0 = inactive & 1 = active
@@ -169,6 +172,16 @@ public class SoftwareCoSessionManager {
         return file;
     }
 
+    public static String getReadmeFile() {
+        String file = getSoftwareDir(true);
+        if (SoftwareCoUtils.isWindows()) {
+            file += "\\jetbrainsMt_README.md";
+        } else {
+            file += "/jetbrainsMt_README.md";
+        }
+        return file;
+    }
+
     public static Project getOpenProject() {
         ProjectManager projMgr = ProjectManager.getInstance();
         Project[] projects = projMgr.getOpenProjects();
@@ -245,12 +258,7 @@ public class SoftwareCoSessionManager {
             } catch (Exception e) {
                 log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
             }
-        }
-//        else if(playerState == 1) {
-//            JsonObject obj = (JsonObject) SoftwareCoMusic.jsonParser.parse(payload);
-//            keystrokeData.add(obj);
-//        }
-        else if(playerState == 0) {
+        } else if(playerState == 0) {
             String dataStoreFile = getMusicDataFile(false);
             deleteFile(dataStoreFile);
             keystrokeData = new JsonArray();
@@ -809,6 +817,71 @@ public class SoftwareCoSessionManager {
         FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
     }
 
+    public void openReadmeFile() {
+        Project p = getOpenProject();
+        if (p == null) {
+            return;
+        }
+
+        // Getting Resource as file object
+//        URL url = getClass().getResource("/com/softwareco/intellij/plugin/assets/README.md");
+//        String fileContent = getFileContent(url.getFile());
+        String fileContent = FileManager.getReadmeMdContent();
+
+        String readmeFile = SoftwareCoSessionManager.getReadmeFile();
+        File f = new File(readmeFile);
+        if (!f.exists()) {
+            Writer writer = null;
+            // write the summary content
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(new File(readmeFile)), Charset.forName("UTF-8")));
+                writer.write(fileContent);
+            } catch (IOException ex) {
+                // Report
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception ex) {/*ignore*/}
+            }
+        }
+        VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
+        if(vFile != null) {
+            OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
+            FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+        }
+    }
+
+    public static String getFileContent(String file) {
+        String content = null;
+
+        File f = new File(file);
+        if (f.exists()) {
+            try {
+                byte[] encoded = Files.readAllBytes(Paths.get(f.getPath()));
+                content = new String(encoded, Charset.forName("UTF-8"));
+            } catch (Exception e) {
+                log.warning("Music Time: Error trying to read and parse: " + e.getMessage());
+            }
+        }
+        return content;
+    }
+
+    public static void saveFileContent(String file, String content) {
+        File f = new File(file);
+
+        Writer writer = null;
+        try {
+            writer = new BufferedWriter(new OutputStreamWriter(
+                    new FileOutputStream(f), Charset.forName("UTF-8")));
+            writer.write(content);
+        } catch (IOException ex) {
+            // Report
+        } finally {
+            try {writer.close();} catch (Exception ex) {/*ignore*/}
+        }
+    }
+
     private Project getCurrentProject() {
         Project project = null;
         Editor[] editors = EditorFactory.getInstance().getAllEditors();
@@ -828,7 +901,6 @@ public class SoftwareCoSessionManager {
         String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
         String unlikeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_unlikeicon";
         String preiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_preicon";
-        String stopiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_stopicon";
         String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
         String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";

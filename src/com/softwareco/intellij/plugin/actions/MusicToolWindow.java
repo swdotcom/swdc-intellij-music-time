@@ -10,6 +10,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.music.*;
+import com.softwareco.intellij.plugin.musicjava.SoftwareResponse;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -71,6 +72,7 @@ public class MusicToolWindow {
                                 tree.setExpandedState(tree.getPathForRow(0), false);
                             }
                         }
+                        MusicControlManager.getSpotifyDevices(); // API call
                         PlayListCommands.updatePlaylists(0, null);
                     } else {
                         refreshButton();
@@ -122,6 +124,7 @@ public class MusicToolWindow {
         this.rebuildPlaylistTreeView();
 
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
         scrollPane.repaint();
 
 //**********************************************************************************************************************
@@ -187,6 +190,7 @@ public class MusicToolWindow {
 
         this.rebuildRecommendedTreeView();
         recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
+        recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
         recommendScroll.repaint();
 
         playlistWindowContent.setBackground((Color) null);
@@ -308,11 +312,21 @@ public class MusicToolWindow {
 
             DefaultListModel listModel = new DefaultListModel();
 
+            /* Learn more */
+            Icon readmeIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/readme.png");
+            JLabel learnMore = new JLabel();
+            learnMore.setIcon(readmeIcon);
+            learnMore.setText("Learn more");
+            learnMore.setToolTipText("View the Music Time Readme to learn more");
+            listModel.add(listIndex, learnMore);
+            listIndex ++;
+
             /* Web analytics */
             Icon pawIcon = IconLoader.getIcon("/com/softwareco/intellij/plugin/assets/paw.png");
             JLabel webAnalytics = new JLabel();
             webAnalytics.setIcon(pawIcon);
             webAnalytics.setText("See web analytics");
+            webAnalytics.setToolTipText("See music analytics in the web app");
             listModel.add(listIndex, webAnalytics);
             listIndex ++;
 
@@ -321,6 +335,7 @@ public class MusicToolWindow {
             JLabel openDashboard = new JLabel();
             openDashboard.setIcon(dashboardIcon);
             openDashboard.setText("Open dashboard");
+            openDashboard.setToolTipText("View your latest music matrix right here in your editor");
             listModel.add(listIndex, openDashboard);
             listIndex ++;
 
@@ -329,12 +344,17 @@ public class MusicToolWindow {
             JLabel deviceState = new JLabel();
             deviceState.setIcon(spotifyIcon);
             if(MusicControlManager.spotifyDeviceIds.size() > 0) {
-                if(MusicControlManager.currentDeviceName != null) {
-                    deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
-                    deviceState.setToolTipText("Listening on a Spotify device");
+                if(MusicControlManager.currentDeviceId != null) {
+                    if(MusicControlManager.currentDeviceName != null) {
+                        deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
+                        deviceState.setToolTipText("Listening on a Spotify device");
+                    } else {
+                        deviceState.setText("Available on " + MusicControlManager.cacheDeviceName);
+                        deviceState.setToolTipText("Available on a Spotify device");
+                    }
                 } else {
-                    deviceState.setText("Connect to a Spotify device");
-                    deviceState.setToolTipText("Connect to a Spotify device");
+                    deviceState.setText("Available Spotify devices");
+                    deviceState.setToolTipText("Available Spotify devices");
                 }
 
             } else {
@@ -369,7 +389,9 @@ public class MusicToolWindow {
                     } else if(label.getText().equals("Open dashboard")) {
                         //Code to open web dashboard
                         SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
-                    } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to")) {
+                    } else if(label.getText().equals("Learn more")) {
+                        SoftwareCoSessionManager.getInstance().openReadmeFile();
+                    } else if(label.getText().contains("Listening on") || label.getText().contains("Connect to") || label.getText().contains("Available")) {
                         MusicControlManager.launchPlayer(false, false);
                     }
                 }
@@ -399,8 +421,10 @@ public class MusicToolWindow {
             aiPlaylist.setIcon(gearIcon);
             if(PlayListCommands.myAIPlaylistId != null) {
                 aiPlaylist.setText("Refresh my AI playlist");
+                aiPlaylist.setToolTipText("Refresh your personalized playlist (My AI Top 40)");
             } else {
                 aiPlaylist.setText("Generate my AI playlist");
+                aiPlaylist.setToolTipText("Generate your personalized playlist (My AI Top 40)");
             }
             refreshAIModel.add(0, aiPlaylist);
 
@@ -409,6 +433,7 @@ public class MusicToolWindow {
             JLabel createPlaylist = new JLabel();
             createPlaylist.setIcon(addIcon);
             createPlaylist.setText("Create Playlist");
+            createPlaylist.setToolTipText("Create your personalized playlist");
             refreshAIModel.add(1, createPlaylist);
 
             JList<JLabel> refreshAIList = new JList<>(refreshAIModel);
@@ -498,11 +523,29 @@ public class MusicToolWindow {
                 } else {
                     for (JsonElement array : items) {
                         JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                        String trackName = track.get("name").getAsString();
-                        if(trackName.length() > 50) {
-                            trackName = trackName.substring(0, 46) + "...";
+                        JsonArray artists = track.getAsJsonArray("artists");
+                        String artistNames = "";
+                        if(artists.size() > 0) {
+                            for(JsonElement artistArray : artists) {
+                                artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                            }
+                            artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
                         }
-                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                        String trackName = track.get("name").getAsString();
+                        if(trackName.length() > 40) {
+                            trackName = trackName.substring(0, 36) + "...";
+                            if(artistNames.length() > 0)
+                                trackName += " (" + artistNames + ")";
+                        } else if(artistNames.length() > 0) {
+                            trackName += " (" + artistNames + ")";
+                        }
+                        String trackId;
+                        if(track.getAsJsonArray("available_markets").size() == 0) {
+                            trackId = "404";
+                        } else {
+                            trackId = track.get("id").getAsString();
+                        }
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                         softwarePlaylist.add(node);
                     }
                 }
@@ -564,11 +607,29 @@ public class MusicToolWindow {
                     } else {
                         for (JsonElement array : items) {
                             JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                            String trackName = track.get("name").getAsString();
-                            if(trackName.length() > 50) {
-                                trackName = trackName.substring(0, 46) + "...";
+                            JsonArray artists = track.getAsJsonArray("artists");
+                            String artistNames = "";
+                            if(artists.size() > 0) {
+                                for(JsonElement artistArray : artists) {
+                                    artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                                }
+                                artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
                             }
-                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                            String trackName = track.get("name").getAsString();
+                            if(trackName.length() > 40) {
+                                trackName = trackName.substring(0, 36) + "...";
+                                if(artistNames.length() > 0)
+                                    trackName += " (" + artistNames + ")";
+                            } else if(artistNames.length() > 0) {
+                                trackName += " (" + artistNames + ")";
+                            }
+                            String trackId;
+                            if(track.getAsJsonArray("available_markets").size() == 0) {
+                                trackId = "404";
+                            } else {
+                                trackId = track.get("id").getAsString();
+                            }
+                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                             myAIPlaylist.add(node);
                         }
                     }
@@ -625,11 +686,29 @@ public class MusicToolWindow {
                 if (obj2 != null && obj2.has("items")) {
                     for (JsonElement array : obj2.get("items").getAsJsonArray()) {
                         JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
-                        String trackName = track.get("name").getAsString();
-                        if(trackName.length() > 50) {
-                            trackName = trackName.substring(0, 46) + "...";
+                        JsonArray artists = track.getAsJsonArray("artists");
+                        String artistNames = "";
+                        if(artists.size() > 0) {
+                            for(JsonElement artistArray : artists) {
+                                artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                            }
+                            artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
                         }
-                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                        String trackName = track.get("name").getAsString();
+                        if(trackName.length() > 40) {
+                            trackName = trackName.substring(0, 36) + "...";
+                            if(artistNames.length() > 0)
+                                trackName += " (" + artistNames + ")";
+                        } else if(artistNames.length() > 0) {
+                            trackName += " (" + artistNames + ")";
+                        }
+                        String trackId;
+                        if(track.getAsJsonArray("available_markets").size() == 0) {
+                            trackId = "404";
+                        } else {
+                            trackId = track.get("id").getAsString();
+                        }
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                         likedPlaylist.add(node);
                     }
                 } else {
@@ -701,11 +780,29 @@ public class MusicToolWindow {
                         } else {
                             for (JsonElement array : items) {
                                 JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                                String trackName = track.get("name").getAsString(); // inside track we can check "available_markets": []
-                                if(trackName.length() > 50) {
-                                    trackName = trackName.substring(0, 46) + "...";
+                                JsonArray artists = track.getAsJsonArray("artists");
+                                String artistNames = "";
+                                if(artists.size() > 0) {
+                                    for(JsonElement artistArray : artists) {
+                                        artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                                    }
+                                    artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
                                 }
-                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                                String trackName = track.get("name").getAsString(); // inside track we can check "available_markets": []
+                                if(trackName.length() > 40) {
+                                    trackName = trackName.substring(0, 36) + "...";
+                                    if(artistNames.length() > 0)
+                                        trackName += " (" + artistNames + ")";
+                                } else if(artistNames.length() > 0) {
+                                    trackName += " (" + artistNames + ")";
+                                }
+                                String trackId;
+                                if(track.getAsJsonArray("available_markets").size() == 0) {
+                                    trackId = "404";
+                                } else {
+                                    trackId = track.get("id").getAsString();
+                                }
+                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                                 userPlaylist.add(node);
                             }
                         }
@@ -852,11 +949,29 @@ public class MusicToolWindow {
                 int index = (PlayListCommands.currentBatch * 10) - 10;
                 for (int i = 0; i < 10; i++) {
                     JsonObject track = tracks.get(index).getAsJsonObject();
-                    String trackName = track.get("name").getAsString();
-                    if (trackName.length() > 50) {
-                        trackName = trackName.substring(0, 46) + "...";
+                    JsonArray artists = track.getAsJsonArray("artists");
+                    String artistNames = "";
+                    if(artists.size() > 0) {
+                        for(JsonElement artistArray : artists) {
+                            artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                        }
+                        artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
                     }
-                    PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                    String trackName = track.get("name").getAsString();
+                    if (trackName.length() > 40) {
+                        trackName = trackName.substring(0, 36) + "...";
+                        if(artistNames.length() > 0)
+                            trackName += " (" + artistNames + ")";
+                    } else if(artistNames.length() > 0) {
+                        trackName += " (" + artistNames + ")";
+                    }
+                    String trackId;
+                    if(track.getAsJsonArray("available_markets").size() == 0) {
+                        trackId = "404";
+                    } else {
+                        trackId = track.get("id").getAsString();
+                    }
+                    PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
                     recommendedPlaylist.add(node);
                     index++;
                 }
@@ -954,8 +1069,8 @@ public class MusicToolWindow {
                     }
                 }).start();
             } else if(MusicControlManager.deviceActivated) {
-                boolean isPlayed = PlayerControlManager.playSpotifyPlaylist(playlist, track);
-                if(!isPlayed) {
+                SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track);
+                if(response.getCode() == 403) {
                     SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                 }
                 MusicControlManager.deviceActivated = false;

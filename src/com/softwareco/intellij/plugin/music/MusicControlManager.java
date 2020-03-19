@@ -46,7 +46,7 @@ public class MusicControlManager {
     public static Map<String, String> spotifyDevices = new HashMap<>(); // Device id and name
     public static String currentDeviceId = null;
     public static String currentDeviceName = null;
-    public static String previousDeviceName = null;
+    public static String cacheDeviceName = null;
 
     public static int playerCounter = 0;
     public static boolean deviceActivated = false;
@@ -260,13 +260,21 @@ public class MusicControlManager {
                 }
             } else {
                 if(spotifyDeviceIds.size() == 0) {
-                    String infoMsg = "Spotify is currently not running, would you like to launch the \n" +
-                            "desktop instead of the web player?";
-                    int response = Messages.showOkCancelDialog(infoMsg, SoftwareCoUtils.pluginName, "Not Now", "Yes", Messages.getInformationIcon());
-                    if (response == 0) {
-                        launchWebPlayer(true);
-                        return true;
-                    } else if (response == 2) {
+                    if(userStatus != null && userStatus.equals("premium")) {
+                        String infoMsg = "Music Time requires a running Spotify player. \n" +
+                                "Choose a player to launch.";
+                        String[] options = new String[] {"Web player", "Desktop player"};
+                        int response = Messages.showDialog(infoMsg, SoftwareCoUtils.pluginName, options, 0, Messages.getInformationIcon());
+                        if (response == 0) {
+                            launchWebPlayer(true);
+                            return true;
+                        } else if (response == 1) {
+                            launchDesktopPlayer(true);
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else {
                         launchDesktopPlayer(true);
                         return true;
                     }
@@ -310,6 +318,7 @@ public class MusicControlManager {
                     Thread.sleep(3000);
                     if(SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
                         desktopDeviceActive = true;
+                        lazyUpdateDevices(3, activateDevice, false);
                     } else if(SoftwareCoUtils.isWindows()) {
                         MusicControlManager.getSpotifyDevices(); // API call
                         boolean desktopPlayer = false;
@@ -334,8 +343,16 @@ public class MusicControlManager {
                 }
             }).start();
         } else if(!desktopDeviceActive) {
-            SoftwareCoUtils.showMsgPrompt("Desktop app is not detected, Launching web player");
-            launchWebPlayer(activateDevice);
+            SoftwareCoUtils.showMsgPrompt("Desktop player is not available");
+            new Thread(() -> {
+                try {
+                    Thread.sleep(3000);
+                    launchWebPlayer(activateDevice);
+                }
+                catch (Exception e){
+                    System.err.println(e);
+                }
+            }).start();
         }
     }
 
@@ -491,15 +508,18 @@ public class MusicControlManager {
                 if(spotifyDeviceIds.size() == 0) {
                     currentDeviceId = null;
                     currentDeviceName = null;
+                    cacheDeviceName = null;
                 } else if(spotifyDeviceIds.size() == 1) {
                     currentDeviceId = spotifyDeviceIds.get(0);
-                    currentDeviceName = spotifyDevices.get(currentDeviceId);
+                    cacheDeviceName = spotifyDevices.get(currentDeviceId);
                 } else if(!spotifyDeviceIds.contains(currentDeviceId)) {
                     currentDeviceId = null;
+                    currentDeviceName = null;
+                    cacheDeviceName = null;
                 }
 
-                if(currentDeviceName != null && !currentDeviceName.equals(previousDeviceName)) {
-                    previousDeviceName = currentDeviceName;
+                if(currentDeviceName != null && !currentDeviceName.equals(cacheDeviceName)) {
+                    cacheDeviceName = currentDeviceName;
                     PlayListCommands.updatePlaylists(5, null);
                 }
             } else {
