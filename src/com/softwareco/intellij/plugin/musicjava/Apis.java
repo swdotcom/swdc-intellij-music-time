@@ -309,6 +309,10 @@ public class Apis {
     }
     //***** End ****************
 
+    public static boolean isSpotifyInstalled() {
+        return Util.isSpotifyInstalled();
+    }
+
     public static void startDesktopPlayer(String playerName) {
         Util.startPlayer(playerName);
     }

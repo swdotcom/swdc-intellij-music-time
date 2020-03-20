@@ -119,8 +119,19 @@ public class Util {
     }
 
     protected static boolean isSpotifyInstalled() {
-        String[] args = { "osascript", "-e", "exists application \"Spotify\"" };
-        String result = runCommand(args, null);
+        String result = null;
+        if(isWindows()) {
+            String spotify = getUserHomeDir() + "\\AppData\\Roaming\\Spotify\\Spotify.exe";
+            File file = new File(spotify);
+            if(file.exists()) {
+                result = "true";
+            }
+//            String[] args = {"powershell -command \"Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table –AutoSize\""};
+//            result = runCmd(args, null);
+        } else if(isMac()) {
+            String[] args = {"osascript", "-e", "exists application \"Spotify\""};
+            result = runCommand(args, null);
+        }
         return (result != null) ? Boolean.valueOf(result) : false;
     }
 

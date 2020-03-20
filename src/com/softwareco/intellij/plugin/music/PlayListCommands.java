@@ -44,23 +44,8 @@ public class PlayListCommands {
         if(type == 0) {
             PlaylistManager.getUserPlaylists(); // API call
             // Sort Playlists ****************************************************
-            if (userPlaylists.size() > 0) {
-
-                Map<String, String> sortedPlaylist = new LinkedHashMap<>();
-
-                if (!sortType.equals("Latest")) {
-                    sortedPlaylist = sortHashMapByValues((HashMap<String, String>) userPlaylists);
-                    userPlaylistIds.clear();
-                } else {
-                    sortedPlaylist = userPlaylists;
-                }
-
-                Set<String> ids = sortedPlaylist.keySet();
-                for (String id : ids) {
-                    if (!sortType.equals("Latest")) {
-                        userPlaylistIds.add(id);
-                    }
-                }
+            if (userPlaylists.size() > 0 && sortType.equals("Sort A-Z")) {
+                sortHashMapByValues((HashMap<String, String>) userPlaylists);
             }
             // End Sort Playlists ***************************************************************
         } else if(type == 1) {
@@ -96,13 +81,18 @@ public class PlayListCommands {
             HashMap<String, String> passedMap) {
         List<String> mapKeys = new ArrayList<>(passedMap.keySet());
         List<String> mapValues = new ArrayList<>(passedMap.values());
-        Collections.sort(mapValues);
+        List<String> values = new ArrayList<>();
+        for(String value : mapValues) {
+            values.add(value.toLowerCase());
+        }
+        Collections.sort(values);
         Collections.sort(mapKeys);
 
         LinkedHashMap<String, String> sortedMap =
                 new LinkedHashMap<>();
+        userPlaylistIds.clear();
 
-        Iterator<String> valueIt = mapValues.iterator();
+        Iterator<String> valueIt = values.iterator();
         while (valueIt.hasNext()) {
             String val = valueIt.next().toLowerCase();
             Iterator<String> keyIt = mapKeys.iterator();
@@ -115,6 +105,7 @@ public class PlayListCommands {
                 if (comp1.equals(comp2)) {
                     keyIt.remove();
                     sortedMap.put(key, val);
+                    userPlaylistIds.add(key);
                     break;
                 }
             }

@@ -304,6 +304,7 @@ public class MusicControlManager {
     }
 
     public static void launchDesktopPlayer(boolean activateDevice) {
+        boolean spotifyState = Apis.isSpotifyInstalled();
         Apis.startDesktopPlayer("Spotify");
         desktopDeviceActive = false;
         lazilyCheckDesktopPlayer(10, activateDevice);
