@@ -29,6 +29,5 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="slack-api-1.7.0.RELEASE" level="project" />
   </component>
 </module>

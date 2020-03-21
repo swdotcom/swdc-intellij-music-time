@@ -304,10 +304,23 @@ public class MusicControlManager {
     }
 
     public static void launchDesktopPlayer(boolean activateDevice) {
-        boolean spotifyState = Apis.isSpotifyInstalled();
-        Apis.startDesktopPlayer("Spotify");
+        boolean spotifyState;
+        if(SoftwareCoUtils.isWindows()) {
+            spotifyState = Apis.isSpotifyInstalled();
+        } else {
+            spotifyState = true;
+        }
+
         desktopDeviceActive = false;
-        lazilyCheckDesktopPlayer(10, activateDevice);
+        if(spotifyState) {
+            Apis.startDesktopPlayer("Spotify");
+            if(SoftwareCoUtils.isMac())
+                lazilyCheckDesktopPlayer(3, activateDevice);
+            else
+                lazyUpdateDevices(10, activateDevice, false);
+        } else {
+            lazilyCheckDesktopPlayer(0, activateDevice);
+        }
     }
 
     public static void lazilyCheckDesktopPlayer(int retryCount, boolean activateDevice) {
