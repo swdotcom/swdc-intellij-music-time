@@ -539,13 +539,13 @@ public class MusicToolWindow {
                         } else if(artistNames.length() > 0) {
                             trackName += " (" + artistNames + ")";
                         }
-                        String trackId;
-                        if(track.getAsJsonArray("available_markets").size() == 0) {
-                            trackId = "404";
-                        } else {
-                            trackId = track.get("id").getAsString();
-                        }
-                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
+//                        String trackId;
+//                        if(track.getAsJsonArray("available_markets").size() == 0) {
+//                            trackId = "404";
+//                        } else {
+//                            trackId = track.get("id").getAsString();
+//                        }
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         softwarePlaylist.add(node);
                     }
                 }
@@ -623,13 +623,13 @@ public class MusicToolWindow {
                             } else if(artistNames.length() > 0) {
                                 trackName += " (" + artistNames + ")";
                             }
-                            String trackId;
-                            if(track.getAsJsonArray("available_markets").size() == 0) {
-                                trackId = "404";
-                            } else {
-                                trackId = track.get("id").getAsString();
-                            }
-                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
+//                            String trackId;
+//                            if(track.getAsJsonArray("available_markets").size() == 0) {
+//                                trackId = "404";
+//                            } else {
+//                                trackId = track.get("id").getAsString();
+//                            }
+                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                             myAIPlaylist.add(node);
                         }
                     }
@@ -702,13 +702,13 @@ public class MusicToolWindow {
                         } else if(artistNames.length() > 0) {
                             trackName += " (" + artistNames + ")";
                         }
-                        String trackId;
-                        if(track.getAsJsonArray("available_markets").size() == 0) {
-                            trackId = "404";
-                        } else {
-                            trackId = track.get("id").getAsString();
-                        }
-                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
+//                        String trackId;
+//                        if(track.getAsJsonArray("available_markets").size() == 0) {
+//                            trackId = "404";
+//                        } else {
+//                            trackId = track.get("id").getAsString();
+//                        }
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                         likedPlaylist.add(node);
                     }
                 } else {
@@ -796,13 +796,13 @@ public class MusicToolWindow {
                                 } else if(artistNames.length() > 0) {
                                     trackName += " (" + artistNames + ")";
                                 }
-                                String trackId;
-                                if(track.getAsJsonArray("available_markets").size() == 0) {
-                                    trackId = "404";
-                                } else {
-                                    trackId = track.get("id").getAsString();
-                                }
-                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, trackId);
+//                                String trackId;
+//                                if(track.getAsJsonArray("available_markets").size() == 0) {
+//                                    trackId = "404";
+//                                } else {
+//                                    trackId = track.get("id").getAsString();
+//                                }
+                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
                                 userPlaylist.add(node);
                             }
                         }

@@ -908,6 +908,9 @@ public class SoftwareCoSessionManager {
         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
         
         if(id.equals(headphoneiconId) || id.equals(connectspotifyId)) {
+            if(MusicControlManager.spotifyCacheState)
+                MusicControlManager.disConnectSpotify();
+
             MusicControlManager.connectSpotify();
         } else if(id.equals(playiconId)) {
             MusicControlManager.playerCounter = 0;

@@ -503,15 +503,17 @@ public class KeystrokeCount {
                 int fileContributorCount = SoftwareCoRepoManager.getInstance().getFileContributorCount(SoftwareCoMusic.getRootPath(), key);
                 fileInfo.setRepoFileContributorCount(fileContributorCount);
 
+                long fileAgeDays = 0;
                 BasicFileAttributes attributes = null;
                 try {
                     attributes = Files.readAttributes(Paths.get(key), BasicFileAttributes.class);
                 } catch (IOException ex) {}
-                assert attributes != null;
-                Instant fileInstant = attributes.creationTime().toInstant();
-                Instant now = Clock.systemUTC().instant();
-                Duration difference = Duration.between(fileInstant, now);
-                long fileAgeDays = difference.toDays();
+                if(attributes != null) {
+                    Instant fileInstant = attributes.creationTime().toInstant();
+                    Instant now = Clock.systemUTC().instant();
+                    Duration difference = Duration.between(fileInstant, now);
+                    fileAgeDays = difference.toDays();
+                }
 
                 fileInfo.setFileAgeDays(fileAgeDays);
             }
