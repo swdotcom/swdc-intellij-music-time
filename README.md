@@ -40,7 +40,7 @@ Click the **Generate AI Playlist** button to get a personalized AI playlist gene
 
 ### **4. Try a song recommendation**
 
-We also recommend songs by genre and mood of music based on your listening history. Try happy, energetic, or danceable music for upbeat work or classical or jazz for slower, more complex tasks. You can add a song to a playlist using the "+" button.
+We also recommend songs by genre and mood of music based on your listening history. Try happy, energetic, or danceable music for upbeat work or classical or jazz for slower, more complex tasks. You can add a song to a playlist by right click on song then "Add to playlist".
 
 ### **5. Like a song**
 
@@ -62,7 +62,7 @@ Click on the “See web analytics” button to see your most productive songs, a
 
 ### **2. Open your Music Time dashboard**
 
-Click the “🎧” icon in the status bar then **Music Time Dashboard** to generate an in-editor report of your top songs, artists, and genres by productivity score.
+Click “Music Time” on the menu bar then **Open Dashboard** to generate an in-editor report of your top songs, artists, and genres by productivity score.
 
 ### **3. Explore your music metrics**
 
@@ -74,7 +74,7 @@ Music Time is built on our [Code Time plugin](https://github.com/swdotcom/swdc-i
 
 ## Share your top songs
 
-Share your top songs on Facebook, Twitter, WhatsApp, and Tumblr by clicking on the share icon next to a song in the playlist tree. You can also Connect Slack to share songs with your team.
+Share your top songs on Facebook, Twitter, WhatsApp, and Tumblr by right clicking on a song in the playlist tree then "Share". You can also Connect Slack to share songs with your team.
 
 Connecting Slack requires team member permissions or above. You will not be able to connect Slack as a single or multi-channel guest.
 
