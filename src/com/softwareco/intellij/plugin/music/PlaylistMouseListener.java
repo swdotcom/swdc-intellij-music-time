@@ -1,5 +1,6 @@
 package com.softwareco.intellij.plugin.music;
 
+import com.google.gson.JsonObject;
 import com.softwareco.intellij.plugin.SoftwareCoSessionManager;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.actions.MusicToolWindow;
@@ -62,8 +63,12 @@ public class PlaylistMouseListener extends MouseAdapter {
                             MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
                     } else {
                         SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
-                        if(response.getCode() == 403) {
-                            SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                        if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
+                            JsonObject error = response.getJsonObj().getAsJsonObject("error");
+                            if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
+                                SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
+                            else if(error.get("reason").getAsString().equals("UNKNOWN"))
+                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                         }
                     }
                 }
@@ -84,8 +89,12 @@ public class PlaylistMouseListener extends MouseAdapter {
                                 MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
                         } else {
                             SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
-                            if(response.getCode() == 403) {
-                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                            if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
+                                JsonObject error = response.getJsonObj().getAsJsonObject("error");
+                                if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
+                                    SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
+                                else if(error.get("reason").getAsString().equals("UNKNOWN"))
+                                    SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                             }
                         }
                     } else {
