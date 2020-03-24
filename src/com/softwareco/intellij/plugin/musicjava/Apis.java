@@ -26,6 +26,13 @@ public class Apis {
         return pattern.matcher(email).matches();
     }
 
+    /*
+     * Refresh spotify access token
+     * @param
+     * refreshToken - spotify refresh token
+     * clientId - spotify client id
+     * clientSecret - spotify client secret
+     */
     public static Object refreshAccessToken(String refreshToken, String clientId, String clientSecret) {
         if(refreshToken == null)
             refreshToken = MusicStore.getSpotifyRefreshToken();
@@ -53,6 +60,11 @@ public class Apis {
         return resp;
     }
 
+    /*
+     * Get spotify devices
+     * @param
+     * accessToken - spotify access token
+     */
     public static Object getSpotifyDevices(String accessToken) {
 
         String api = "/v1/me/player/devices";
@@ -88,6 +100,12 @@ public class Apis {
         return resp;
     }
 
+    /*
+     * Activate spotify device
+     * @param
+     * accessToken - spotify access token
+     * deviceId - spotify device id
+     */
     public static boolean activateDevice(String accessToken, String deviceId) {
 
         JsonObject obj = new JsonObject();
@@ -107,6 +125,11 @@ public class Apis {
         return false;
     }
 
+    /*
+     * Get spotify current user profile
+     * @param
+     * accessToken - spotify access token
+     */
     public static Object getUserProfile(String accessToken) {
 
         String api = "/v1/me";
@@ -129,6 +152,12 @@ public class Apis {
 
     // Playlist Manager APIs **********************************************************************************
     //**** Start *******
+    /*
+     * Get spotify user playlist
+     * @param
+     * spotifyUserId - spotify user id
+     * accessToken - spotify access token
+     */
     public static Object getUserPlaylists(String spotifyUserId, String accessToken) {
 
         if(spotifyUserId == null) {
@@ -189,6 +218,12 @@ public class Apis {
         return response;
     }
 
+    /*
+     * Get spotify user playlist
+     * @param
+     * spotifyUserId - spotify user id
+     * accessToken - spotify access token
+     */
     public static Object getPlaylists(String spotifyUserId, String accessToken) {
         String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
@@ -207,6 +242,12 @@ public class Apis {
         return resp;
     }
 
+    /*
+     * Get spotify tracks by playlist id
+     * @param
+     * accessToken - spotify access token
+     * playlistId - spotify playlist id
+     */
     public static Object getTracksByPlaylistId(String accessToken, String playlistId) {
 
         if(playlistId != null) {
@@ -239,6 +280,11 @@ public class Apis {
         return new SoftwareResponse();
     }
 
+    /*
+     * Get spotify track by id
+     * @param
+     * trackId - spotify track id
+     */
     public static Object getTrackById(String trackId) {
 
         if(trackId != null) {
@@ -250,6 +296,11 @@ public class Apis {
         return new SoftwareResponse();
     }
 
+    /*
+     * Get spotify recently played track
+     * @param
+     * accessToken - spotify access token
+     */
     public static Object getSpotifyWebRecentTrack(String accessToken) {
 
         String api = "/v1/me/player/recently-played?limit=1";
@@ -276,6 +327,11 @@ public class Apis {
         return resp;
     }
 
+    /*
+     * Get spotify currently playing track
+     * @param
+     * accessToken - spotify access token
+     */
     public static Object getSpotifyWebCurrentTrack(String accessToken) {
 
         String api = "/v1/me/player/currently-playing";
