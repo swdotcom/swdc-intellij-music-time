@@ -22,6 +22,9 @@ public class PlaylistController {
     public static Map<String, String> myAITopTracks = new HashMap<>();
     public static List<String> recommendedTracks = new ArrayList<>();
 
+    /*
+     * Get spotify top tracks
+     */
     public static Object getTopSpotifyTracks() {
 
         String api = "/v1/me/top/tracks?time_range=medium_term&limit=50";
@@ -50,6 +53,11 @@ public class PlaylistController {
         return resp;
     }
 
+    /*
+     * Get spotify liked tracks
+     * @param
+     * accessToken - spotify access token
+     */
     public static Object getLikedSpotifyTracks(String accessToken) {
 
         String api = "/v1/me/tracks?limit=50&offset=0";
@@ -79,6 +87,9 @@ public class PlaylistController {
         return resp;
     }
 
+    /*
+     * Generate software AI playlist
+     */
     public static Object generateAIPlaylist() {
         if(MusicStore.spotifyUserId == null) {
             Apis.getUserProfile(MusicStore.getSpotifyAccessToken());
@@ -96,6 +107,12 @@ public class PlaylistController {
         return resp;
     }
 
+    /*
+     * Send generated AI playlist info to software.com
+     * @param
+     * payload - playlist data
+     * jwt - software jwt token
+     */
     public static Object sendPlaylistToSoftware(String payload, String jwt) {
 
         String api = "/music/playlist/generated";
@@ -104,6 +121,11 @@ public class PlaylistController {
         return resp;
     }
 
+    /*
+     * Get recommended tracks from software.com
+     * @param
+     * jwt - software jwt token
+     */
     public static Object getRecommendedTracks(String jwt) {
 
         String api = "/music/recommendations?limit=40";
@@ -119,6 +141,13 @@ public class PlaylistController {
         return resp;
     }
 
+
+    /*
+     * Refresh software AI playlist
+     * @param
+     * playlistId - spotify playlist id
+     * jwt - software jwt token
+     */
     public static Object refreshAIPlaylist(String playlistId, String jwt) {
 
         if(playlistId != null) {
@@ -140,6 +169,11 @@ public class PlaylistController {
         return new SoftwareResponse();
     }
 
+    /*
+     * Create spotify playlist
+     * @param
+     * playlistName - spotify playlist name
+     */
     public static Object createPlaylist(String playlistName) {
         if(MusicStore.spotifyUserId == null) {
             Apis.getUserProfile(MusicStore.getSpotifyAccessToken());
@@ -157,6 +191,12 @@ public class PlaylistController {
         return resp;
     }
 
+    /*
+     * Add tracks in spotify playlist at position 0
+     * @param
+     * playlistId - spotify playlist id
+     * tracks - list of tracks to add in playlist
+     */
     public static Object addTracksInPlaylist(String playlistId, Set<String> tracks) {
 
         if(playlistId != null) {
@@ -178,6 +218,12 @@ public class PlaylistController {
         return new SoftwareResponse();
     }
 
+    /*
+     * Update spotify playlist tracks with new tracks
+     * @param
+     * playlistId - spotify playlist id
+     * tracks - tracks to be replaced with current tracks in playlist
+     */
     public static Object updatePlaylist(String playlistId, JsonObject tracks) {
 
         if(playlistId != null) {
@@ -201,6 +247,12 @@ public class PlaylistController {
         return new SoftwareResponse();
     }
 
+    /*
+     * Remove specific tracks from spotify playlist
+     * @param
+     * playlistId - spotify playlist id
+     * tracks - list of tracks to remove from playlist
+     */
     public static Object removeTracksInPlaylist(String playlistId, Set<String> tracks) {
 
         if(playlistId != null) {
@@ -223,6 +275,11 @@ public class PlaylistController {
         return new SoftwareResponse();
     }
 
+    /*
+     * Remove playlist from your spotify account
+     * @param
+     * playlistId - spotify playlist id
+     */
     public static boolean removePlaylist(String playlistId) {
         if(playlistId != null) {
             String api = "/v1/playlists/" + playlistId + "/followers";
@@ -234,6 +291,12 @@ public class PlaylistController {
         return false;
     }
 
+    /*
+     * Get AI top tracks from spotify (custom AI playlist of software)
+     * @param
+     * accessToken - spotify access token
+     * playlistId - spotify playlist id
+     */
     public static Object getAITopTracks(String accessToken, String playlistId) {
         if(playlistId != null) {
             SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(accessToken, playlistId);
@@ -253,12 +316,24 @@ public class PlaylistController {
         return null;
     }
 
+    /*
+     * Get spotify genres
+     * @param
+     * accessToken - spotify access token
+     */
     public static Object getGenre(String accessToken) {
         String api = "/v1/recommendations/available-genre-seeds";
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         return resp.getJsonObj();
     }
 
+    /*
+     * Get spotify recommended tracks
+     * @param
+     * accessToken - spotify access token
+     * queryParameter - parameters to apply on recommendation. Required: (seed_tracks | seed_genres | seed_artists)
+     * for more info check: https://developer.spotify.com/documentation/web-api/reference/browse/get-recommendations/
+     */
     public static Object getRecommendationForTracks(String accessToken, Map<String, String> queryParameter) {
         String api = "/v1/recommendations";
         if(queryParameter != null && queryParameter.size() > 0) {
