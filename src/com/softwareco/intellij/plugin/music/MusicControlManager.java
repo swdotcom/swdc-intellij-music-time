@@ -526,6 +526,10 @@ public class MusicControlManager {
                 } else if(spotifyDeviceIds.size() == 1) {
                     currentDeviceId = spotifyDeviceIds.get(0);
                     cacheDeviceName = spotifyDevices.get(currentDeviceId);
+                    if (cacheDeviceName.contains("Web Player"))
+                        playerType = "Web Player";
+                    else
+                        playerType = "Desktop Player";
                 } else if(!spotifyDeviceIds.contains(currentDeviceId)) {
                     currentDeviceId = null;
                     currentDeviceName = null;
