@@ -17,6 +17,7 @@ import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
+import com.intellij.uiDesigner.core.GridConstraints;
 import com.softwareco.intellij.plugin.music.MusicControlManager;
 import com.softwareco.intellij.plugin.music.PlayListCommands;
 import com.softwareco.intellij.plugin.music.PlaylistManager;
@@ -34,6 +35,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.time.ZonedDateTime;
@@ -432,19 +434,19 @@ public class SoftwareCoUtils {
                             String pauseIcon = "pause.png";
                             String playIcon = "play.png";
                             String nextIcon = "next.png";
-                            final String connectPremiumMsg = kpmMsg != null ? kpmMsg : pluginName;
+//                            final String connectPremiumMsg = kpmMsg != null ? kpmMsg : pluginName;
                             final String musicToolTipVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
                             if(MusicControlManager.currentTrackName != null && MusicControlManager.currentTrackName.length() > 20) {
                                 MusicControlManager.currentTrackName = MusicControlManager.currentTrackName.substring(0, 19) + "...";
                             }
                             final String musicMsgVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
                             if (headphoneIconVal != null) {
-                                if (connectPremiumMsg.equals("Connect Premium")) {
-                                    SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                            connectPremiumMsg, connectPremiumMsg, connectspotifyId);
-                                    statusBar.addWidget(kpmWidget, connectspotifyId);
-                                    statusBar.updateWidget(connectspotifyId);
-                                }
+//                                if (connectPremiumMsg.equals("Connect Premium")) {
+//                                    SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+//                                            connectPremiumMsg, connectPremiumMsg, connectspotifyId);
+//                                    statusBar.addWidget(kpmWidget, connectspotifyId);
+//                                    statusBar.updateWidget(connectspotifyId);
+//                                }
 
                                 if(MusicControlManager.currentTrackName != null) {
                                     if(MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
@@ -1038,7 +1040,35 @@ public class SoftwareCoUtils {
     public static void showMsgPrompt(String infoMsg) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
-                Messages.showInfoMessage(infoMsg, pluginName);
+                ProjectManager pm = ProjectManager.getInstance();
+                if (pm != null && pm.getOpenProjects() != null && pm.getOpenProjects().length > 0) {
+                    try {
+                        Project p = pm.getOpenProjects()[0];
+                        final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
+                        JPanel panel = new JPanel();
+                        panel.setLayout(new GridLayout(2,1));
+                        panel.setOpaque(true);
+
+                        GridConstraints musicConstraint = new GridConstraints();
+                        musicConstraint.setRow(0);
+                        musicConstraint.setRowSpan(1);
+                        musicConstraint.setColSpan(1);
+                        JLabel music = new JLabel("Music Time");
+                        music.setOpaque(true);
+                        panel.add(music, musicConstraint);
+
+                        GridConstraints msgConstraint = new GridConstraints();
+                        msgConstraint.setRow(1);
+                        msgConstraint.setRowSpan(1);
+                        msgConstraint.setColSpan(1);
+                        JLabel msg = new JLabel(infoMsg);
+                        msg.setOpaque(true);
+                        panel.add(msg, msgConstraint);
+
+                        statusBar.fireNotificationPopup(panel, new Color(55, 108, 137, 100));
+                    } catch(Exception e) {}
+                }
+                //Messages.showInfoMessage(infoMsg, pluginName);
             }
         });
     }
