@@ -1070,8 +1070,12 @@ public class MusicToolWindow {
                 }).start();
             } else if(MusicControlManager.deviceActivated) {
                 SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track);
-                if(response.getCode() == 403) {
-                    SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
+                    JsonObject error = response.getJsonObj().getAsJsonObject("error");
+                    if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
+                        SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
+                    else if(error.get("reason").getAsString().equals("UNKNOWN"))
+                        SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
                 }
                 MusicControlManager.deviceActivated = false;
             }

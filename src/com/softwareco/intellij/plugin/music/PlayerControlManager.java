@@ -23,7 +23,7 @@ public class PlayerControlManager {
             return new SoftwareResponse();
         }
 
-        if(playlistId.length() < 5) {
+        if(playlistId.length() < 5 && MusicControlManager.playerType.equals("Web Player")) {
             if (MusicControlManager.currentDeviceId != null) {
                 JsonObject obj;
                 List<String> tracks = new ArrayList<>();
@@ -129,6 +129,9 @@ public class PlayerControlManager {
                         MusicControlManager.playerCounter++;
                         playSpotifyDevices();
                     }
+                } else if(resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
+                    JsonObject error = resp.getJsonObj().getAsJsonObject("error");
+                    SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
                 }
             } else {
                 MusicControlManager.getSpotifyDevices();
@@ -167,6 +170,9 @@ public class PlayerControlManager {
                         MusicControlManager.playerCounter++;
                         pauseSpotifyDevices();
                     }
+                } else if(resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
+                    JsonObject error = resp.getJsonObj().getAsJsonObject("error");
+                    SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
                 }
             } else {
                 MusicControlManager.getSpotifyDevices();
@@ -209,6 +215,9 @@ public class PlayerControlManager {
                         MusicControlManager.playerCounter++;
                         previousSpotifyTrack();
                     }
+                } else if(resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
+                    JsonObject error = resp.getJsonObj().getAsJsonObject("error");
+                    SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
                 }
             } else {
                 MusicControlManager.getSpotifyDevices();
@@ -251,6 +260,9 @@ public class PlayerControlManager {
                         MusicControlManager.playerCounter++;
                         nextSpotifyTrack();
                     }
+                } else if(resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
+                    JsonObject error = resp.getJsonObj().getAsJsonObject("error");
+                    SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
                 }
             } else {
                 MusicControlManager.getSpotifyDevices();
@@ -281,6 +293,9 @@ public class PlayerControlManager {
                     }
                 }).start();
                 return true;
+            } else if(resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
+                JsonObject error = resp.getJsonObj().getAsJsonObject("error");
+                SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
             }
         }
         return false;
