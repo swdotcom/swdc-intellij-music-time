@@ -15,6 +15,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -160,7 +161,7 @@ public class SlackControlManager {
                     slackCacheState = exist;
                     ACCESS_TOKEN = null;
                     SoftwareCoSessionManager.setItem("slack_access_token", null);
-                    SoftwareCoUtils.showMsgPrompt("Slack disconnected successfully!!!");
+                    SoftwareCoUtils.showMsgPrompt("Slack disconnected successfully!!!", new Color(55, 108, 137, 100));
                 }
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to Disconnect Slack null response");
@@ -184,7 +185,7 @@ public class SlackControlManager {
                 }
             }).start();
         } else {
-            SoftwareCoUtils.showMsgPrompt("Slack connected successfully!!!");
+            SoftwareCoUtils.showMsgPrompt("Slack connected successfully!!!", new Color(55, 108, 137, 100));
         }
     }
 

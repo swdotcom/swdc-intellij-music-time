@@ -77,7 +77,7 @@ public class MusicToolWindow {
                     } else {
                         refreshButton();
                     }
-                    SoftwareCoUtils.showMsgPrompt("Your playlists were refreshed successfully");
+                    SoftwareCoUtils.showMsgPrompt("Your playlists were refreshed successfully", new Color(55, 108, 137, 100));
                     new Thread(() -> {
                         try {
                             Thread.sleep(1000);
@@ -463,9 +463,9 @@ public class MusicToolWindow {
                             if (playlistName != null) {
                                 JsonObject status = PlayListCommands.createPlaylist(playlistName);
                                 if (status != null)
-                                    SoftwareCoUtils.showMsgPrompt("Your playlist was created successfully");
+                                    SoftwareCoUtils.showMsgPrompt("Your playlist was created successfully", new Color(55, 108, 137, 100));
                                 else
-                                    SoftwareCoUtils.showMsgPrompt("Unable to create playlist, try again");
+                                    SoftwareCoUtils.showMsgPrompt("Unable to create playlist, try again", new Color(120, 23, 50, 100));
                             }
 
                             new Thread(() -> {
@@ -482,10 +482,10 @@ public class MusicToolWindow {
 
                         if (label.getText().equals("Refresh my AI playlist")) {
                             PlayListCommands.refreshAIPlaylist();
-                            SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was refreshed successfully");
+                            SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was refreshed successfully", new Color(55, 108, 137, 100));
                         } else if (label.getText().equals("Generate my AI playlist")) {
                             PlayListCommands.generateAIPlaylist();
-                            SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was generated successfully");
+                            SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was generated successfully", new Color(55, 108, 137, 100));
                         }
                         new Thread(() -> {
                             try {
@@ -1073,9 +1073,9 @@ public class MusicToolWindow {
                 if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                     JsonObject error = response.getJsonObj().getAsJsonObject("error");
                     if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
-                        SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString());
+                        SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
                     else if(error.get("reason").getAsString().equals("UNKNOWN"))
-                        SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track because it is unavailable in your market.");
+                        SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
                 }
                 MusicControlManager.deviceActivated = false;
             }

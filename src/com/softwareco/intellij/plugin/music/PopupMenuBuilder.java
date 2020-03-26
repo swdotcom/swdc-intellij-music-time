@@ -46,9 +46,9 @@ public class PopupMenuBuilder {
                     boolean status = PlayerControlManager.likeSpotifyTrack(false, trackId);
                     if(status) {
                         PlayListCommands.updatePlaylists(3, null);
-                        SoftwareCoUtils.showMsgPrompt("Removed from your Liked Songs");
+                        SoftwareCoUtils.showMsgPrompt("Removed from your Liked Songs", new Color(55, 108, 137, 100));
                     } else {
-                        SoftwareCoUtils.showMsgPrompt("Failed to remove from Liked Songs");
+                        SoftwareCoUtils.showMsgPrompt("Failed to remove from Liked Songs", new Color(120, 23, 50, 100));
                     }
                 }
             });
@@ -62,9 +62,9 @@ public class PopupMenuBuilder {
                     boolean status = PlayerControlManager.likeSpotifyTrack(true, trackId);
                     if(status) {
                         PlayListCommands.updatePlaylists(3, null);
-                        SoftwareCoUtils.showMsgPrompt("Added to your Liked Songs");
+                        SoftwareCoUtils.showMsgPrompt("Added to your Liked Songs", new Color(55, 108, 137, 100));
                     } else {
-                        SoftwareCoUtils.showMsgPrompt("Failed to add in Liked Songs");
+                        SoftwareCoUtils.showMsgPrompt("Failed to add in Liked Songs", new Color(120, 23, 50, 100));
                     }
                 }
             });
@@ -130,9 +130,9 @@ public class PopupMenuBuilder {
                     }
 
                     if (playlistName != null)
-                        SoftwareCoUtils.showMsgPrompt("Added to '" + playlistName + "'");
+                        SoftwareCoUtils.showMsgPrompt("Added to '" + playlistName + "'", new Color(55, 108, 137, 100));
                     else
-                        SoftwareCoUtils.showMsgPrompt("Failed to add: " + error);
+                        SoftwareCoUtils.showMsgPrompt("Failed to add: " + error, new Color(120, 23, 50, 100));
                 }
             }
         });
@@ -160,9 +160,9 @@ public class PopupMenuBuilder {
                     }
 
                     if (playlistName != null)
-                        SoftwareCoUtils.showMsgPrompt("Removed from '" + playlistName + "'");
+                        SoftwareCoUtils.showMsgPrompt("Removed from '" + playlistName + "'", new Color(55, 108, 137, 100));
                     else
-                        SoftwareCoUtils.showMsgPrompt("Failed to remove: " + error);
+                        SoftwareCoUtils.showMsgPrompt("Failed to remove: " + error, new Color(120, 23, 50, 100));
                 }
             });
             popupMenu.add(removePlaylist);
@@ -176,7 +176,7 @@ public class PopupMenuBuilder {
                 StringSelection stringSelection = new StringSelection(uri);
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 clipboard.setContents(stringSelection, null);
-                SoftwareCoUtils.showMsgPrompt("Song link Copied to Clipboard");
+                SoftwareCoUtils.showMsgPrompt("Song link Copied to Clipboard", new Color(55, 108, 137, 100));
             }
         });
 
@@ -263,9 +263,9 @@ public class PopupMenuBuilder {
 
                         boolean status = SlackControlManager.postMessage(obj.toString());
                         if (status)
-                            SoftwareCoUtils.showMsgPrompt("Song shared successfully");
+                            SoftwareCoUtils.showMsgPrompt("Song shared successfully", new Color(55, 108, 137, 100));
                         else
-                            SoftwareCoUtils.showMsgPrompt("Song sharing failed");
+                            SoftwareCoUtils.showMsgPrompt("Song sharing failed", new Color(120, 23, 50, 100));
                     }
                 }
             });
@@ -305,9 +305,9 @@ public class PopupMenuBuilder {
                 public void actionPerformed(ActionEvent e) {
                     boolean status = PlayListCommands.removePlaylist(id);
                     if (status)
-                        SoftwareCoUtils.showMsgPrompt("Playlist deleted successfully");
+                        SoftwareCoUtils.showMsgPrompt("Playlist deleted successfully",new Color(55, 108, 137, 100));
                     else
-                        SoftwareCoUtils.showMsgPrompt("Playlist deletion failed");
+                        SoftwareCoUtils.showMsgPrompt("Playlist deletion failed", new Color(120, 23, 50, 100));
                 }
             });
             popupMenu.add(deletePlaylist);
@@ -321,7 +321,7 @@ public class PopupMenuBuilder {
                 StringSelection stringSelection = new StringSelection(uri);
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 clipboard.setContents(stringSelection, null);
-                SoftwareCoUtils.showMsgPrompt("Playlist link Copied to Clipboard");
+                SoftwareCoUtils.showMsgPrompt("Playlist link Copied to Clipboard", new Color(55, 108, 137, 100));
             }
         });
 
@@ -408,9 +408,9 @@ public class PopupMenuBuilder {
 
                         boolean status = SlackControlManager.postMessage(obj.toString());
                         if (status)
-                            SoftwareCoUtils.showMsgPrompt("Playlist shared successfully");
+                            SoftwareCoUtils.showMsgPrompt("Playlist shared successfully", new Color(55, 108, 137, 100));
                         else
-                            SoftwareCoUtils.showMsgPrompt("Playlist sharing failed");
+                            SoftwareCoUtils.showMsgPrompt("Playlist sharing failed", new Color(120, 23, 50, 100));
                     }
                 }
             });

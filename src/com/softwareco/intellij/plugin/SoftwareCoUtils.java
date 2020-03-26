@@ -18,9 +18,7 @@ import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.uiDesigner.core.GridConstraints;
-import com.softwareco.intellij.plugin.music.MusicControlManager;
-import com.softwareco.intellij.plugin.music.PlayListCommands;
-import com.softwareco.intellij.plugin.music.PlaylistManager;
+import com.softwareco.intellij.plugin.music.*;
 import com.softwareco.intellij.plugin.slack.SlackControlManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -35,6 +33,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.Charset;
@@ -1037,7 +1036,7 @@ public class SoftwareCoUtils {
         });
     }
 
-    public static void showMsgPrompt(String infoMsg) {
+    public static void showMsgPrompt(String infoMsg, Color color) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
                 ProjectManager pm = ProjectManager.getInstance();
@@ -1045,27 +1044,11 @@ public class SoftwareCoUtils {
                     try {
                         Project p = pm.getOpenProjects()[0];
                         final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
-                        JPanel panel = new JPanel();
-                        panel.setLayout(new GridLayout(2,1));
-                        panel.setOpaque(true);
 
-                        GridConstraints musicConstraint = new GridConstraints();
-                        musicConstraint.setRow(0);
-                        musicConstraint.setRowSpan(1);
-                        musicConstraint.setColSpan(1);
-                        JLabel music = new JLabel("Music Time");
-                        music.setOpaque(true);
-                        panel.add(music, musicConstraint);
+                        JLabel msg = new JLabel("<html><strong>Music Time</strong><br>" + infoMsg + "</html>");
+                        msg.setBorder(new EmptyBorder(2, 10, 2, 0));
 
-                        GridConstraints msgConstraint = new GridConstraints();
-                        msgConstraint.setRow(1);
-                        msgConstraint.setRowSpan(1);
-                        msgConstraint.setColSpan(1);
-                        JLabel msg = new JLabel(infoMsg);
-                        msg.setOpaque(true);
-                        panel.add(msg, msgConstraint);
-
-                        statusBar.fireNotificationPopup(panel, new Color(55, 108, 137, 100));
+                        statusBar.fireNotificationPopup(msg, color);
                     } catch(Exception e) {}
                 }
                 //Messages.showInfoMessage(infoMsg, pluginName);
