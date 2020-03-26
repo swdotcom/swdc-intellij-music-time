@@ -16,6 +16,7 @@ import com.softwareco.intellij.plugin.slack.SlackControlManager;
 import org.apache.http.client.methods.HttpPut;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -357,7 +358,7 @@ public class MusicControlManager {
                 }
             }).start();
         } else if(!desktopDeviceActive) {
-            SoftwareCoUtils.showMsgPrompt("Desktop player is not available");
+            SoftwareCoUtils.showMsgPrompt("Desktop player is not available", new Color(120, 23, 50, 100));
             new Thread(() -> {
                 try {
                     Thread.sleep(3000);
