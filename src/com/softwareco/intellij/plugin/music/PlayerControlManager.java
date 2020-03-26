@@ -23,7 +23,7 @@ public class PlayerControlManager {
             return new SoftwareResponse();
         }
 
-        if(playlistId.length() < 5) {
+        if(playlistId.length() < 5 && MusicControlManager.playerType.equals("Web Player")) {
             if (MusicControlManager.currentDeviceId != null) {
                 JsonObject obj;
                 List<String> tracks = new ArrayList<>();
