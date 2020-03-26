@@ -23,7 +23,13 @@ public class PlayerControlManager {
             return new SoftwareResponse();
         }
 
-        if(playlistId.length() < 5 && MusicControlManager.playerType.equals("Web Player")) {
+        if(MusicControlManager.userStatus == null) {
+            JsonObject obj = MusicControlManager.getUserProfile();
+            if (obj != null)
+                MusicControlManager.userStatus = obj.get("product").getAsString();
+        }
+
+        if(playlistId.length() < 5 && MusicControlManager.userStatus != null && MusicControlManager.userStatus.equals("premium")) {
             if (MusicControlManager.currentDeviceId != null) {
                 JsonObject obj;
                 List<String> tracks = new ArrayList<>();

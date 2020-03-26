@@ -45,6 +45,10 @@ public class PlaylistMouseListener extends MouseAdapter {
             if(MusicControlManager.currentDeviceId == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
                 MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
                 MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
+                if (MusicControlManager.currentDeviceName.contains("Web Player"))
+                    MusicControlManager.playerType = "Web Player";
+                else
+                    MusicControlManager.playerType = "Desktop Player";
             }
             /* retrieve the node that was selected */
             if (node.isLeaf()) {
