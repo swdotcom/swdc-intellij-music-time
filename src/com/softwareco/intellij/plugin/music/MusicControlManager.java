@@ -396,7 +396,7 @@ public class MusicControlManager {
         }
         MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, spotifyCacheState);
 
-        SoftwareCoUtils.updatePlayerControls();
+        SoftwareCoUtils.updatePlayerControls(true);
     }
 
     // Lazily update devices

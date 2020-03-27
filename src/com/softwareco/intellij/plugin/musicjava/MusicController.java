@@ -140,8 +140,8 @@ public class MusicController {
         return false;
     }
 
-    public static void playSpotifyDesktop() {
-        Util.playPlayer("Spotify");
+    public static boolean playSpotifyDesktop() {
+        return Util.playPlayer("Spotify").equals("");
     }
 
     public static Object pauseSpotifyWeb(String deviceId, String accessToken) {
@@ -153,8 +153,8 @@ public class MusicController {
         return null;
     }
 
-    public static void pauseSpotifyDesktop() {
-        Util.pausePlayer("Spotify");
+    public static boolean pauseSpotifyDesktop() {
+        return Util.pausePlayer("Spotify").equals("");
     }
 
     public static Object previousSpotifyWeb(String deviceId, String accessToken) {
@@ -166,8 +166,8 @@ public class MusicController {
         return null;
     }
 
-    public static void previousSpotifyDesktop() {
-        Util.previousTrack("Spotify");
+    public static boolean previousSpotifyDesktop() {
+        return Util.previousTrack("Spotify").equals("");
     }
 
     public static Object nextSpotifyWeb(String deviceId, String accessToken) {
@@ -179,8 +179,8 @@ public class MusicController {
         return null;
     }
 
-    public static void nextSpotifyDesktop() {
-        Util.nextTrack("Spotify");
+    public static boolean nextSpotifyDesktop() {
+        return Util.nextTrack("Spotify").equals("");
     }
     //********* End Player controls ******************
 

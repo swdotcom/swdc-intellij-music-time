@@ -724,14 +724,10 @@ public class SoftwareCoUtils {
         BrowserUtil.browse("mailto:cody@software.com");
     }
 
-    public static synchronized void updatePlayerControls() {
+    public static synchronized void updatePlayerControls(boolean recursiveCall) {
         if(MusicControlManager.spotifyCacheState) {
-            PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
-//            if(MusicControlManager.playerType.equals("Web Player") || isWindows()){
-//                PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
-//            } else {
-//                PlaylistManager.getSpotifyDesktopCurrentTrack();  // get current track to update status bar
-//            }
+            if(recursiveCall)
+                PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
 
             PlayListCommands.updatePlaylists(5, null); // API call
 

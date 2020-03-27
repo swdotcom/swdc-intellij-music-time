@@ -826,11 +826,11 @@ public class SoftwareCoSessionManager {
         // Getting Resource as file object
 //        URL url = getClass().getResource("/com/softwareco/intellij/plugin/assets/README.md");
 //        String fileContent = getFileContent(url.getFile());
-        String fileContent = FileManager.getReadmeMdContent();
 
         String readmeFile = SoftwareCoSessionManager.getReadmeFile();
         File f = new File(readmeFile);
         if (!f.exists()) {
+            String fileContent = FileManager.getReadmeMdContent();
             Writer writer = null;
             // write the summary content
             try {
@@ -849,6 +849,8 @@ public class SoftwareCoSessionManager {
         if(vFile != null) {
             OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
             FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+            setItem("intellij_MtReadme", "true");
+            setItem("displayedMtReadme", "true");
         }
     }
 
