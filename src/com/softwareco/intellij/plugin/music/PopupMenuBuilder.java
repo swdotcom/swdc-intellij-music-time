@@ -1,13 +1,8 @@
 package com.softwareco.intellij.plugin.music;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.intellij.codeInsight.hint.HintManager;
 import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.IconLoader;
-import com.softwareco.intellij.plugin.PopupNotifier;
 import com.softwareco.intellij.plugin.SoftwareCoUtils;
 import com.softwareco.intellij.plugin.slack.SlackControlManager;
 
@@ -15,11 +10,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PopupMenuBuilder {
@@ -89,7 +84,7 @@ public class PopupMenuBuilder {
                 } else {
                     playlists = new String[] {"Create a new playlist"};
                 }
-                int index = SoftwareCoUtils.showMsgInputPrompt("Select Playlist", "Spotify", spotifyIcon, playlists);
+                int index = SoftwareCoUtils.showMsgInputPrompt("Select playlist", "Spotify", spotifyIcon, playlists);
                 if(index >= 0) {
                     String playlistName = null;
                     String error = null;
@@ -208,7 +203,7 @@ public class PopupMenuBuilder {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String api = "https://twitter.com/intent/tweet?text=Check+out+this+song&url=" + uri
-                        + "&hashtags=MusicTime&via=via";
+                        + "&hashtags=MusicTime&via=software_hq";
                 BrowserUtil.browse(api);
             }
         });
@@ -250,7 +245,7 @@ public class PopupMenuBuilder {
             slack.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    int index = SoftwareCoUtils.showMsgInputPrompt("Select Channel", "Slack", slackIcon, finalChannels);
+                    int index = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
                     String channel = null;
                     if(index >= 0)
                         channel = finalChannels[index];
@@ -353,7 +348,7 @@ public class PopupMenuBuilder {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String api = "https://twitter.com/intent/tweet?text=Check+out+this+playlist&url=" + uri
-                        + "&hashtags=MusicTime&via=via";
+                        + "&hashtags=MusicTime&via=software_hq";
                 BrowserUtil.browse(api);
             }
         });
@@ -395,7 +390,7 @@ public class PopupMenuBuilder {
             slack.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    int index = SoftwareCoUtils.showMsgInputPrompt("Select Channel", "Slack", slackIcon, finalChannels);
+                    int index = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
                     String channel = null;
                     if(index >= 0)
                         channel = finalChannels[index];

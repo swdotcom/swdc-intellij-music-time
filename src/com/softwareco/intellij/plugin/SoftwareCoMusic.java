@@ -76,6 +76,11 @@ public class SoftwareCoMusic implements ApplicationComponent {
             String musicFile = SoftwareCoSessionManager.getMusicDataFile(false);
             SoftwareCoSessionManager.deleteFile(musicFile);
         }
+        boolean readmeExist = SoftwareCoSessionManager.readmeFileExists();
+        if(readmeExist) {
+            String readmeFile = SoftwareCoSessionManager.getReadmeFile(false);
+            SoftwareCoSessionManager.deleteFile(readmeFile);
+        }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         boolean jwtExists = SoftwareCoSessionManager.jwtExists();
         if (!sessionFileExists || !jwtExists) {

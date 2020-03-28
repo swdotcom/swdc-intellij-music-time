@@ -100,6 +100,14 @@ public class SoftwareCoSessionManager {
         return f.exists();
     }
 
+    public static boolean readmeFileExists() {
+        // don't auto create the file
+        String file = getReadmeFile(false);
+        // check if it exists
+        File f = new File(file);
+        return f.exists();
+    }
+
     public static boolean jwtExists() {
         String jwt = getItem("jwt");
         return (jwt != null && !jwt.equals("")) ? true : false;
@@ -172,8 +180,8 @@ public class SoftwareCoSessionManager {
         return file;
     }
 
-    public static String getReadmeFile() {
-        String file = getSoftwareDir(true);
+    public static String getReadmeFile(boolean autoCreate) {
+        String file = getSoftwareDir(autoCreate);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\jetbrainsMt_README.md";
         } else {
@@ -826,11 +834,11 @@ public class SoftwareCoSessionManager {
         // Getting Resource as file object
 //        URL url = getClass().getResource("/com/softwareco/intellij/plugin/assets/README.md");
 //        String fileContent = getFileContent(url.getFile());
-        String fileContent = FileManager.getReadmeMdContent();
 
-        String readmeFile = SoftwareCoSessionManager.getReadmeFile();
+        String readmeFile = SoftwareCoSessionManager.getReadmeFile(true);
         File f = new File(readmeFile);
         if (!f.exists()) {
+            String fileContent = FileManager.getReadmeMdContent();
             Writer writer = null;
             // write the summary content
             try {
@@ -849,6 +857,8 @@ public class SoftwareCoSessionManager {
         if(vFile != null) {
             OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
             FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+            setItem("intellij_MtReadme", "true");
+            setItem("displayedMtReadme", "true");
         }
     }
 

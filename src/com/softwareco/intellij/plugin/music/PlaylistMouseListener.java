@@ -65,9 +65,9 @@ public class PlaylistMouseListener extends MouseAdapter {
                         MusicControlManager.deviceActivated = false;
                         boolean launchState = MusicControlManager.launchPlayer(false, true);
                         if(launchState)
-                            MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId());
+                            MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId(), node.getName());
                     } else {
-                        SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId());
+                        SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId(), node.getName());
                         if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                             JsonObject error = response.getJsonObj().getAsJsonObject("error");
                             if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
@@ -91,9 +91,9 @@ public class PlaylistMouseListener extends MouseAdapter {
                             MusicControlManager.deviceActivated = false;
                             boolean launchState = MusicControlManager.launchPlayer(false, true);
                             if(launchState)
-                                MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId());
+                                MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId(), child.getName());
                         } else {
-                            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId());
+                            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId(), child.getName());
                             if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                                 JsonObject error = response.getJsonObj().getAsJsonObject("error");
                                 if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
