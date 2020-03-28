@@ -227,8 +227,8 @@ public class PlayerControlManager {
                     MusicControlManager.playerCounter = 0;
                     new Thread(() -> {
                         try {
-                            Thread.sleep(1000);
-                            SoftwareCoUtils.updatePlayerControls(true);
+                            MusicControlManager.changeCurrentTrack(false);
+                            SoftwareCoUtils.updatePlayerControls(false);
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -255,7 +255,8 @@ public class PlayerControlManager {
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.previousSpotifyDesktop();
-            SoftwareCoUtils.updatePlayerControls(true);
+            MusicControlManager.changeCurrentTrack(false);
+            SoftwareCoUtils.updatePlayerControls(false);
             return true;
         }
         return false;
@@ -272,8 +273,8 @@ public class PlayerControlManager {
                     MusicControlManager.playerCounter = 0;
                     new Thread(() -> {
                         try {
-                            Thread.sleep(1000);
-                            SoftwareCoUtils.updatePlayerControls(true);
+                            MusicControlManager.changeCurrentTrack(true);
+                            SoftwareCoUtils.updatePlayerControls(false);
                         } catch (Exception e) {
                             System.err.println(e);
                         }
@@ -300,7 +301,8 @@ public class PlayerControlManager {
             }
         } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.nextSpotifyDesktop();
-            SoftwareCoUtils.updatePlayerControls(true);
+            MusicControlManager.changeCurrentTrack(true);
+            SoftwareCoUtils.updatePlayerControls(false);
             return true;
         }
         return false;

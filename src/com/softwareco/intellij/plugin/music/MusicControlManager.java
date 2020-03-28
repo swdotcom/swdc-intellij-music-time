@@ -1,5 +1,6 @@
 package com.softwareco.intellij.plugin.music;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
@@ -40,7 +41,7 @@ public class MusicControlManager {
 
     public static List<String> playlistids = new ArrayList<>();
     public static String currentPlaylistId = null;
-    public static List<String> tracksByPlaylistId = new ArrayList<>();
+    public static Map<String, Map<String, String>> tracksByPlaylistId = new HashMap<>();
     public static String currentTrackId = null;
     public static String currentTrackName = null;
     public static List<String> spotifyDeviceIds = new ArrayList<>();
@@ -396,7 +397,15 @@ public class MusicControlManager {
         }
         MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, spotifyCacheState);
 
-        SoftwareCoUtils.updatePlayerControls(true);
+        new Thread(() -> {
+            try {
+                SoftwareCoUtils.updatePlayerControls(true);
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
+
     }
 
     // Lazily update devices
@@ -572,5 +581,128 @@ public class MusicControlManager {
             }
         }
         return null;
+    }
+
+    public static void changeCurrentTrack(boolean hasNext) {
+        if(currentPlaylistId == null || currentTrackId == null)
+            return;
+        int currentIndex = 0;
+        if(currentPlaylistId.equals(PlayListCommands.topSpotifyPlaylistId)) {
+            JsonObject obj = PlayListCommands.topSpotifyTracks;
+            if (obj != null && obj.has("items")) {
+                JsonArray items = obj.getAsJsonArray("items");
+                for (JsonElement array : items) {
+                    JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
+                    if(track.get("id").getAsString().equals(currentTrackId)) {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if(hasNext) {
+                    if(currentIndex < items.size()) {
+                        JsonObject track = items.get(currentIndex + 1).getAsJsonObject().getAsJsonObject("track");
+                        currentTrackId = track.get("id").getAsString();
+                        currentTrackName = track.get("name").getAsString();
+                    }
+                } else if(currentIndex > 0){
+                    JsonObject track = items.get(currentIndex - 1).getAsJsonObject().getAsJsonObject("track");
+                    currentTrackId = track.get("id").getAsString();
+                    currentTrackName = track.get("name").getAsString();
+                }
+            }
+        } else if(currentPlaylistId.equals(PlayListCommands.myAIPlaylistId)) {
+            JsonObject obj = PlayListCommands.myAITopTracks;
+            if (obj != null && obj.has("tracks")) {
+                JsonArray items = obj.getAsJsonObject("tracks").getAsJsonArray("items");
+                for (JsonElement array : items) {
+                    JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
+                    if(track.get("id").getAsString().equals(currentTrackId)) {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if(hasNext) {
+                    if(currentIndex < items.size()) {
+                        JsonObject track = items.get(currentIndex + 1).getAsJsonObject().getAsJsonObject("track");
+                        currentTrackId = track.get("id").getAsString();
+                        currentTrackName = track.get("name").getAsString();
+                    }
+                } else if(currentIndex > 0){
+                    JsonObject track = items.get(currentIndex - 1).getAsJsonObject().getAsJsonObject("track");
+                    currentTrackId = track.get("id").getAsString();
+                    currentTrackName = track.get("name").getAsString();
+                }
+            }
+        } else if(currentPlaylistId.equals(PlayListCommands.likedPlaylistId)) {
+            JsonObject obj = PlayListCommands.likedTracks;
+            if (obj != null && obj.has("items")) {
+                JsonArray items = obj.getAsJsonArray("items");
+                for (JsonElement array : items) {
+                    JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
+                    if(track.get("id").getAsString().equals(currentTrackId)) {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if(hasNext) {
+                    if(currentIndex < items.size()) {
+                        JsonObject track = items.get(currentIndex + 1).getAsJsonObject().getAsJsonObject("track");
+                        currentTrackId = track.get("id").getAsString();
+                        currentTrackName = track.get("name").getAsString();
+                    }
+                } else if(currentIndex > 0){
+                    JsonObject track = items.get(currentIndex - 1).getAsJsonObject().getAsJsonObject("track");
+                    currentTrackId = track.get("id").getAsString();
+                    currentTrackName = track.get("name").getAsString();
+                }
+            }
+        } else if(currentPlaylistId.equals(PlayListCommands.recommendedPlaylistId)) {
+            JsonObject obj = PlayListCommands.currentRecommendedTracks;
+            if (obj != null && obj.has("tracks") && obj.getAsJsonArray("tracks").size() > 0
+                    && obj.getAsJsonArray("tracks").size() == 50) {
+                JsonArray items = obj.getAsJsonArray("tracks");
+                for (JsonElement array : items) {
+                    JsonObject track = array.getAsJsonObject();
+                    if(track.get("id").getAsString().equals(currentTrackId)) {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if(hasNext) {
+                    if(currentIndex < items.size()) {
+                        JsonObject track = items.get(currentIndex + 1).getAsJsonObject();
+                        currentTrackId = track.get("id").getAsString();
+                        currentTrackName = track.get("name").getAsString();
+                    }
+                } else if(currentIndex > 0){
+                    JsonObject track = items.get(currentIndex - 1).getAsJsonObject();
+                    currentTrackId = track.get("id").getAsString();
+                    currentTrackName = track.get("name").getAsString();
+                }
+            }
+        } else if(PlayListCommands.userPlaylistIds.contains(currentPlaylistId)) {
+            JsonObject obj = PlayListCommands.userTracks.get(currentPlaylistId);
+            if (obj != null && obj.has("tracks")) {
+                JsonArray items = obj.getAsJsonObject("tracks").getAsJsonArray("items");
+                for (JsonElement array : items) {
+                    JsonObject track = array.getAsJsonObject().getAsJsonObject("track");
+                    if(track.get("id").getAsString().equals(currentTrackId)) {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                if(hasNext) {
+                    if(currentIndex < items.size()) {
+                        JsonObject track = items.get(currentIndex + 1).getAsJsonObject().getAsJsonObject("track");
+                        currentTrackId = track.get("id").getAsString();
+                        currentTrackName = track.get("name").getAsString();
+                    }
+                } else if(currentIndex > 0){
+                    JsonObject track = items.get(currentIndex - 1).getAsJsonObject().getAsJsonObject("track");
+                    currentTrackId = track.get("id").getAsString();
+                    currentTrackName = track.get("name").getAsString();
+                }
+            }
+        }
     }
 }

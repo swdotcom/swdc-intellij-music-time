@@ -9,7 +9,9 @@ import com.softwareco.intellij.plugin.musicjava.Apis;
 import com.softwareco.intellij.plugin.musicjava.Util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,11 +71,12 @@ public class PlaylistManager {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
                     JsonObject tracks = obj.get("tracks").getAsJsonObject();
-                    MusicControlManager.tracksByPlaylistId.clear();
+                    Map<String, String> trks = new HashMap<>();
                     for (JsonElement array : tracks.get("items").getAsJsonArray()) {
                         JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                        MusicControlManager.tracksByPlaylistId.add(track.get("id").getAsString());
+                        trks.put(track.get("id").getAsString(), track.get("name").getAsString());
                     }
+                    MusicControlManager.tracksByPlaylistId.put(playlistId, trks);
                 } else {
                     LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
                 }
