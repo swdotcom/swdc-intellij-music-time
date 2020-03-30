@@ -244,17 +244,26 @@ public class MusicControlManager {
                     } else {
                         String deviceId = spotifyDeviceIds.get(index - size);
                         String deviceName = spotifyDevices.get(deviceId);
-                        activateDevice(deviceId);
-                        if (deviceName.contains("Web Player")) {
-                            playerType = "Web Player";
-                            MusicControlManager.currentDeviceId = deviceId;
-                            MusicControlManager.currentDeviceName = deviceName;
-                            return true;
-                        } else {
-                            playerType = "Desktop Player";
-                            MusicControlManager.currentDeviceId = deviceId;
-                            MusicControlManager.currentDeviceName = deviceName;
-                            return true;
+                        boolean isActivated = activateDevice(deviceId);
+                        if(isActivated) {
+                            if (deviceName.contains("Web Player")) {
+                                playerType = "Web Player";
+                                MusicControlManager.currentDeviceId = deviceId;
+                                MusicControlManager.currentDeviceName = deviceName;
+                                return true;
+                            } else {
+                                playerType = "Desktop Player";
+                                MusicControlManager.currentDeviceId = deviceId;
+                                MusicControlManager.currentDeviceName = deviceName;
+                                return true;
+                            }
+                        } else if(userStatus != null && !userStatus.equals("premium")) {
+                            if (deviceName.contains("Web Player")) {
+                                SoftwareCoUtils.showMsgPrompt("Unable to switch on " + deviceName + "<br> only desktop app allowed for non-premium.", new Color(120, 23, 50, 100));
+                            } else {
+                                SoftwareCoUtils.showMsgPrompt("Please close your web player before switching<br> to the desktop player", new Color(120, 23, 50, 100));
+                            }
+                            return false;
                         }
                     }
                 } else {

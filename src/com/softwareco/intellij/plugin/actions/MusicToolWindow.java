@@ -348,9 +348,12 @@ public class MusicToolWindow {
                     if(MusicControlManager.currentDeviceName != null) {
                         deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
                         deviceState.setToolTipText("Listening on a Spotify device");
-                    } else {
+                    } else if(MusicControlManager.cacheDeviceName != null) {
                         deviceState.setText("Available on " + MusicControlManager.cacheDeviceName);
                         deviceState.setToolTipText("Available on a Spotify device");
+                    } else {
+                        deviceState.setText("Available Spotify devices");
+                        deviceState.setToolTipText("Available Spotify devices");
                     }
                 } else {
                     deviceState.setText("Available Spotify devices");
