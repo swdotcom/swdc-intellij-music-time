@@ -261,7 +261,7 @@ public class MusicControlManager {
                             if (deviceName.contains("Web Player")) {
                                 SoftwareCoUtils.showMsgPrompt("Unable to switch on " + deviceName + "<br> only desktop app allowed for non-premium.", new Color(120, 23, 50, 100));
                             } else {
-                                SoftwareCoUtils.showMsgPrompt("Unable to switch on " + deviceName + "<br> close web player(if open) and play track.", new Color(120, 23, 50, 100));
+                                SoftwareCoUtils.showMsgPrompt("Please close your web player before switching<br> to the desktop player", new Color(120, 23, 50, 100));
                             }
                             return false;
                         }
