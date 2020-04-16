@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><idea-plugin>
-  <id>com.softwareco.intellij.plugin.musictime</id>
+  <id>com.musictime.intellij.plugin</id>
 
   <name>Music Time</name>
   <version>1.1.0</version>
@@ -70,27 +70,27 @@ We provide 90 days of data history for free, forever. In the future, we will pro
   <application-components>
     <!-- Add your application components here -->
     <component>
-      <implementation-class>com.softwareco.intellij.plugin.SoftwareCoMusic</implementation-class>
+      <implementation-class>com.musictime.intellij.plugin.SoftwareCoMusic</implementation-class>
     </component>
   </application-components>
 
   <extensions defaultExtensionNs="com.intellij">
-<postStartupActivity implementation="com.softwareco.intellij.plugin.PluginPostStartupActivity"/>
-<toolWindow anchor="left" factoryClass="com.softwareco.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/softwareco/intellij/plugin/assets/paw-tab.png" id="Music Time"/>
-</extensions>
+    <postStartupActivity implementation="com.musictime.intellij.plugin.PluginPostStartupActivity"/>
+    <toolWindow anchor="left" factoryClass="com.musictime.intellij.plugin.actions.MusicToolWindowFactory" icon="/com/musictime/intellij/plugin/assets/paw-tab.png" id="Music Time"/>
+  </extensions>
 
   <actions>
-<group class="com.softwareco.intellij.plugin.actions.CustomMusicActionGroup" description="Music Time menu actions" id="CustomMusicActionGroup" text="Music Time">
-<add-to-group anchor="before" group-id="MainMenu" relative-to-action="HelpMenu"/>
-<action class="com.softwareco.intellij.plugin.actions.MusicDashboardAction" description="View your latest music metrics on editor" id="MusicDashboardAction" text="Open dashboard"/>
-<action class="com.softwareco.intellij.plugin.actions.SubmitGitIssueAction" description="Encounter a bug? Submit an issue on our GitHub page" id="SubmitGitIssueAction" text="Submit an issue on GitHub"/>
-<action class="com.softwareco.intellij.plugin.actions.SubmitFeedbackAction" description="Send us an email at cody@software.com" id="SubmitFeedbackAction" text="Submit Feedback"/>
-<separator/>
-<action class="com.softwareco.intellij.plugin.actions.ConnectSpotifyAction" description="Connect to the Spotify." id="ConnectSpotifyAction" text="Connect Spotify"/>
-<action class="com.softwareco.intellij.plugin.actions.DisconnectSpotifyAction" description="Disconnect to the Spotify." id="DisconnectSpotifyAction" text="Disconnect Spotify"/>
-<action class="com.softwareco.intellij.plugin.actions.ConnectSlackAction" description="To share a playlist or track on Slack, Please connect your account" id="ConnectSlackAction" text="Connect Slack"/>
-<action class="com.softwareco.intellij.plugin.actions.DisconnectSlackAction" description="Disconnect to the Slack" id="DisconnectSlackAction" text="Disconnect Slack"/>
-</group>
-</actions>
+    <group class="com.musictime.intellij.plugin.actions.CustomMusicActionGroup" description="Music Time menu actions" id="CustomMusicActionGroup" text="Music Time">
+    <add-to-group anchor="before" group-id="MainMenu" relative-to-action="HelpMenu"/>
+    <action class="com.musictime.intellij.plugin.actions.MusicDashboardAction" description="View your latest music metrics on editor" id="MusicDashboardAction" text="Open dashboard"/>
+    <action class="com.musictime.intellij.plugin.actions.SubmitGitIssueAction" description="Encounter a bug? Submit an issue on our GitHub page" id="SubmitGitIssueAction" text="Submit an issue on GitHub"/>
+    <action class="com.musictime.intellij.plugin.actions.SubmitFeedbackAction" description="Send us an email at cody@software.com" id="SubmitFeedbackAction" text="Submit Feedback"/>
+    <separator/>
+    <action class="com.musictime.intellij.plugin.actions.ConnectSpotifyAction" description="Connect to the Spotify." id="ConnectSpotifyAction" text="Connect Spotify"/>
+    <action class="com.musictime.intellij.plugin.actions.DisconnectSpotifyAction" description="Disconnect to the Spotify." id="DisconnectSpotifyAction" text="Disconnect Spotify"/>
+    <action class="com.musictime.intellij.plugin.actions.ConnectSlackAction" description="To share a playlist or track on Slack, Please connect your account" id="ConnectSlackAction" text="Connect Slack"/>
+    <action class="com.musictime.intellij.plugin.actions.DisconnectSlackAction" description="Disconnect to the Slack" id="DisconnectSlackAction" text="Disconnect Slack"/>
+    </group>
+  </actions>
 
 </idea-plugin>
