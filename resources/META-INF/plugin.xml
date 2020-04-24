@@ -2,62 +2,96 @@
   <id>com.musictime.intellij.plugin</id>
 
   <name>Music Time</name>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
 
   <vendor email="cody@software.com" url="https://software.com">Software</vendor>
 
     <description><![CDATA[
-<h1 id="musictimeforintellij">Music Time for IntelliJ</h1>
+# Music Time
 
-<blockquote>
-<p><strong>Music Time</strong> is an IntelliJ plugin that discovers the most productive music to listen to as you code.</p>
-</blockquote>
+[Music Time](https://www.software.com/music-time) is an IntelliJ plugin that discovers the most productive music to listen to as you code.
 
-<p align="center" style="margin: 0 10%">
-<img src="https://raw.githubusercontent.com/swdotcom/swdc-intellij/master/resources/assets/intellij-dashboard.gif" alt="Music Time for IntelliJ" />
-</p>
+## Features
 
-<h2 id="powerupyourdevelopment">Power up your development</h2>
+-   **Integrated player controls**: Control your music right from the status bar of your editor.
 
-<p><strong>In-editor dashboard</strong>
-Get daily and weekly reports of your music listening activity right in your code editor.</p>
+-   **Embedded playlists**: Browse and play your Spotify and iTunes playlists and songs from your editor.
 
-<p><strong>Status bar metrics</strong>
-After installing our plugin, your status bar will show real-time metrics about time music listen per day.</p>
+-   **AI playlists**: Get a personalized AI playlist generated using deep learning to help you focus.
 
-<p><strong>Weekly email reports</strong>
-Get a weekly report delivered right to your email inbox.</p>
+-   **Metrics profile**: Learn how the underlying metrics of music (including tempo, loudness, speechiness, energy, and valence) impact how you code.
 
-<p><strong>Data visualizations</strong>
-Go to our web app to get simple data visualizations, such as a rolling heatmap of your best programming times by hour of the day.</p>
-<p><strong>Calendar integration</strong>
-Integrate with Google Calendar to automatically set calendar events to protect your best programming times from meetings and interrupts.</p>
+-   **Personal top 40**: See your most productive songs, artists, and genres every week in your weekly top 40.
 
-<p><strong>More stats</strong>
-See your best time for coding and the speed, frequency, and top files across your commits.</p>
+-   **Weekly music dashboard**: See your top songs, artists, and genres each week by productivity score and plays while coding.
 
-<h2 id="whyyoushouldtryitout">Why you should try it out</h2>
+-   **Global top 40**: Discover new music from developers around the world in our Software Top 40 playlist.
 
-<ul>
-<li>Automatic time reports by project</li>
+-   **Slack integration**: Connect Slack to share songs and playlists in channels in your workspace.
 
-<li>See what time you listen music your best-find your "flow"</li>
+Music Time currently supports Spotify. We will support iTunes and other players in a future release. You can also check out the [cody-music](https://www.npmjs.com/package/cody-music) npm package for more information about how this extension works.
 
-<li>Defend your best music times against meetings and interrupts</li>
+## Getting started
 
-<li>Find out what you can learn from your data</li>
-</ul>
+### **1. Connect your Spotify account**
 
-<h2 id="itssafesecureandfree">It's safe, secure, and free</h2>
+Click the **Connect Spotify** button in the status bar or in the playlist tree, which will prompt you to log in to your Spotify account.
 
-<p><strong>We never access your code</strong>
-We do not process, send, or store your proprietary code. We only provide metrics about music listening, and we make it easy to see the data we collect.</p>
+### **2. Control your music and playlists right from your editor**
 
-<p><strong>Your data is private</strong>
-We will never share your individually identifiable data with your boss. In the future, we will roll up data into groups and teams but we will keep your data anonymized.</p>
+Click on any song in your list of playlists. Music Time will prompt you to open a Spotify player—either the desktop app or web player.
 
-<p><strong>Free for you, forever</strong>
-We provide 90 days of data history for free, forever. In the future, we will provide premium plans for advanced features and historical data access.</p>
+⚠️ Music Time requires a premium Spotify account and an internet connection to control your music on Windows and Linux. If you are on a Mac, Music Time can also control the Spotify desktop app using AppleScript as either a premium or non-premium user.
+
+### **3. Generate your personal playlist**
+
+Click the **Generate AI Playlist** button to get a personalized AI playlist generated using deep learning. Your AI Top 40 playlist is initially based on your liked songs and global developer data, but will improve as you listen to more music while you code.
+
+### **4. Try a song recommendation**
+
+We also recommend songs by genre and mood of music based on your listening history. Try happy, energetic, or danceable music for upbeat work or classical or jazz for slower, more complex tasks. You can add a song to a playlist by right click on song then "Add to playlist".
+
+### **5. Like a song**
+
+Like a song from the status bar by pressing the "♡" button, which helps us improve your song recommendations and adds that song to your Liked Songs playlist on Spotify.
+
+### **6. Check out the Software Top 40**
+
+Discover new music from developers around the world in a playlist generated by our algorithms. The Software Top 40 playlist is refreshed every week.
+
+## Find your most productive music
+
+As you listen to music while you code, we calculate a productivity score by combining your coding metrics with your listening history and data from over 10,000 developers.
+
+Here are the different ways you can discover your most productive music.
+
+### **1. View your web analytics**
+
+Click on the “See web analytics” button to see your most productive songs, artists, and genres by productivity score. You can also visit app.software.com/login and use your Spotify email address to log in.
+
+### **2. Open your Music Time dashboard**
+
+Click “Music Time” on the menu bar then **Open Dashboard** to generate an in-editor report of your top songs, artists, and genres by productivity score.
+
+### **3. Explore your music metrics**
+
+Discover how the underlying [metrics of music](https://app.software.com/music/metrics) (including tempo, loudness, speechiness, energy, and valence) impact how you code.
+
+### **4. Visualize your Code Time metrics**
+
+Music Time is built on our [Code Time plugin](https://github.com/swdotcom/swdc-intellij). You will be able to see data—such as your keystrokes, time by file and project, and lines of code—which is used calculate to your productivity scores. [Visit your feed](https://app.software.com) to see simple visualizations of your Code Time data, such as a rolling heatmap of your top programming times by hour of the day.
+
+## Share your top songs
+
+Share your top songs on Facebook, Twitter, WhatsApp, and Tumblr by right clicking on a song in the playlist tree then "Share". You can also Connect Slack to share songs with your team.
+
+Connecting Slack requires team member permissions or above. You will not be able to connect Slack as a single or multi-channel guest.
+
+## Contributing & Feedback
+
+Enjoying Music Time? Tweet at us ([@softwaretop40](https://twitter.com/softwaretop40)) and follow us on Instagram ([@softwaretop40](https://www.instagram.com/softwaretop40/)).
+
+You can open an issue on a GitHub page or contact us at [support@software.com](mailto:support@software.com) with any additional questions or feedback.
 ]]></description>
 
   <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->

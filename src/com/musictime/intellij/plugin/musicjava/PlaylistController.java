@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
-import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
