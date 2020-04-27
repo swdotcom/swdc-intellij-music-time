@@ -6,12 +6,16 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.music.MusicControlManager;
+import com.musictime.intellij.plugin.music.PlayerControlManager;
+import com.musictime.intellij.plugin.music.PlaylistManager;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,6 +38,8 @@ public class MusicController {
             deviceId = MusicStore.getCurrentDeviceId();
         }
 
+        SoftwareResponse resp = null;
+
         if(playlistId != null && playlistId.length() > 5) {
             JsonObject obj = new JsonObject();
             obj.addProperty("context_uri", "spotify:playlist:" + playlistId);
@@ -47,12 +53,18 @@ public class MusicController {
 
             if (deviceId != null) {
                 String api = "/v1/me/player/play?device_id=" + deviceId;
-                return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+                resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
             }
         } else {
-            return playSpotifyWebTrack(deviceId, trackId, accessToken);
+            resp = playSpotifyWebTrack(deviceId, trackId, accessToken);
         }
-        return new SoftwareResponse();
+
+        if (resp == null) {
+            return new SoftwareResponse();
+        }
+        // check to see if the song is playing
+        playSongIfNotPlaying(deviceId, accessToken);
+        return resp;
     }
 
     public static void playDesktopPlaylist(String playerName, String playlist) { Util.playPlaylist(playerName, playlist); }
@@ -82,11 +94,20 @@ public class MusicController {
             obj.add("uris", array);
         }
 
+        SoftwareResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+            resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         }
-        return new SoftwareResponse();
+
+        if (resp == null) {
+            return new SoftwareResponse();
+        }
+
+        // check to see if the song is playing
+        playSongIfNotPlaying(deviceId, accessToken);
+
+        return resp;
     }
 
     /*
@@ -123,11 +144,36 @@ public class MusicController {
             }
         }
 
+        SoftwareResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            return Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+            resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         }
-        return new SoftwareResponse();
+
+        if (resp == null) {
+            return new SoftwareResponse();
+        }
+
+        // check to see if the song is playing
+        playSongIfNotPlaying(deviceId, accessToken);
+
+        return resp;
+    }
+
+    private static void playSongIfNotPlaying(String deviceId, String accessToken) {
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                // check to see if the song is playing
+                JsonObject jsonObj = PlaylistManager.getSpotifyWebCurrentTrack();
+
+                if (jsonObj != null && jsonObj.has("is_playing")) {
+                    if (!jsonObj.get("is_playing").getAsBoolean()) {
+                        PlayerControlManager.playSpotifyDevices();
+                    }
+                }
+            }
+        }, 3000);
     }
 
     //***** Player controls ****************

@@ -22,7 +22,6 @@ public class MusicStore {
     public static String currentDeviceName = null;
 
     public static String topSpotifyPlaylistId = "1";
-    public static String likedPlaylistId = "2";
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();
 
@@ -166,14 +165,6 @@ public class MusicStore {
 
     public static void setTopSpotifyPlaylistId(String topSpotifyPlaylistId) {
         MusicStore.topSpotifyPlaylistId = topSpotifyPlaylistId;
-    }
-
-    public static String getLikedPlaylistId() {
-        return likedPlaylistId;
-    }
-
-    public static void setLikedPlaylistId(String likedPlaylistId) {
-        MusicStore.likedPlaylistId = likedPlaylistId;
     }
 
     public static String getMyAIPlaylistId() {

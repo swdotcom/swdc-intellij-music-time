@@ -17,13 +17,13 @@ public class PlayListCommands {
     public static JsonObject topSpotifyTracks = null;
     public static String topSpotifyPlaylistId = "6jCkTED0V5NEuM8sKbGG1Z"; // Software Top 40 playlist_id
     public static JsonObject likedTracks = null;
-    public static String likedPlaylistId = "2";
+    public static String likedPlaylistId = "Liked Songs";
     public static List<String> genres = new ArrayList<>();
     public static String selectedGenre = null;
     public static JsonObject recommendedTracks = new JsonObject(); // All recommended tracks (limit 100)
     public static JsonObject currentRecommendedTracks = new JsonObject(); // 50 recommended tracks to play
     public static int currentBatch = 1; // range 1-10 for 100 tracks (max 10 batches)
-    public static String recommendedPlaylistId = "3";
+    public static String recommendedPlaylistId = "__musictime-recs__";
     public static JsonObject myAITopTracks = null;
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();

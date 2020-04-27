@@ -32,11 +32,13 @@ public class PlayerControlManager {
                 MusicControlManager.userStatus = obj.get("product").getAsString();
         }
 
-        if(playlistId.length() < 5 && MusicControlManager.userStatus != null && MusicControlManager.userStatus.equals("premium")) {
+        boolean isNonNamedPlaylist = (playlistId.equals(PlayListCommands.recommendedPlaylistId) || playlistId.equals(PlayListCommands.likedPlaylistId)) ? true : false;
+
+        if(isNonNamedPlaylist && MusicControlManager.userStatus != null && MusicControlManager.userStatus.equals("premium")) {
             if (MusicControlManager.currentDeviceId != null) {
                 JsonObject obj;
                 List<String> tracks = new ArrayList<>();
-                if(playlistId.equals("2")) {
+                if(playlistId.equals(PlayListCommands.likedPlaylistId)) {
                     obj = PlayListCommands.likedTracks;
                     if (obj != null && obj.has("items")) {
                         for(JsonElement array : obj.get("items").getAsJsonArray()) {
@@ -44,7 +46,7 @@ public class PlayerControlManager {
                             tracks.add(track.get("id").getAsString());
                         }
                     }
-                } else if(playlistId.equals("3")) {
+                } else if(playlistId.equals(PlayListCommands.recommendedPlaylistId)) {
                     PlayListCommands.updateCurrentRecommended();
                     obj = PlayListCommands.currentRecommendedTracks;
                     if (obj != null && obj.has("tracks")) {
