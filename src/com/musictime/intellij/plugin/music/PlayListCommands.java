@@ -232,7 +232,7 @@ public class PlayListCommands {
     public static void updateCurrentRecommended() {
         if(recommendedTracks != null) {
             JsonArray recommendArray = recommendedTracks.getAsJsonArray("tracks");
-            if(recommendArray.size() > 0 && recommendArray.size() == 100) {
+            if(recommendArray != null && recommendArray.size() > 0 && recommendArray.size() == 100) {
                 if (currentBatch < 6) {
                     currentRecommendedTracks = new JsonObject();
                     JsonArray array = new JsonArray();

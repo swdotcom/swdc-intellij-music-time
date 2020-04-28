@@ -95,6 +95,7 @@ public class SoftwareCoUtils {
 
     // jwt_from_apptoken_call
     public static String jwt = null;
+    private static boolean initiatedCodeTimeInstallCheck = false;
     public static boolean codeTimeInstalled = false;
 
     static {
@@ -112,6 +113,10 @@ public class SoftwareCoUtils {
     public static boolean isSpotifyConncted() { return MusicControlManager.spotifyCacheState; }
 
     public static boolean isCodeTimeInstalled() {
+        if (!initiatedCodeTimeInstallCheck) {
+            initiatedCodeTimeInstallCheck = true;
+            getUser();
+        }
         return codeTimeInstalled;
     }
 
@@ -826,7 +831,23 @@ public class SoftwareCoUtils {
                     }
                 }
 
+                if (!codeTimeInstalled) {
+                    // check to see if latestPayloadTimestampEndUtc is found
+                    String val = SoftwareCoSessionManager.getItem("latestPayloadTimestampEndUtc");
+                    if (StringUtils.isNotBlank(val)) {
+                        codeTimeInstalled = true;
+                    }
+                }
+
                 return userData;
+            }
+        }
+
+        if (!codeTimeInstalled) {
+            // check to see if latestPayloadTimestampEndUtc is found
+            String val = SoftwareCoSessionManager.getItem("latestPayloadTimestampEndUtc");
+            if (StringUtils.isNotBlank(val)) {
+                codeTimeInstalled = true;
             }
         }
 
