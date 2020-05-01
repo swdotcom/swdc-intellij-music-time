@@ -2,8 +2,8 @@ package com.musictime.intellij.plugin.music;
 
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
-import com.musictime.intellij.plugin.musicjava.SoftwareResponse;
 
 import javax.swing.*;
 import java.awt.*;

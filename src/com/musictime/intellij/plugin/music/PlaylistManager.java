@@ -4,15 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.musicjava.SoftwareResponse;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.Util;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import org.apache.commons.net.util.Base64;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -52,7 +53,7 @@ public class Apis {
         byte[] bytesEncoded = Base64.encodeBase64(authPayload.getBytes());
         String encodedAuthPayload = "Basic " + new String(bytesEncoded);
 
-        SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, null, encodedAuthPayload);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null, encodedAuthPayload);
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             MusicStore.setSpotifyAccessToken(obj.get("access_token").getAsString());
@@ -68,7 +69,7 @@ public class Apis {
     public static Object getSpotifyDevices(String accessToken) {
 
         String api = "/v1/me/player/devices";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if (resp.isOk()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("devices")) {
@@ -117,7 +118,7 @@ public class Apis {
         obj.addProperty("play", true);
 
         String api = "/v1/me/player";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         if (resp.getCode() == 204) {
             getSpotifyDevices(accessToken);
             return true;
@@ -133,7 +134,7 @@ public class Apis {
     public static Object getUserProfile(String accessToken) {
 
         String api = "/v1/me";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         JsonObject obj = resp.getJsonObj();
         if (resp.isOk()) {
             MusicStore.setSpotifyUserId(obj.get("id").getAsString());
@@ -226,7 +227,7 @@ public class Apis {
      */
     public static Object getPlaylists(String spotifyUserId, String accessToken) {
         String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if(resp.isOk()) {
             return resp;
         } else if(!resp.getJsonObj().isJsonNull()) {
@@ -252,7 +253,7 @@ public class Apis {
 
         if(playlistId != null) {
             String api = "/v1/playlists/" + playlistId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
             if (resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
@@ -289,7 +290,7 @@ public class Apis {
 
         if(trackId != null) {
             String api = "/v1/tracks/" + trackId;
-            SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
 
             return resp;
         }
@@ -304,7 +305,7 @@ public class Apis {
     public static Object getSpotifyWebRecentTrack(String accessToken) {
 
         String api = "/v1/me/player/recently-played?limit=1";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if (resp.isOk()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("items")) {
@@ -335,7 +336,7 @@ public class Apis {
     public static Object getSpotifyWebCurrentTrack(String accessToken) {
 
         String api = "/v1/me/player/currently-playing";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         if (resp.isOk() && resp.getCode() == 200) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {

@@ -9,8 +9,8 @@ import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.*;
-import com.musictime.intellij.plugin.musicjava.SoftwareResponse;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -1051,10 +1051,11 @@ public class MusicToolWindow {
                 SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track, trackName);
                 if (response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                     JsonObject error = response.getJsonObj().getAsJsonObject("error");
-                    if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
+                    if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED")) {
                         SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
-                    else if (error.get("reason").getAsString().equals("UNKNOWN"))
+                    } else if (error.get("reason").getAsString().equals("UNKNOWN")) {
                         SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
+                    }
                 }
                 MusicControlManager.deviceActivated = false;
             }

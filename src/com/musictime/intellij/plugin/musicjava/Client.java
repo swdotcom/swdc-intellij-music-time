@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -30,6 +31,8 @@ public class Client {
     public final static String api_endpoint = "https://api.software.com";
     // set the api endpoint for spotify
     public final static String spotify_endpoint = "https://api.spotify.com";
+    // set the launch url to use
+    public final static String launch_url = "https://app.software.com";
 
     public static String pluginName = "Music Time";
 
@@ -52,11 +55,15 @@ public class Client {
         httpClient = HttpClientBuilder.create().build();
     }
 
-    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
-        return makeApiCall(api, httpMethodName, payload, null);
+    public static SoftwareResponse makeSpotifyApiCall(String api, String httpMethodName, String payload, String overridingJwt) {
+        return makeApiCall(api, httpMethodName, payload, overridingJwt, true);
     }
 
-    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, String overridingJwt) {
+    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
+        return makeApiCall(api, httpMethodName, payload, null, false);
+    }
+
+    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, String overridingJwt, boolean isSpotifyApiCall) {
 
         SoftwareResponse softwareResponse = new SoftwareResponse();
 
@@ -65,9 +72,7 @@ public class Client {
 
         Future<HttpResponse> response = null;
 
-        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
-                || api.contains("/users/plugin/accounts") || api.contains("/disconnect")
-                || api.contains("/generated") || api.contains("/music/recommendations")) {
+        if (!isSpotifyApiCall) {
             // if the server is having issues, we'll timeout within 5 seconds for these calls
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);
@@ -124,7 +129,7 @@ public class Client {
                                 }
                             }
                         } catch (IOException e) {
-                            String errorMessage = pluginName + ": Unable to get the response from the http request, error: " + e.getMessage();
+                            String errorMessage = pluginName + ": Unable to get the response from the http request for api " + api + ", error: " + e.getMessage();
                             softwareResponse.setErrorMessage(errorMessage);
                             LOG.log(Level.WARNING, errorMessage);
                         }
@@ -140,7 +145,7 @@ public class Client {
                     }
                 }
             } catch (InterruptedException | ExecutionException e) {
-                String errorMessage = pluginName + ": Unable to get the response from the http request, error: " + e.getMessage();
+                String errorMessage = pluginName + ": Unable to get the response from the http request for api " + api + ", error: " + e.getMessage();
                 softwareResponse.setErrorMessage(errorMessage);
                 LOG.log(Level.WARNING, errorMessage);
             }

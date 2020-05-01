@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import org.apache.http.client.methods.HttpGet;
 
 import java.io.*;

@@ -21,6 +21,7 @@ import com.intellij.openapi.wm.WindowManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
+import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -56,11 +57,6 @@ import java.util.regex.PatternSyntaxException;
 public class SoftwareCoUtils {
 
     public static final Logger LOG = Logger.getLogger("SoftwareCoUtils");
-
-    // set the api endpoint to use.
-    public final static String api_endpoint = "https://api.software.com";
-    // set the launch url to use
-    public final static String launch_url = "https://app.software.com";
 
     public static HttpClient httpClient;
     public static HttpClient pingClient;
@@ -259,7 +255,7 @@ public class SoftwareCoUtils {
                                 }
                             }
                         } catch (IOException e) {
-                            String errorMessage = SoftwareCoMusic.getPluginName() + ": Unable to get the response from the http request, error: " + e.getMessage();
+                            String errorMessage = SoftwareCoMusic.getPluginName() + ": Unable to get the response from the http request for api " + api + ", error: " + e.getMessage();
                             softwareResponse.setErrorMessage(errorMessage);
                             LOG.log(Level.WARNING, errorMessage);
                         }
@@ -277,7 +273,7 @@ public class SoftwareCoUtils {
                     }
                 }
             } catch (InterruptedException | ExecutionException e) {
-                String errorMessage = SoftwareCoMusic.getPluginName() + ": Unable to get the response from the http request, error: " + e.getMessage();
+                String errorMessage = SoftwareCoMusic.getPluginName() + ": Unable to get the response from the http request for api " + api + ", error: " + e.getMessage();
                 softwareResponse.setErrorMessage(errorMessage);
                 LOG.log(Level.WARNING, errorMessage);
             }
@@ -1048,6 +1044,15 @@ public class SoftwareCoUtils {
         });
     }
 
+    public static void showInfoMessage(String msg) {
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            public void run() {
+                // ask to download the PM
+                Messages.showInfoMessage(msg, SoftwareCoMusic.getPluginName());
+            }
+        });
+    }
+
     public static void showMsgPrompt(String infoMsg, Color color) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
@@ -1151,7 +1156,7 @@ public class SoftwareCoUtils {
     }
 
     public static void launchMusicWebDashboard() {
-        String url = SoftwareCoUtils.launch_url + "/music";
+        String url = Client.launch_url + "/music";
         BrowserUtil.browse(url);
     }
 

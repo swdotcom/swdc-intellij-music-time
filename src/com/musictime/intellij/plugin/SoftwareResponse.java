@@ -10,7 +10,7 @@ public class SoftwareResponse {
     private String dataMessage;
     private String errorMessage;
     private String jsonStr;
-    private JsonObject jsonObj;
+    private JsonObject jsonObj = new JsonObject();
 
     public boolean isOk() {
         return ok;

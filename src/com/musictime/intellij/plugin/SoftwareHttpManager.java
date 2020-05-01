@@ -1,5 +1,6 @@
 package com.musictime.intellij.plugin;
 
+import com.musictime.intellij.plugin.musicjava.Client;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.*;
@@ -36,7 +37,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
 
             switch (httpMethodName) {
                 case HttpPost.METHOD_NAME:
-                    req = new HttpPost("" + SoftwareCoUtils.api_endpoint + this.api);
+                    req = new HttpPost("" + Client.api_endpoint + this.api);
                     if (payload != null) {
                         //
                         // add the json payload
@@ -46,10 +47,10 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
                     }
                     break;
                 case HttpDelete.METHOD_NAME:
-                    req = new HttpDelete(SoftwareCoUtils.api_endpoint + "" + this.api);
+                    req = new HttpDelete(Client.api_endpoint + "" + this.api);
                     break;
                 case HttpPut.METHOD_NAME:
-                    req = new HttpPut(SoftwareCoUtils.api_endpoint + "" + this.api);
+                    req = new HttpPut(Client.api_endpoint + "" + this.api);
                     if (payload != null) {
                         //
                         // add the json payload
@@ -59,7 +60,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
                     }
                     break;
                 default:
-                    req = new HttpGet(SoftwareCoUtils.api_endpoint + "" + this.api);
+                    req = new HttpGet(Client.api_endpoint + "" + this.api);
                     break;
             }
 

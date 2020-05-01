@@ -11,9 +11,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
-import com.musictime.intellij.plugin.musicjava.Apis;
-import com.musictime.intellij.plugin.musicjava.MusicStore;
-import com.musictime.intellij.plugin.musicjava.Util;
+import com.musictime.intellij.plugin.musicjava.*;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
 import org.apache.http.client.methods.HttpPut;
 
@@ -153,9 +151,49 @@ public class MusicControlManager {
         lazilyFetchSpotifyStatus(20);
     }
 
+    public static void seedLikedSongSessions() {
+        // get the liked songs
+        JsonArray likedTracksList = PlayListCommands.likedTracksList;
+        int batch_limit = 30;
+        JsonArray batch = new JsonArray();
+        if (likedTracksList != null && likedTracksList.size() > 0) {
+            for (int i = 0; i < likedTracksList.size(); i++) {
+                JsonObject track = likedTracksList.get(i).getAsJsonObject();
+                track.addProperty("liked", true);
+                track.addProperty("playlistId", "Liked Songs");
+                track.addProperty("listened", 0);
+                JsonObject songSession = new JsonObject();
+                songSession.add("track", track);
+                if (batch.size() >= batch_limit) {
+                    // send it
+                    sendBatchedLikedSongSessions(batch);
+                    batch = new JsonArray();
+                }
+                batch.add(songSession);
+            }
+        }
+
+        if (batch.size() > 0) {
+            // send the rest
+            sendBatchedLikedSongSessions(batch);
+        }
+    }
+
+    private static void sendBatchedLikedSongSessions(JsonArray batch) {
+        String api = "/music/session/seed";
+        JsonObject payload = new JsonObject();
+        payload.add("tracks", batch);
+        String jsonPayload = payload.toString();
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, jsonPayload, jwt, false);
+        if (!resp.isOk()) {
+            LOG.info("Error posting seed songs: " + resp.getErrorMessage());
+        }
+    }
+
     private static void authSpotify(boolean serverIsOnline) {
         if (serverIsOnline) {
-            String api = "https://api.software.com/auth/spotify?token=" + SoftwareCoUtils.jwt + "&mac=" + SoftwareCoUtils.isMac();
+            String api = Client.api_endpoint + "/auth/spotify?token=" + SoftwareCoUtils.jwt + "&mac=" + SoftwareCoUtils.isMac();
             BrowserUtil.browse(api);
         }
     }
@@ -177,12 +215,19 @@ public class MusicControlManager {
             }).start();
         } else if(spotifyCacheState && spotifyStatus.equals("Not Connected")) {
             spotifyStatus = "Connected";
+            SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
             JsonObject obj = getUserProfile();
-            if (obj != null)
+            if (obj != null) {
                 userStatus = obj.get("product").getAsString();
+            }
 
             PlaylistManager.getUserPlaylists(); // API call
+            // fetch the liked songs (type 3 = liked songs)
             PlayListCommands.updatePlaylists(3, null);
+            // send the liked songs to the app to seed
+            MusicControlManager.seedLikedSongSessions();
+
+            // get genres to show in the options
             PlayListCommands.getGenre(); // API call
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
             MusicControlManager.getSpotifyDevices(); // API call
@@ -505,7 +550,7 @@ public class MusicControlManager {
             }
         }
 
-        com.musictime.intellij.plugin.musicjava.SoftwareResponse resp = (com.musictime.intellij.plugin.musicjava.SoftwareResponse) Apis.refreshAccessToken(REFRESH_TOKEN, CLIENT_ID, CLIENT_SECRET);
+        SoftwareResponse resp = (SoftwareResponse) Apis.refreshAccessToken(REFRESH_TOKEN, CLIENT_ID, CLIENT_SECRET);
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             ACCESS_TOKEN = obj.get("access_token").getAsString();
@@ -517,7 +562,7 @@ public class MusicControlManager {
     public static JsonObject getSpotifyDevices() {
 
         String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        com.musictime.intellij.plugin.musicjava.SoftwareResponse resp = (com.musictime.intellij.plugin.musicjava.SoftwareResponse) Apis.getSpotifyDevices(accessToken);
+        SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyDevices(accessToken);
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("devices")) {
@@ -578,7 +623,7 @@ public class MusicControlManager {
     public static JsonObject getUserProfile() {
 
         String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        com.musictime.intellij.plugin.musicjava.SoftwareResponse resp = (com.musictime.intellij.plugin.musicjava.SoftwareResponse) Apis.getUserProfile(accessToken);
+        SoftwareResponse resp = (SoftwareResponse) Apis.getUserProfile(accessToken);
         JsonObject obj = resp.getJsonObj();
         if (resp.isOk()) {
             spotifyUserId = obj.get("id").getAsString();

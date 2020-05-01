@@ -4,16 +4,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.musicjava.MusicController;
-import com.musictime.intellij.plugin.musicjava.SoftwareResponse;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 
 public class PlayerControlManager {

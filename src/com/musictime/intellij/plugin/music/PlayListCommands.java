@@ -4,9 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
+import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.musicjava.PlaylistController;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
-import com.musictime.intellij.plugin.musicjava.SoftwareResponse;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -17,6 +17,7 @@ public class PlayListCommands {
     public static JsonObject topSpotifyTracks = null;
     public static String topSpotifyPlaylistId = "6jCkTED0V5NEuM8sKbGG1Z"; // Software Top 40 playlist_id
     public static JsonObject likedTracks = null;
+    public static JsonArray likedTracksList = new JsonArray();
     public static String likedPlaylistId = "Liked Songs";
     public static List<String> genres = new ArrayList<>();
     public static String selectedGenre = null;
@@ -59,10 +60,23 @@ public class PlayListCommands {
             myAITopTracks = getAITopTracks(); // API call
             // End My AI Top 40 ***************************************************************
         } else if(type == 3) {
+
             // Liked Songs Playlist **********************************************
             JsonObject tracks = getLikedSpotifyTracks(); // API call
-            if(tracks != null)
+            if(tracks != null) {
+                // this is just the top level (the tracks are found in the items)
                 likedTracks = tracks;
+                likedTracksList = new JsonArray();
+                // set the raw liked tracks
+                if (likedTracks != null && likedTracks.get("items") != null) {
+                    JsonArray items = likedTracks.getAsJsonArray("items");
+                    if (items != null && items.size() > 0) {
+                        for (JsonElement el : items) {
+                            likedTracksList.add(el.getAsJsonObject().getAsJsonObject("track"));
+                        }
+                    }
+                }
+            }
             // End Liked Songs ***************************************************************
         } else if(type == 4 && playlistId != null) {
             // User Playlists ****************************************************

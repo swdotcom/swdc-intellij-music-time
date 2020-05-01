@@ -6,11 +6,7 @@ import com.intellij.ide.BrowserUtil;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
-import com.musictime.intellij.plugin.musicjava.Util;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareHttpManager;
-import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.musicjava.Util;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -136,7 +132,7 @@ public class SlackControlManager {
 
         String jwt = SoftwareCoSessionManager.getItem("jwt");
         String encodedJwt = URLEncoder.encode(jwt, "UTF-8");
-        String api = SoftwareCoUtils.api_endpoint + "/auth/slack?integrate=slack&plugin=musictime&token=" + encodedJwt;
+        String api = Client.api_endpoint + "/auth/slack?integrate=slack&plugin=musictime&token=" + encodedJwt;
         BrowserUtil.browse(api);
 
         // Periodically check that the user has connected
@@ -165,7 +161,7 @@ public class SlackControlManager {
                     slackCacheState = exist;
                     ACCESS_TOKEN = null;
                     SoftwareCoSessionManager.setItem("slack_access_token", null);
-                    SoftwareCoUtils.showMsgPrompt("Slack disconnected successfully!!!", new Color(55, 108, 137, 100));
+                    SoftwareCoUtils.showMsgPrompt("Successfully disconnected Slack", new Color(55, 108, 137, 100));
                 }
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to Disconnect Slack null response");
@@ -189,7 +185,7 @@ public class SlackControlManager {
                 }
             }).start();
         } else {
-            SoftwareCoUtils.showMsgPrompt("Slack connected successfully!!!", new Color(55, 108, 137, 100));
+            SoftwareCoUtils.showMsgPrompt("Successfully connected to Slack", new Color(55, 108, 137, 100));
         }
     }
 
