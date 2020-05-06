@@ -6,6 +6,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,10 +28,9 @@ public class ConnectSlackAction extends AnAction {
         boolean hasJwt = SoftwareCoSessionManager.jwtExists();
         boolean isLoggedIn = (!sessionFileExists || !hasJwt || !SlackControlManager.isSlackConncted())
                 ? false : true;
-        boolean spotifyConnected = SoftwareCoUtils.isSpotifyConncted();
-        boolean serverOnline = SoftwareCoSessionManager.isServerOnline();
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
 
-        event.getPresentation().setVisible(spotifyConnected && !isLoggedIn && serverOnline);
+        event.getPresentation().setVisible(hasSpotifyAccess && !isLoggedIn);
         event.getPresentation().setEnabled(true);
     }
 }

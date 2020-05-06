@@ -4,11 +4,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.music.MusicControlManager;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.net.util.Base64;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -91,9 +95,7 @@ public class Apis {
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     refreshAccessToken(null, null, null);
                 }
             }
@@ -142,9 +144,7 @@ public class Apis {
             MusicStore.setSpotifyAccessToken(accessToken);
             return resp;
         } else if (obj != null && obj.has("error")) {
-            JsonObject error = obj.get("error").getAsJsonObject();
-            String message = error.get("message").getAsString();
-            if(message.equals("The access token expired")) {
+            if(MusicControlManager.requiresSpotifyAccessTokenRefresh(obj)) {
                 refreshAccessToken(null, null, null);
             }
         }
@@ -233,14 +233,64 @@ public class Apis {
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     refreshAccessToken(null, null, null);
                 }
             }
         }
         return resp;
+    }
+
+    /**
+     * type: Valid types are: album, artist, playlist, and track
+     * q: can have a filter and keywords, or just keywords. You
+     * can have a wildcard as well. The query will search against
+     * the name and description if a specific filter isn't specified.
+     * examples:
+     * 1) search for a track by name "what a time to be alive"
+     *    query string: ?q=name:what%20a%20time&type=track
+     *    result: this should return tracks matching the track name
+     * 2) search for a track using a wildcard in the name
+     *    query string: ?q=name:what*&type=track&limit=50
+     *    result: will return all tracks with "what" in the name
+     * 3) search for an artist in name or description
+     *    query string: ?tania%20bowra&type=artist
+     *    result: will return all artists where tania bowra is in
+     *            the name or description
+     * limit: max of 50
+     */
+    public static JsonArray searchSpotify(String keywords) {
+        if (StringUtils.isNotBlank(keywords)) {
+            keywords = keywords.trim();
+            String encodedKeywords = keywords;
+            try {
+                encodedKeywords = URLEncoder.encode(keywords, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                encodedKeywords = keywords;
+            }
+
+            String api = "/v1/search?type=track&q="+encodedKeywords+"&limit=50";
+            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+            if (resp.isOk()) {
+                JsonObject data = resp.getJsonObj();
+                if (data.has("tracks") && data.get("tracks").getAsJsonObject().has("items")) {
+                    return data.get("tracks").getAsJsonObject().get("items").getAsJsonArray();
+                }
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject data = resp.getJsonObj();
+                if (MusicControlManager.requiresSpotifyAccessTokenRefresh(data)) {
+                    refreshAccessToken(null, null, null);
+                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+                }
+            }
+            if (resp != null && resp.isOk()) {
+                JsonObject data = resp.getJsonObj();
+                if (data.has("tracks") && data.get("tracks").getAsJsonObject().has("items")) {
+                    return data.get("tracks").getAsJsonObject().get("items").getAsJsonArray();
+                }
+            }
+        }
+        return new JsonArray();
     }
 
     /*
@@ -269,9 +319,7 @@ public class Apis {
             } else if(!resp.getJsonObj().isJsonNull()) {
                 JsonObject tracks = resp.getJsonObj();
                 if (tracks != null && tracks.has("error")) {
-                    JsonObject error = tracks.get("error").getAsJsonObject();
-                    String message = error.get("message").getAsString();
-                    if(message.equals("The access token expired")) {
+                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                         refreshAccessToken(null, null, null);
                     }
                 }
@@ -318,9 +366,7 @@ public class Apis {
         } else {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     refreshAccessToken(null, null, null);
                 }
             }
@@ -355,9 +401,7 @@ public class Apis {
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     refreshAccessToken(null, null, null);
                 }
             }

@@ -40,7 +40,6 @@ public class SoftwareCoSessionManager {
 
     private static JsonArray keystrokeData = new JsonArray();
     public static int playerState = 0; // 0 = inactive & 1 = active
-    public static boolean isServerActive = false;
 
     /* cache data*/
     private static int keyStrokes = 0;
@@ -58,9 +57,6 @@ public class SoftwareCoSessionManager {
     public static long local_start = 0L;
     private static long lastAppAvailableCheck = 0;
     private static long lastServerCheck = 0;
-
-    private static String SERVICE_NOT_AVAIL =
-            "Our service is temporarily unavailable.\n\nPlease try again later.\n";
 
     public static SoftwareCoSessionManager getInstance() {
         if (instance == null) {
@@ -141,12 +137,6 @@ public class SoftwareCoSessionManager {
             SoftwareCoUtils.updateServerStatus(resp.isOk());
             lastServerCheck = nowInSec;
         }
-        return SoftwareCoUtils.isAppAvailable();
-    }
-
-    public synchronized static boolean directServerOnlineCheck() {
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
-        SoftwareCoUtils.updateServerStatus(resp.isOk());
         return SoftwareCoUtils.isAppAvailable();
     }
 
@@ -466,12 +456,9 @@ public class SoftwareCoSessionManager {
 
         final String payload = SoftwareCoMusic.gson.toJson(track);
 
-        if(isServerActive) {
-            sendMusicOfflineData();
-            SoftwareCoUtils.sendSongSessionPayload(payload);
-        } else if(SoftwareCoUtils.isMac() && MusicControlManager.playerType.equals("Desktop Player")) {
-            storeSongSessionPayload(payload);
-        }
+        sendMusicOfflineData();
+        SoftwareCoUtils.sendSongSessionPayload(payload);
+
         // Reset song session payload
         TrackInfoManager.resetTrackInfo();
         resetCacheData();
@@ -567,12 +554,10 @@ public class SoftwareCoSessionManager {
                     // delete the file
                     deleteFile(dataStoreFile);
 
-                    isServerActive = directServerOnlineCheck();
                     /* process keystroke data */
                     processKeystrokes(jsonArray);
 
                 } else {
-                    isServerActive = directServerOnlineCheck();
                     log.info("Music Time: No keystroke data to send");
                 }
             } catch (Exception e) {
@@ -583,9 +568,7 @@ public class SoftwareCoSessionManager {
                 /* process keystroke data */
                 processKeystrokes(keystrokeData);
                 keystrokeData = new JsonArray();
-                isServerActive = directServerOnlineCheck();
             } else {
-                isServerActive = directServerOnlineCheck();
                 log.info("Music Time: No keystroke data to send");
             }
         }
@@ -769,43 +752,32 @@ public class SoftwareCoSessionManager {
     }
 
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
-        boolean isOnline = isServerOnline();
         String dashboardFile = FileManager.getMusicDashboardFile();
         String jwt = SoftwareCoSessionManager.getItem("jwt");
 
         Writer writer = null;
 
-        if (isOnline) {
-            //String api = "/dashboard?plugin=" + plugin + "&linux=" + SoftwareCoUtils.isLinux() + "&html=" + isHtml;
-            String api = "/dashboard/music";
-            SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-            if(response.isOk()) {
-                String dashboardSummary = response.getJsonStr();
-                if (dashboardSummary == null || dashboardSummary.trim().isEmpty()) {
-                    dashboardSummary = SERVICE_NOT_AVAIL;
-                }
+        String api = "/dashboard/music";
+        SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        if(response.isOk()) {
+            String dashboardSummary = response.getJsonStr();
 
-                // write the dashboard summary content
+            // write the dashboard summary content
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(dashboardFile), StandardCharsets.UTF_8));
+                writer.write(dashboardSummary);
+            } catch (IOException ex) {
+                // Report
+            } finally {
                 try {
-                    writer = new BufferedWriter(new OutputStreamWriter(
-                            new FileOutputStream(dashboardFile), StandardCharsets.UTF_8));
-                    writer.write(dashboardSummary);
-                } catch (IOException ex) {
-                    // Report
-                } finally {
-                    try {
-                        writer.close();
-                    } catch (Exception ex) {/*ignore*/}
-                }
+                    writer.close();
+                } catch (Exception ex) {/*ignore*/}
             }
         }
     }
 
     public static void launchMusicTimeMetricsDashboard() {
-        boolean isOnline = isServerOnline();
-        if (!isOnline) {
-            SoftwareCoUtils.showOfflinePrompt(false);
-        }
         Project p = getOpenProject();
         if (p == null) {
             return;
@@ -914,9 +886,6 @@ public class SoftwareCoSessionManager {
         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
         
         if(id.equals(headphoneiconId) || id.equals(connectspotifyId)) {
-            if(MusicControlManager.spotifyCacheState)
-                MusicControlManager.disConnectSpotify();
-
             MusicControlManager.connectSpotify();
         } else if(id.equals(playiconId)) {
             MusicControlManager.playerCounter = 0;

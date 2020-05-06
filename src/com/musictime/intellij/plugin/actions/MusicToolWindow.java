@@ -11,6 +11,8 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.*;
+import com.musictime.intellij.plugin.musicjava.Apis;
+import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -40,6 +42,7 @@ public class MusicToolWindow {
     private JScrollPane recommendScroll;
     private JLabel category;
     private JLabel genre;
+    private JLabel songSearch;
     private JLabel recommendRefresh;
 
     private static MusicToolWindow win;
@@ -60,9 +63,10 @@ public class MusicToolWindow {
         refresh.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
                 if (refreshButtonState == 0) {
                     refreshButtonState = 1;
-                    if (MusicControlManager.spotifyCacheState) {
+                    if (hasSpotifyAccess) {
                         Set<String> keys = playlists.keySet();
                         for (String key : keys) {
                             if (!key.equals(PlayListCommands.recommendedPlaylistId)) {
@@ -160,14 +164,37 @@ public class MusicToolWindow {
             }
         });
 
+        songSearch.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                Icon spotifyIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
+                String keywords = SoftwareCoUtils.showInputPrompt("Search for songs", "Spotify", spotifyIcon);
+                if (StringUtils.isNotBlank(keywords)) {
+                    keywords = keywords.trim();
+                    JsonArray result = Apis.searchSpotify(keywords);
+                    if (result != null && result.size() > 0) {
+                        // add these to the recommendation list
+                        JsonObject obj = new JsonObject();
+                        obj.add("tracks", result);
+                        PlayListCommands.recommendedTracks = obj;
+                        PlayListCommands.recommendationTitle = "Top results";
+                        PlayListCommands.updateSearchedSongsRecommendations();
+                        MusicToolWindow.refresh();
+                    }
+                }
+            }
+        });
+
         /* Refresh */
         recommendRefresh.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
                 super.mouseClicked(e);
                 if (recommendRefreshState == 0) {
                     recommendRefreshState = 1;
-                    if (MusicControlManager.spotifyCacheState) {
+                    if (hasSpotifyAccess) {
                         if (PlayListCommands.currentBatch < 10) {
                             PlayListCommands.currentBatch += 1;
                         } else {
@@ -242,8 +269,8 @@ public class MusicToolWindow {
     public synchronized void rebuildPlaylistTreeView() {
         // Get VSpacer component
         Component component = dataPanel.getComponent(dataPanel.getComponentCount() - 1);
-
-        if (!SoftwareCoUtils.isSpotifyConncted()) {
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        if (!hasSpotifyAccess) {
             dataPanel.removeAll();
             menu.setVisible(false);
             refresh.setVisible(false);
@@ -852,8 +879,8 @@ public class MusicToolWindow {
     }
 
     public synchronized void rebuildRecommendedTreeView() {
-
-        if (!SoftwareCoUtils.isSpotifyConncted()) {
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        if (!hasSpotifyAccess) {
             recommendPanel.removeAll();
             category.setVisible(false);
             genre.setVisible(false);
@@ -923,12 +950,11 @@ public class MusicToolWindow {
 //*********************************************************************************************************************************************
             // Recommended Songs List
             Icon pawIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/paw.png");
-            PlaylistTreeNode recommendedPlaylist = new PlaylistTreeNode(PopupMenuBuilder.selectedValue, PlayListCommands.recommendedPlaylistId);
+            PlaylistTreeNode recommendedPlaylist = new PlaylistTreeNode(PlayListCommands.recommendationTitle, PlayListCommands.recommendedPlaylistId);
             DefaultTreeModel recommendedPlaylistModel = new DefaultTreeModel(recommendedPlaylist);
             recommendedPlaylist.setModel(recommendedPlaylistModel);
             JsonObject obj = PlayListCommands.recommendedTracks;
-            if (obj != null && obj.has("tracks") && obj.getAsJsonArray("tracks").size() > 0
-                    && obj.getAsJsonArray("tracks").size() == 100) {
+            if (obj != null && obj.has("tracks") && obj.getAsJsonArray("tracks").size() > 0) {
                 JsonArray tracks = obj.getAsJsonArray("tracks");
                 int index = (PlayListCommands.currentBatch * 10) - 10;
                 for (int i = 0; i < 10; i++) {

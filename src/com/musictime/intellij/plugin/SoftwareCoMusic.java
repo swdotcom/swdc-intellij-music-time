@@ -16,6 +16,7 @@ import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -37,7 +38,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     private static int retry_counter = 0;
     private static String pluginName = null;
-    private static long check_online_interval_ms = 1000 * 60 * 10;
+    private static long check_online_interval_ms = 1000 * 60;
 
     public SoftwareCoMusic() {
     }
@@ -81,7 +82,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     public void initComponent() {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        SoftwareCoSessionManager.isServerActive = serverIsOnline;
         boolean musicFileExist = SoftwareCoSessionManager.musicDataFileExists();
         if(musicFileExist) {
             String musicFile = FileManager.getMusicDataFile(false);
@@ -96,9 +96,9 @@ public class SoftwareCoMusic implements ApplicationComponent {
         boolean jwtExists = SoftwareCoSessionManager.jwtExists();
         if (!sessionFileExists || !jwtExists) {
             if (!serverIsOnline) {
-                // server isn't online, check again in 10 min
+                // server isn't online, check again in 1 min
                 if (retry_counter == 0) {
-                    SoftwareCoUtils.showOfflinePrompt(true);
+                    SoftwareCoUtils.showOfflinePrompt();
                 }
                 new Thread(() -> {
                     try {
@@ -111,13 +111,16 @@ public class SoftwareCoMusic implements ApplicationComponent {
             } else {
                 getPluginName();
 
-                String jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
-                SoftwareCoUtils.jwt = jwt;
+                String jwt = SoftwareCoSessionManager.getItem("jwt");
+                if (StringUtils.isBlank(jwt)) {
+                    jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
+                    SoftwareCoSessionManager.setItem("jwt", jwt);
+                }
 
                 if (jwt == null) {
                     // it failed, try again later
                     if (retry_counter == 0) {
-                        SoftwareCoUtils.showOfflinePrompt(true);
+                        SoftwareCoUtils.showOfflinePrompt();
                     }
                     new Thread(() -> {
                         try {
@@ -147,11 +150,24 @@ public class SoftwareCoMusic implements ApplicationComponent {
         log.info(plugName + ": Finished initializing SoftwareCoMusic plugin");
 
         // check user status every 45 minutes
-        final Runnable userStatusRunner = () -> SoftwareCoUtils.getUserStatus();
+        final Runnable userStatusRunner = () -> checkUserStatusIfNotRegistered();
         asyncManager.scheduleService(
                 userStatusRunner, "userStatusRunner", 60 * 45, 60 * 45);
 
         initializeUserInfoWhenProjectsReady(initializedUser);
+    }
+
+    private void checkUserStatusIfNotRegistered() {
+        new Thread(() -> {
+            try {
+                String email = SoftwareCoSessionManager.getItem("name");
+                if (StringUtils.isBlank(email)) {
+                    SoftwareCoUtils.getMusicTimeUserStatus();
+                }
+            } catch (Exception e) {
+                System.err.println(e);
+            }
+        }).start();
     }
 
     private void initializeUserInfoWhenProjectsReady(boolean initializedUser) {
@@ -173,10 +189,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     private void initializeUserInfo(boolean initializedUser) {
-        if(SoftwareCoUtils.jwt != null)
-            SoftwareCoUtils.getUserDetails(true);
-
-        SoftwareCoUtils.getUserStatus();
+        // get the user status (jwt, email, spotify, slack)
+        SoftwareCoUtils.getMusicTimeUserStatus();
 
         if (!SoftwareCoUtils.isCodeTimeInstalled()) {
             // every 30 minutes
@@ -184,21 +198,23 @@ public class SoftwareCoMusic implements ApplicationComponent {
             asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 30);
         }
 
-        if(!SoftwareCoUtils.isSpotifyConncted()) {
+        if(!MusicControlManager.hasSpotifyAccess()) {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
         } else {
             JsonObject obj = MusicControlManager.getUserProfile();
-            if (obj != null)
+            if (obj != null) {
                 MusicControlManager.userStatus = obj.get("product").getAsString();
+            }
 
             PlaylistManager.getUserPlaylists(); // API call
+            PlayListCommands.updatePlaylists(0, null);
             PlayListCommands.updatePlaylists(3, null);
             PlayListCommands.getGenre(); // API call
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
             MusicControlManager.getSpotifyDevices(); // API call
 
-            MusicControlManager.lazyUpdatePlayer();
+            SoftwareCoUtils.updatePlayerControls(false);
         }
 
         if(initializedUser) {

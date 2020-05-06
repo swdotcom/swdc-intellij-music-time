@@ -12,7 +12,7 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.musicjava.*;
-import com.musictime.intellij.plugin.slack.SlackControlManager;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.HttpPut;
 
 import javax.swing.*;
@@ -29,12 +29,7 @@ public class MusicControlManager {
     public static final Logger LOG = Logger.getLogger("MusicControlManager");
 
     // Spotify variables
-    private static String CLIENT_ID = null;
-    private static String CLIENT_SECRET = null;
-    public static String ACCESS_TOKEN = null;
-    public static String REFRESH_TOKEN = null;
     public static String userStatus = null; // premium or non-premium
-    public static boolean spotifyCacheState = false;
     public static String defaultbtn = "play"; // play or pause
     public static String spotifyUserId = null;
 
@@ -70,8 +65,6 @@ public class MusicControlManager {
         spotifyDeviceIds.clear();
         currentDeviceId = null;
         currentDeviceName = null;
-        ACCESS_TOKEN = null;
-        REFRESH_TOKEN = null;
         userStatus = null;
         playerCounter = 0;
         defaultbtn = "play";
@@ -85,70 +78,35 @@ public class MusicControlManager {
         MusicToolWindow.reset();
     }
 
-    public static synchronized boolean spotifyState() {
-        return spotifyCacheState;
-    }
-
     public static void disConnectSpotify() {
-        boolean serverIsOnline = Util.isServerOnline();
-        if (!serverIsOnline) {
-            SoftwareCoUtils.showOfflinePrompt(false);
-        }
+        SoftwareCoSessionManager.setItem("spotify_access_token", null);
+        SoftwareCoSessionManager.setItem("spotify_refresh_token", null);
+        MusicStore.resetConfig();
 
         String api = "/auth/spotify/disconnect";
         String jwt = SoftwareCoSessionManager.getItem("jwt");
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null, jwt);
-        if (resp.isOk()) {
-            boolean exist = false;
-            JsonObject obj = resp.getJsonObj();
-            if (obj != null && obj.has("auths")) {
-                for(JsonElement array : obj.get("auths").getAsJsonArray()) {
-                    if(array.getAsJsonObject().get("type").getAsString().equals("spotify")) {
-                        exist = true;
-                    }
-                }
-                if(!exist) {
-                    spotifyCacheState = exist;
-                    SoftwareCoSessionManager.setItem("spotify_access_token", null);
-                    SoftwareCoSessionManager.setItem("spotify_refresh_token", null);
-                    MusicStore.resetConfig();
-                }
-            } else {
-                LOG.log(Level.INFO, "Music Time: Unable to Disconnect Spotify null response");
-            }
+        SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null, jwt);
 
-            if(!spotifyCacheState) {
-                resetSpotify();
-                String headPhoneIcon = "headphone.png";
-                SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
-            } else {
-                String headPhoneIcon = "headphone.png";
-                SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Current Track", "Current Track");
-            }
-        }
+        resetSpotify();
+        String headPhoneIcon = "headphone.png";
+        SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
     }
 
     public static void connectSpotify() {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        if (!serverIsOnline) {
-            SoftwareCoUtils.showOfflinePrompt(true);
-        }
         spotifyUserId = null;
         spotifyDeviceIds.clear();
         currentDeviceId = null;
         currentDeviceName = null;
 
-        JsonObject userObj = SoftwareCoUtils.getClientInfo(serverIsOnline);
-        if(userObj != null) {
-            CLIENT_ID = userObj.get("clientId").getAsString();
-            CLIENT_SECRET = userObj.get("clientSecret").getAsString();
+        if (MusicStore.SPOTIFY_CLIENT_ID == null) {
+            SoftwareCoUtils.getAndUpdateClientInfo();
         }
 
         // Authenticate Spotify
-        authSpotify(serverIsOnline);
+        authSpotify();
 
         // Periodically check that the user has connected
-        lazilyFetchSpotifyStatus(20);
+        lazilyFetchSpotifyStatus(40);
     }
 
     public static void seedLikedSongSessions() {
@@ -191,37 +149,46 @@ public class MusicControlManager {
         }
     }
 
-    private static void authSpotify(boolean serverIsOnline) {
-        if (serverIsOnline) {
-            String api = Client.api_endpoint + "/auth/spotify?token=" + SoftwareCoUtils.jwt + "&mac=" + SoftwareCoUtils.isMac();
-            BrowserUtil.browse(api);
-        }
+    private static void authSpotify() {
+        /**
+         * const qryStr = `token=${encodedJwt}&mac=${mac}`;
+         *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
+         */
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+
+        String api = Client.api_endpoint + "/auth/spotify?token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
+        BrowserUtil.browse(api);
+
     }
 
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        MusicControlManager.spotifyCacheState = isSpotifyConncted(serverIsOnline);
+        boolean connected = SoftwareCoUtils.getMusicTimeUserStatus();
 
-        if (!spotifyCacheState && retryCount > 0) {
+        if (!connected && retryCount > 0) {
             final int newRetryCount = retryCount - 1;
             new Thread(() -> {
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(10000);
                     lazilyFetchSpotifyStatus(newRetryCount);
                 }
                 catch (Exception e){
                     System.err.println(e);
                 }
             }).start();
-        } else if(spotifyCacheState && spotifyStatus.equals("Not Connected")) {
+        } else if (connected) {
             spotifyStatus = "Connected";
             SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
+            // get the spotify user profile
             JsonObject obj = getUserProfile();
             if (obj != null) {
                 userStatus = obj.get("product").getAsString();
             }
 
+            // fetch the user playlists (ai and top 40)
             PlaylistManager.getUserPlaylists(); // API call
+
+            PlayListCommands.updatePlaylists(0, null);
+
             // fetch the liked songs (type 3 = liked songs)
             PlayListCommands.updatePlaylists(3, null);
             // send the liked songs to the app to seed
@@ -232,7 +199,7 @@ public class MusicControlManager {
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
             MusicControlManager.getSpotifyDevices(); // API call
 
-            lazyUpdatePlayer();
+            SoftwareCoUtils.updatePlayerControls(false);
         }
     }
 
@@ -427,45 +394,9 @@ public class MusicControlManager {
         }
     }
 
-    // Lazily update player controls
-    public static void lazyUpdatePlayer() {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        boolean spotifyState = isSpotifyConncted(serverIsOnline);
-        if(spotifyState) {
-            // Update player controls for every 5 second
-            new Thread(() -> {
-                try {
-                    Thread.sleep(5000);
-                    lazyUpdatePlayer();
-                }
-                catch (Exception e){
-                    System.err.println(e);
-                }
-            }).start();
-        }
-        if(CLIENT_ID == null) {
-            JsonObject userObj = SoftwareCoUtils.getClientInfo(serverIsOnline);
-            if(userObj != null) {
-                CLIENT_ID = userObj.get("clientId").getAsString();
-                CLIENT_SECRET = userObj.get("clientSecret").getAsString();
-            }
-        }
-        MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, spotifyCacheState);
-
-        new Thread(() -> {
-            try {
-                SoftwareCoUtils.updatePlayerControls(true);
-            }
-            catch (Exception e){
-                System.err.println(e);
-            }
-        }).start();
-
-    }
-
     // Lazily update devices
     public static void lazyUpdateDevices(int retryCount, boolean activateDevice, boolean isWeb) {
-        if(MusicControlManager.spotifyState() && !deviceActivated && retryCount > 0) {
+        if (!hasSpotifyAccess() && !deviceActivated && retryCount > 0) {
             final int newRetryCount = retryCount - 1;
             // Update devices for every 3 second
             new Thread(() -> {
@@ -504,58 +435,30 @@ public class MusicControlManager {
         }
     }
 
-    private static boolean isSpotifyConncted(boolean serverIsOnline) {
-        JsonObject userObj = SoftwareCoUtils.getUserDetails(serverIsOnline);
-        if (userObj != null && userObj.has("email")) {
-            // check if the email is valid
-            String email = userObj.get("email").getAsString();
-            if (SoftwareCoUtils.validateEmail(email)) {
-                SoftwareCoSessionManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
-                SoftwareCoSessionManager.setItem("name", email);
-                for(JsonElement array : userObj.get("auths").getAsJsonArray()) {
-                    if(array.getAsJsonObject().get("type").getAsString().equals("spotify")) {
-                        if(ACCESS_TOKEN == null && REFRESH_TOKEN == null) {
-                            ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
-                            REFRESH_TOKEN = array.getAsJsonObject().get("refresh_token").getAsString();
-                            SoftwareCoSessionManager.setItem("spotify_access_token", ACCESS_TOKEN);
-                            SoftwareCoSessionManager.setItem("spotify_refresh_token", REFRESH_TOKEN);
-                        }
-                        MusicControlManager.spotifyCacheState = true;
-                        MusicStore.setConfig(CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN, true);
-                    }
+    public static boolean hasSpotifyAccess() {
+        String accessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
+        return accessToken != null ? true : false;
+    }
 
-                    if(array.getAsJsonObject().get("type").getAsString().equals("slack")) {
-                        if(SlackControlManager.ACCESS_TOKEN == null) {
-                            SlackControlManager.ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
-                            SoftwareCoSessionManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
-                        }
-                        SlackControlManager.slackCacheState = true;
-                    }
-                    SoftwareCoUtils.jwt = userObj.get("plugin_token").getAsString();
-                }
-            }
-        }
-        return MusicControlManager.spotifyState();
+    private static void getMusicTimeUserStatus() {
+
     }
 
     public static void refreshAccessToken() {
-        if(REFRESH_TOKEN == null)
-            REFRESH_TOKEN = SoftwareCoSessionManager.getItem("spotify_refresh_token");
-
-        if(CLIENT_ID == null && CLIENT_SECRET == null) {
-            JsonObject userObj = SoftwareCoUtils.getClientInfo(true);
-            if(userObj != null) {
-                CLIENT_ID = userObj.get("clientId").getAsString();
-                CLIENT_SECRET = userObj.get("clientSecret").getAsString();
-            }
+        if (MusicStore.SPOTIFY_CLIENT_ID == null) {
+            SoftwareCoUtils.getAndUpdateClientInfo();
         }
 
-        SoftwareResponse resp = (SoftwareResponse) Apis.refreshAccessToken(REFRESH_TOKEN, CLIENT_ID, CLIENT_SECRET);
+        if (MusicStore.SPOTIFY_REFRESH_TOKEN == null) {
+            SoftwareCoUtils.getMusicTimeUserStatus();
+        }
+
+        SoftwareResponse resp = (SoftwareResponse) Apis.refreshAccessToken(MusicStore.SPOTIFY_REFRESH_TOKEN, MusicStore.SPOTIFY_CLIENT_ID, MusicStore.SPOTIFY_CLIENT_SECRET);
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
-            ACCESS_TOKEN = obj.get("access_token").getAsString();
-            SoftwareCoSessionManager.setItem("spotify_access_token", ACCESS_TOKEN);
-            LOG.log(Level.INFO, "Music Time: New Access Token: " + ACCESS_TOKEN);
+            MusicStore.SPOTIFY_ACCESS_TOKEN = obj.get("access_token").getAsString();
+            SoftwareCoSessionManager.setItem("spotify_access_token", MusicStore.SPOTIFY_ACCESS_TOKEN);
+            LOG.log(Level.INFO, "Music Time: New Access Token: " + MusicStore.SPOTIFY_ACCESS_TOKEN);
         }
     }
 
@@ -629,13 +532,24 @@ public class MusicControlManager {
             spotifyUserId = obj.get("id").getAsString();
             return obj;
         } else if (obj != null && obj.has("error")) {
-            JsonObject error = obj.get("error").getAsJsonObject();
-            String message = error.get("message").getAsString();
-            if(message.equals("The access token expired")) {
+            if (requiresSpotifyAccessTokenRefresh(obj)) {
                 refreshAccessToken();
             }
         }
         return null;
+    }
+
+    public static boolean requiresSpotifyAccessTokenRefresh(JsonObject resp) {
+        if (resp != null && resp.has("error")) {
+            JsonObject error = resp.get("error").getAsJsonObject();
+            if (error.has("status")) {
+                int statusCode = error.get("status").getAsInt();
+                if (statusCode == 401) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static void changeCurrentTrack(boolean hasNext) {

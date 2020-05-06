@@ -26,7 +26,7 @@ public class PlaylistManager {
 
     public static JsonObject getUserPlaylists() {
 
-        if(MusicControlManager.spotifyUserId == null) {
+        if (MusicControlManager.spotifyUserId == null) {
             MusicControlManager.getUserProfile();
         }
 
@@ -197,6 +197,9 @@ public class PlaylistManager {
                 MusicControlManager.currentTrackName = null;
                 SoftwareCoSessionManager.playerState = 0;
             }
+
+            SoftwareCoUtils.updatePlayerControls(false);
+
             return resp.getJsonObj();
         } else if(resp.getCode() == 204) {
             if(!isDeviceChecked) {
@@ -218,9 +221,7 @@ public class PlaylistManager {
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     MusicControlManager.refreshAccessToken();
                 }
             }

@@ -6,6 +6,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.music.MusicControlManager;
 import org.jetbrains.annotations.NotNull;
 
 public class MusicDashboardAction extends AnAction {
@@ -18,7 +19,8 @@ public class MusicDashboardAction extends AnAction {
     public void update(AnActionEvent event) {
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         boolean hasJwt = SoftwareCoSessionManager.jwtExists();
-        boolean isLoggedIn = (!sessionFileExists || !hasJwt || !SoftwareCoUtils.isSpotifyConncted())
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        boolean isLoggedIn = (!sessionFileExists || !hasJwt || !hasSpotifyAccess)
                 ? false : true;
         boolean serverOnline = SoftwareCoSessionManager.isServerOnline();
 

@@ -273,9 +273,7 @@ public class MusicController {
         if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     Apis.refreshAccessToken(null, null, null);
                     resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
                 }
@@ -298,9 +296,7 @@ public class MusicController {
         if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     Apis.refreshAccessToken(null, null, null);
                     resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
                 }
@@ -323,9 +319,7 @@ public class MusicController {
         if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     Apis.refreshAccessToken(null, null, null);
                     resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
                 }
@@ -348,9 +342,7 @@ public class MusicController {
         if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     Apis.refreshAccessToken(null, null, null);
                     resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null, accessToken);
                 }
@@ -376,9 +368,7 @@ public class MusicController {
         if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
-                JsonObject error = tracks.get("error").getAsJsonObject();
-                String message = error.get("message").getAsString();
-                if(message.equals("The access token expired")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
                     Apis.refreshAccessToken(null, null, null);
                     resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null, accessToken);
                 }

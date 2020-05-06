@@ -22,6 +22,7 @@ public class PlayListCommands {
     public static List<String> genres = new ArrayList<>();
     public static String selectedGenre = null;
     public static JsonObject recommendedTracks = new JsonObject(); // All recommended tracks (limit 100)
+    public static String recommendationTitle = "";
     public static JsonObject currentRecommendedTracks = new JsonObject(); // 50 recommended tracks to play
     public static int currentBatch = 1; // range 1-10 for 100 tracks (max 10 batches)
     public static String recommendedPlaylistId = "__musictime-recs__";
@@ -43,6 +44,7 @@ public class PlayListCommands {
     */
     public static synchronized void updatePlaylists(int type, String playlistId) {
         if(type == 0) {
+            System.out.println("------------- REFRESHING PLAYLIST -----------------");
             PlaylistManager.getUserPlaylists(); // API call
             // Sort Playlists ****************************************************
             if (userPlaylists.size() > 0 && sortType.equals("Sort A-Z")) {
@@ -138,6 +140,7 @@ public class PlayListCommands {
     }
 
     public static void updateRecommendation(String type, String selected) {
+        recommendationTitle = selected;
         if(type.equals("genre")) {
             selectedGenre = selected;
             Map<String, String> queryParams = new HashMap<>();
@@ -150,8 +153,8 @@ public class PlayListCommands {
         } else if(type.equals("category")) {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "100");
-            queryParams.put("min_popularity", "20");
-            queryParams.put("target_popularity", "90");
+            queryParams.put("min_popularity", "30");
+            queryParams.put("target_popularity", "100");
 
             String trackIds = "";
             int categoryCounter = 0;
@@ -215,24 +218,24 @@ public class PlayListCommands {
 
             switch (selected) {
                 case "Happy":
-                    queryParams.put("min_valence", "0.7");
+                    queryParams.put("min_valence", "0.5");
                     queryParams.put("target_valence", "1");
                     break;
                 case "Energetic":
-                    queryParams.put("min_energy", "0.7");
+                    queryParams.put("min_energy", "0.5");
                     queryParams.put("target_energy", "1");
                     break;
                 case "Danceable":
-                    queryParams.put("min_danceability", "0.7");
+                    queryParams.put("min_danceability", "0.6");
                     queryParams.put("target_danceability", "1");
                     break;
                 case "Instrumental":
-                    queryParams.put("min_instrumentalness", "0.0");
-                    queryParams.put("target_instrumentalness", "0.1");
+                    queryParams.put("min_instrumentalness", "0.5");
+                    queryParams.put("target_instrumentalness", "1");
                     break;
                 case "Quiet music":
-                    queryParams.put("max_loudness", "-5");
-                    queryParams.put("target_loudness", "-10");
+                    queryParams.put("max_loudness", "-10");
+                    queryParams.put("target_loudness", "-50");
                     break;
             }
 
@@ -243,10 +246,22 @@ public class PlayListCommands {
         MusicToolWindow.refresh();
     }
 
+    public static void updateSearchedSongsRecommendations() {
+        if (recommendedTracks != null) {
+            JsonArray recommendArray = recommendedTracks.getAsJsonArray("tracks");
+            JsonArray array = new JsonArray();
+            int maxSize = Math.min(50, recommendArray.size());
+            for (int i = 0; i < maxSize; i++) {
+                array.add(recommendArray.get(i));
+            }
+            currentRecommendedTracks.add("tracks", array);
+        }
+    }
+
     public static void updateCurrentRecommended() {
         if(recommendedTracks != null) {
             JsonArray recommendArray = recommendedTracks.getAsJsonArray("tracks");
-            if(recommendArray != null && recommendArray.size() > 0 && recommendArray.size() == 100) {
+            if(recommendArray != null && recommendArray.size() > 0) {
                 if (currentBatch < 6) {
                     currentRecommendedTracks = new JsonObject();
                     JsonArray array = new JsonArray();

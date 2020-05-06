@@ -125,10 +125,6 @@ public class SlackControlManager {
     public static boolean isSlackConncted() { return slackCacheState; }
 
     public static void connectSlack() throws UnsupportedEncodingException {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        if (!serverIsOnline) {
-            SoftwareCoUtils.showOfflinePrompt(true);
-        }
 
         String jwt = SoftwareCoSessionManager.getItem("jwt");
         String encodedJwt = URLEncoder.encode(jwt, "UTF-8");
@@ -140,10 +136,6 @@ public class SlackControlManager {
     }
 
     public static void disconnectSlack() {
-        boolean serverIsOnline = Util.isServerOnline();
-        if (!serverIsOnline) {
-            SoftwareCoUtils.showOfflinePrompt(false);
-        }
 
         String api = "/auth/slack/disconnect";
         String jwt = SoftwareCoSessionManager.getItem("jwt");
@@ -203,7 +195,6 @@ public class SlackControlManager {
                             ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
                             SoftwareCoSessionManager.setItem("slack_access_token", ACCESS_TOKEN);
                         }
-                        SoftwareCoUtils.jwt = userObj.get("plugin_token").getAsString();
                         slackCacheState = true;
 
                         return true;
@@ -216,10 +207,6 @@ public class SlackControlManager {
     }
 
     public static void getSlackChannels() {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        if (!serverIsOnline) {
-            SoftwareCoUtils.showOfflinePrompt(false);
-        }
 
         String accessToken = SoftwareCoSessionManager.getItem("slack_access_token");
         String api = "channels.list?token=" + accessToken + "&exclude_archived=true&exclude_members=true&pretty=1";
@@ -239,10 +226,6 @@ public class SlackControlManager {
     }
 
     public static boolean postMessage(String payload) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        if (!serverIsOnline) {
-            SoftwareCoUtils.showOfflinePrompt(false);
-        }
 
         String accessToken = SoftwareCoSessionManager.getItem("slack_access_token");
         String api = "chat.postMessage";

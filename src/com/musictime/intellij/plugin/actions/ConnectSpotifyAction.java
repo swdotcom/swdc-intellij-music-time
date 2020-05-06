@@ -18,11 +18,11 @@ public class ConnectSpotifyAction extends AnAction {
     public void update(AnActionEvent event) {
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         boolean hasJwt = SoftwareCoSessionManager.jwtExists();
-        boolean isLoggedIn = (!sessionFileExists || !hasJwt || !SoftwareCoUtils.isSpotifyConncted())
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        boolean isLoggedIn = (!sessionFileExists || !hasJwt || !hasSpotifyAccess)
                 ? false : true;
-        boolean serverOnline = SoftwareCoSessionManager.isServerOnline();
 
-        event.getPresentation().setVisible(!isLoggedIn && serverOnline);
+        event.getPresentation().setVisible(!isLoggedIn);
         event.getPresentation().setEnabled(true);
     }
 }

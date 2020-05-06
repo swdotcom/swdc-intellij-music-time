@@ -66,19 +66,6 @@ public class Util {
 
     public static void setItem(String key, String val) { sessionMap.put(key, val); }
 
-    public static void showOfflinePrompt(boolean isTenMinuteReconnect) {
-        final String reconnectMsg = (isTenMinuteReconnect) ? "in ten minutes. " : "soon. ";
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
-            public void run() {
-                String infoMsg = "Our service is temporarily unavailable. " +
-                        "We will try to reconnect again " + reconnectMsg +
-                        "Your status bar will not update at this time.";
-                // ask to download the PM
-                Messages.showInfoMessage(infoMsg, Client.pluginName);
-            }
-        });
-    }
-
     public static void showMsgPrompt(String infoMsg) {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {

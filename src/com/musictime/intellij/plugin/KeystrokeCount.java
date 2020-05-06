@@ -229,8 +229,9 @@ public class KeystrokeCount {
         this.close = 0;
         this.keystrokes = 0;
         this.source = new HashMap<>();
+
         if (this.project != null) {
-            this.project.resetData();
+            this.project = null;
         }
 
         this.start = 0L;
@@ -544,7 +545,8 @@ public class KeystrokeCount {
 
     public void processKeystrokes() {
 
-        if (this.hasData() && MusicControlManager.spotifyState()) {
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        if (this.hasData() && hasSpotifyAccess) {
 
             SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
 

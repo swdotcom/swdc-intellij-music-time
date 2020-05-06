@@ -6,6 +6,8 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.music.MusicControlManager;
+import com.musictime.intellij.plugin.music.PlayerControlManager;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,10 +21,10 @@ public class DisconnectSlackAction extends AnAction {
         boolean hasJwt = SoftwareCoSessionManager.jwtExists();
         boolean isLoggedIn = (!sessionFileExists || !hasJwt || !SlackControlManager.isSlackConncted())
                 ? false : true;
-        boolean spotifyConnected = SoftwareCoUtils.isSpotifyConncted();
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
         boolean serverOnline = SoftwareCoSessionManager.isServerOnline();
 
-        event.getPresentation().setVisible(spotifyConnected && isLoggedIn && serverOnline);
+        event.getPresentation().setVisible(hasSpotifyAccess && isLoggedIn && serverOnline);
         event.getPresentation().setEnabled(true);
     }
 }

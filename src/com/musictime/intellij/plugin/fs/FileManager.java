@@ -7,6 +7,8 @@ import com.google.gson.reflect.TypeToken;
 import com.musictime.intellij.plugin.KeystrokeCount;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.SoftwareResponse;
+import org.apache.http.client.methods.HttpPost;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -14,11 +16,14 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Logger;
 
 public class FileManager {
 
     public static final Logger log = Logger.getLogger("FileManager");
+
+    private static Semaphore semaphore = new Semaphore(1);
 
     private static Timer _timer = null;
 
@@ -299,5 +304,62 @@ public class FileManager {
     public static String cleanJsonString(String data) {
         data = data.replace("/\r\n/g", "").replace("/\n/g", "").trim();
         return data;
+    }
+
+    public static void writeData(String file, Object o) {
+        if (o == null) {
+            return;
+        }
+        File f = new File(file);
+        final String content = SoftwareCoMusic.gson.toJson(o);
+
+        synchronized (semaphore) {
+            Writer writer = null;
+            try {
+                writer = new BufferedWriter(new OutputStreamWriter(
+                        new FileOutputStream(f), Charset.forName("UTF-8")));
+                writer.write(content);
+            } catch (IOException e) {
+                log.warning("Code Time: Error writing content: " + e.getMessage());
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception ex) {/*ignore*/}
+            }
+        }
+    }
+
+    public static JsonArray getFileContentAsJsonArray(String file) {
+        synchronized (semaphore) {
+            JsonParser parser = new JsonParser();
+            try {
+                Object obj = parser.parse(new FileReader(file));
+                JsonArray jsonArray = parser.parse(cleanJsonString(obj.toString())).getAsJsonArray();
+                return jsonArray;
+            } catch (Exception e) {
+                log.warning("Code Time: Error trying to read and parse " + file + ": " + e.getMessage());
+            }
+        }
+        return new JsonArray();
+    }
+
+    public static void sendJsonArrayData(String file, String api) {
+        File f = new File(file);
+        if (f.exists()) {
+            synchronized (semaphore) {
+                try {
+                    JsonArray jsonArr = FileManager.getFileContentAsJsonArray(file);
+                    String payloadData = SoftwareCoMusic.gson.toJson(jsonArr);
+                    SoftwareResponse resp =
+                            SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payloadData);
+                    if (!resp.isOk()) {
+                        // add these back to the offline file
+                        log.info("Code Time: Unable to send array data: " + resp.getErrorMessage());
+                    }
+                } catch (Exception e) {
+                    log.info("Code Time: Unable to send array data: " + e.getMessage());
+                }
+            }
+        }
     }
 }

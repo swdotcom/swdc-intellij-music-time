@@ -10,6 +10,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.InputValidator;
@@ -22,6 +24,7 @@ import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Client;
+import com.musictime.intellij.plugin.musicjava.MusicStore;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -40,11 +43,13 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,18 +84,11 @@ public class SoftwareCoUtils {
     private static String lastMsg = "";
     private static String lastTooltip = "";
 
-    private static int lastDayOfMonth = 0;
-
     private static int DASHBOARD_LABEL_WIDTH = 25;
     private static int DASHBOARD_VALUE_WIDTH = 25;
-    private static int MARKER_WIDTH = 4;
-    private static int deviceCounter = 0;
 
-    private static String SERVICE_NOT_AVAIL =
-            "Our service is temporarily unavailable.\n\nPlease try again later.\n";
+    private static long DAYS_IN_SECONDS = 60 * 60 * 24;
 
-    // jwt_from_apptoken_call
-    public static String jwt = null;
     private static boolean initiatedCodeTimeInstallCheck = false;
     public static boolean codeTimeInstalled = false;
 
@@ -105,8 +103,6 @@ public class SoftwareCoUtils {
         pingClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
         httpClient = HttpClientBuilder.create().build();
     }
-
-    public static boolean isSpotifyConncted() { return MusicControlManager.spotifyCacheState; }
 
     public static boolean isCodeTimeInstalled() {
         if (!initiatedCodeTimeInstallCheck) {
@@ -282,6 +278,18 @@ public class SoftwareCoUtils {
         return softwareResponse;
     }
 
+    public static Project getFirstActiveProject() {
+        Project[] projects = ProjectManager.getInstance().getOpenProjects();
+        if (projects != null && projects.length > 0) {
+            return projects[0];
+        }
+        Editor[] editors = EditorFactory.getInstance().getAllEditors();
+        if (editors != null && editors.length > 0) {
+            return editors[0].getProject();
+        }
+        return null;
+    }
+
     public static String getStringRepresentation(HttpEntity res) throws IOException {
         if (res == null) {
             return null;
@@ -438,12 +446,6 @@ public class SoftwareCoUtils {
                             }
                             final String musicMsgVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
                             if (headphoneIconVal != null) {
-//                                if (connectPremiumMsg.equals("Connect Premium")) {
-//                                    SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-//                                            connectPremiumMsg, connectPremiumMsg, connectspotifyId);
-//                                    statusBar.addWidget(kpmWidget, connectspotifyId);
-//                                    statusBar.updateWidget(connectspotifyId);
-//                                }
 
                                 if(MusicControlManager.currentTrackName != null) {
                                     if(MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
@@ -659,6 +661,23 @@ public class SoftwareCoUtils {
         }
     }
 
+    public static List<String> getResultsForCommandArgs(String[] args, String dir) {
+        List<String> results = new ArrayList<>();
+        try {
+            String result = runCommand(args, dir);
+            if (result == null || result.trim().length() == 0) {
+                return results;
+            }
+            String[] contentList = result.split("\n");
+            results = Arrays.asList(contentList);
+        } catch (Exception e) {
+            if (results == null) {
+                results = new ArrayList<>();
+            }
+        }
+        return results;
+    }
+
     private static long copyLarge(InputStream input, OutputStream output, byte[] buffer) throws IOException {
 
         long count = 0;
@@ -723,9 +742,10 @@ public class SoftwareCoUtils {
     }
 
     public static synchronized void updatePlayerControls(boolean recursiveCall) {
-        if(MusicControlManager.spotifyCacheState) {
-            if(recursiveCall)
+        if (MusicControlManager.hasSpotifyAccess()) {
+            if(recursiveCall) {
                 PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
+            }
 
             PlayListCommands.updatePlaylists(5, null); // API call
 
@@ -850,42 +870,18 @@ public class SoftwareCoUtils {
         return null;
     }
 
-    public static JsonObject getClientInfo(boolean serverIsOnline) {
-        if (serverIsOnline) {
-            // To find client info
-            jwt = getAppJwt(serverIsOnline);
-            LOG.log(Level.INFO, SoftwareCoMusic.getPluginName() + ": JWT: " + jwt);
-            String api = "/auth/spotify/clientInfo";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-            if (resp.isOk()) {
-                return resp.getJsonObj();
-            }
-        }
-        return null;
-    }
-
-    public static JsonObject getUserDetails(boolean serverIsOnline) {
-        if (serverIsOnline) {
-            if(jwt != null) {
-                // To find user Details
-                //LOG.log(Level.INFO, pluginName + ": JWT: " + jwt);
-                String api = "/auth/spotify/user";
-                SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
-                if (resp.isOk()) {
-                    JsonObject obj = resp.getJsonObj();
-                    if (obj != null && obj.has("auths")) {
-                        for(JsonElement array : obj.get("auths").getAsJsonArray()) {
-                            if(array.getAsJsonObject().get("type").getAsString().equals("spotify")) {
-                                String email = obj.get("email").getAsString();
-                                if (validateEmail(email)) {
-                                    SoftwareCoSessionManager.setItem("jwt", obj.get("plugin_jwt").getAsString());
-                                    SoftwareCoSessionManager.setItem("name", email);
-                                }
-                            }
-                        }
-                    }
-                    return resp.getJsonObj();
-                }
+    public static JsonObject getAndUpdateClientInfo() {
+        // To find client info
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        LOG.log(Level.INFO, SoftwareCoMusic.getPluginName() + ": JWT: " + jwt);
+        String api = "/auth/spotify/clientInfo";
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        if (resp.isOk()) {
+            JsonObject jsonObj = resp.getJsonObj();
+            if (jsonObj != null) {
+                MusicStore.SPOTIFY_CLIENT_ID = jsonObj.get("clientId").getAsString();
+                MusicStore.SPOTIFY_CLIENT_SECRET = jsonObj.get("clientSecret").getAsString();
+                return jsonObj;
             }
         }
         return null;
@@ -898,65 +894,72 @@ public class SoftwareCoUtils {
         return pattern.matcher(email).matches();
     }
 
-    public static void getUserStatus() {
+    public static boolean isLoggedIn() {
+        String email = SoftwareCoSessionManager.getItem("name");
+        return StringUtils.isNotBlank(email);
+    }
 
-        JsonObject userObj = getUser();
-        if (userObj != null && userObj.has("email")) {
-            // check if the email is valid
-            String email = userObj.get("email").getAsString();
-            int registered = userObj.get("registered").getAsInt();
+    public static boolean getMusicTimeUserStatus() {
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
 
-            if (registered == 1) {
-                SoftwareCoSessionManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
-                SoftwareCoSessionManager.setItem("name", email);
-                for(JsonElement array : userObj.get("auths").getAsJsonArray()) {
-                    if(array.getAsJsonObject().get("type").getAsString().equals("spotify")) {
-                        if(MusicControlManager.ACCESS_TOKEN == null && MusicControlManager.REFRESH_TOKEN == null) {
-                            MusicControlManager.ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
-                            MusicControlManager.REFRESH_TOKEN = array.getAsJsonObject().get("refresh_token").getAsString();
-                            SoftwareCoSessionManager.setItem("spotify_access_token", MusicControlManager.ACCESS_TOKEN);
-                            SoftwareCoSessionManager.setItem("spotify_refresh_token", MusicControlManager.REFRESH_TOKEN);
-                        }
-                        MusicControlManager.spotifyCacheState = true;
-                    }
-                    if(array.getAsJsonObject().get("type").getAsString().equals("slack")) {
-                        if(SlackControlManager.ACCESS_TOKEN == null) {
-                            SlackControlManager.ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
-                            SoftwareCoSessionManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
-                        }
-                        SlackControlManager.slackCacheState = true;
-                    }
-
-                    if(!userObj.get("plugin_token").isJsonNull())
-                        jwt = userObj.get("plugin_token").getAsString();
+        if (jwt != null) {
+            String api = "/users/plugin/state";
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+            if (resp.isOk()) {
+                // check if we have the data and jwt
+                // resp.data.jwt and resp.data.user
+                // then update the session.json for the jwt
+                JsonObject data = resp.getJsonObj();
+                if (data == null || !data.has("jwt")) {
+                    return false;
                 }
-                return;
-            }
-        }
+                String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
 
-        String pluginjwt = SoftwareCoSessionManager.getItem("jwt");
-        String api = "/users/plugin/state";
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, pluginjwt);
-        if (resp.isOk()) {
-            // check if we have the data and jwt
-            // resp.data.jwt and resp.data.user
-            // then update the session.json for the jwt
-            JsonObject data = resp.getJsonObj();
-            String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
-            // check if we have any data
-            if (state.equals("OK")) {
+                // at the very minimum update the JWT
                 String dataJwt = data.get("jwt").getAsString();
-                SoftwareCoSessionManager.setItem("jwt", dataJwt);
-                String dataEmail = data.get("email").getAsString();
-                if (dataEmail != null) {
-                    SoftwareCoSessionManager.setItem("name", dataEmail);
+                if (StringUtils.isNotBlank(dataJwt) && !isLoggedIn()) {
+                    SoftwareCoSessionManager.setItem("jwt", dataJwt);
                 }
-            } else if (state.equals("NOT_FOUND")) {
-                SoftwareCoSessionManager.setItem("jwt", null);
+
+                // check if we have any data
+                if (state.equals("OK")) {
+                    SoftwareCoSessionManager.setItem("jwt", dataJwt);
+                    String dataEmail = data.get("email").getAsString();
+
+                    // update the email
+                    if (dataEmail != null) {
+                        SoftwareCoSessionManager.setItem("name", dataEmail);
+                    }
+
+                    // get the user object
+                    JsonObject userData = data.get("user").getAsJsonObject();
+                    // check if this user data has "auths"
+                    if (userData != null && userData.has("auths")) {
+                        // it does
+                        JsonArray auths = userData.getAsJsonArray("auths");
+                        for (int i = 0 ; i < auths.size(); i++) {
+                            JsonObject auth = auths.get(i).getAsJsonObject();
+                            if (auth.has("type")) {
+                                if (auth.get("type").getAsString().equals("spotify")) {
+                                    MusicStore.SPOTIFY_ACCESS_TOKEN = auth.get("access_token").getAsString();
+                                    SoftwareCoSessionManager.setItem("spotify_access_token", MusicStore.SPOTIFY_ACCESS_TOKEN);
+                                    MusicStore.SPOTIFY_REFRESH_TOKEN = auth.get("refresh_token").getAsString();
+                                    SoftwareCoSessionManager.setItem("spotify_access_token", MusicStore.SPOTIFY_REFRESH_TOKEN);
+                                } else if (auth.get("type").getAsString().equals("slack")) {
+                                    SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
+                                    SoftwareCoSessionManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
+                                    SlackControlManager.slackCacheState = true;
+                                }
+                            }
+                        }
+                    }
+
+                    return true;
+                }
             }
         }
 
-        SoftwareCoSessionManager.setItem("name", null);
+        return false;
     }
 
     public static void sendHeartbeat(String reason) {
@@ -998,22 +1001,6 @@ public class SoftwareCoUtils {
         return false;
     }
 
-    public static void sendBatchedLikedSongSessions(String tracksToSave) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (serverIsOnline && jwt != null) {
-
-            JsonObject payload = new JsonObject();
-            payload.addProperty("tracks", tracksToSave);
-
-            String api = "/music/session/seed";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString(), jwt);
-            if (!resp.isOk()) {
-                LOG.log(Level.WARNING, SoftwareCoMusic.getPluginName() + ": unable to send liked song sessions");
-            }
-        }
-    }
-
     // sendLikedTrack(like: true|false, trackId, type: spotify|itunes)
     public static void sendLikedTrack(boolean like, String trackId, String type) {
         boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
@@ -1031,13 +1018,11 @@ public class SoftwareCoUtils {
         }
     }
 
-    public static void showOfflinePrompt(boolean isTenMinuteReconnect) {
-        final String reconnectMsg = (isTenMinuteReconnect) ? "in ten minutes. " : "soon. ";
+    public static void showOfflinePrompt() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
                 String infoMsg = "Our service is temporarily unavailable. " +
-                        "We will try to reconnect again " + reconnectMsg +
-                        "Your status bar will not update at this time.";
+                        "We will try to reconnect again soon. Your status bar will not update at this time.";
                 // ask to download the PM
                 Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
             }
@@ -1104,11 +1089,91 @@ public class SoftwareCoUtils {
         };
     }
 
+    public static boolean isGitProject(String projectDir) {
+        if (projectDir == null || projectDir.equals("")) {
+            return false;
+        }
+
+        String gitFile = projectDir + File.separator + ".git";
+        File f = new File(gitFile);
+        return f.exists();
+    }
+
+    public static Date atStartOfWeek(long local_now) {
+        // find out how many days to go back
+        int daysBack = 0;
+        Calendar cal = Calendar.getInstance();
+        if (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+            int dayOfWeek = cal.get(Calendar.DAY_OF_WEEK);
+            while (dayOfWeek != Calendar.SUNDAY) {
+                daysBack++;
+                dayOfWeek -= 1;
+            }
+        } else {
+            daysBack = 7;
+        }
+
+        long startOfDayInSec = atStartOfDay(new Date(local_now * 1000)).toInstant().getEpochSecond();
+        long startOfWeekInSec = startOfDayInSec - (DAYS_IN_SECONDS * daysBack);
+
+        return new Date(startOfWeekInSec * 1000);
+    }
+
+    public static Date atStartOfDay(Date date) {
+        LocalDateTime localDateTime = dateToLocalDateTime(date);
+        LocalDateTime startOfDay = localDateTime.with(LocalTime.MIN);
+        return localDateTimeToDate(startOfDay);
+    }
+
+    public static Date atEndOfDay(Date date) {
+        LocalDateTime localDateTime = dateToLocalDateTime(date);
+        LocalDateTime endOfDay = localDateTime.with(LocalTime.MAX);
+        return localDateTimeToDate(endOfDay);
+    }
+
+    private static LocalDateTime dateToLocalDateTime(Date date) {
+        return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+    }
+
+    private static Date localDateTimeToDate(LocalDateTime localDateTime) {
+        return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    }
+
+    // the timestamps are all in seconds
     public static class TimesData {
-        public Integer offset = ZonedDateTime.now().getOffset().getTotalSeconds();
-        public long now = System.currentTimeMillis() / 1000;
-        public long local_now = now + offset;
-        public String timezone = TimeZone.getDefault().getID();
+        public Integer offset;
+        public long now;
+        public long local_now;
+        public String timezone;
+        public long local_start_day;
+        public long local_start_yesterday;
+        public Date local_start_of_week_date;
+        public Date local_start_of_yesterday_date;
+        public Date local_start_today_date;
+        public long local_start_of_week;
+        public long local_end_day;
+        public long utc_end_day;
+
+        public TimesData() {
+            offset = ZonedDateTime.now().getOffset().getTotalSeconds();
+            now = System.currentTimeMillis() / 1000;
+            local_now = now + offset;
+            timezone = TimeZone.getDefault().getID();
+            local_start_day = atStartOfDay(new Date(local_now * 1000)).toInstant().getEpochSecond();
+            local_start_yesterday = local_start_day - DAYS_IN_SECONDS;
+            local_start_of_week_date = atStartOfWeek(local_now);
+            local_start_of_yesterday_date = new Date(local_start_yesterday * 1000);
+            local_start_today_date = new Date(local_start_day * 1000);
+            local_start_of_week = local_start_of_week_date.toInstant().getEpochSecond();
+            local_end_day = atEndOfDay(new Date(local_now * 1000)).toInstant().getEpochSecond();
+            utc_end_day = atEndOfDay(new Date(now * 1000)).toInstant().getEpochSecond();
+        }
+    }
+
+    public static String getTodayInStandardFormat() {
+        SimpleDateFormat formatDay = new SimpleDateFormat("YYYY-MM-dd");
+        String day = formatDay.format(new Date());
+        return day;
     }
 
     public static TimesData getTimesData() {

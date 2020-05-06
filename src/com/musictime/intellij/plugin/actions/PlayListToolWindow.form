@@ -20,19 +20,30 @@
           <text value="PLAYLISTS"/>
         </properties>
       </component>
-      <component id="3e429" class="javax.swing.JLabel" binding="refresh">
+      <component id="70087" class="javax.swing.JLabel" binding="songSearch">
         <constraints>
           <grid row="0" column="5" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
+          <icon value="com/musictime/intellij/plugin/assets/search-16.png"/>
+          <iconTextGap value="0"/>
+          <text value=""/>
+          <toolTipText value="Song search"/>
+        </properties>
+     </component>
+      <component id="3e429" class="javax.swing.JLabel" binding="refresh">
+        <constraints>
+          <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties>
           <icon value="com/musictime/intellij/plugin/assets/refresh.png"/>
           <text value=" "/>
-          <toolTipText value="Reconsile playlists"/>
+          <toolTipText value="Reconcile playlists"/>
         </properties>
       </component>
       <component id="70086" class="javax.swing.JLabel" binding="menu">
         <constraints>
-          <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
         </constraints>
         <properties>
           <icon value="com/musictime/intellij/plugin/assets/menu.png"/>

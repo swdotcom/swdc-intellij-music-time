@@ -9,7 +9,6 @@ public class MusicStore {
     public static String SPOTIFY_ACCESS_TOKEN = null;
     public static String SPOTIFY_REFRESH_TOKEN = null;
     public static String spotifyAccountType = null; // Premium or Non-Premium
-    public static boolean spotifyCacheState = false;
     public static String spotifyUserId = null;
 
     public static List<String> playlistIds = new ArrayList<>();
@@ -30,13 +29,11 @@ public class MusicStore {
         SPOTIFY_CLIENT_SECRET = clientSecret;
         SPOTIFY_ACCESS_TOKEN = accessToken;
         SPOTIFY_REFRESH_TOKEN = refreshToken;
-        spotifyCacheState = cacheState;
     }
 
     public static void resetConfig() {
         SPOTIFY_ACCESS_TOKEN = null;
         SPOTIFY_REFRESH_TOKEN = null;
-        spotifyCacheState = false;
     }
 
     public static String getSpotifyClientId() {
@@ -77,14 +74,6 @@ public class MusicStore {
 
     public static void setSpotifyAccountType(String spotifyAccountType) {
         MusicStore.spotifyAccountType = spotifyAccountType;
-    }
-
-    public static boolean isSpotifyCacheState() {
-        return spotifyCacheState;
-    }
-
-    public static void setSpotifyCacheState(boolean spotifyCacheState) {
-        MusicStore.spotifyCacheState = spotifyCacheState;
     }
 
     public static String getSpotifyUserId() {

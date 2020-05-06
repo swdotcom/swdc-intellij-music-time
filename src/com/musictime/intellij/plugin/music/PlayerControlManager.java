@@ -24,13 +24,16 @@ public class PlayerControlManager {
 
         if(MusicControlManager.userStatus == null) {
             JsonObject obj = MusicControlManager.getUserProfile();
-            if (obj != null)
+            if (obj != null) {
                 MusicControlManager.userStatus = obj.get("product").getAsString();
+            }
         }
 
+        boolean hasPremiumUserStatus = MusicControlManager.userStatus != null && MusicControlManager.userStatus.equals("premium") ? true : false;
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
         boolean isNonNamedPlaylist = (playlistId.equals(PlayListCommands.recommendedPlaylistId) || playlistId.equals(PlayListCommands.likedPlaylistId)) ? true : false;
 
-        if(isNonNamedPlaylist && MusicControlManager.userStatus != null && MusicControlManager.userStatus.equals("premium")) {
+        if (isNonNamedPlaylist && hasPremiumUserStatus) {
             if (MusicControlManager.currentDeviceId != null) {
                 JsonObject obj;
                 List<String> tracks = new ArrayList<>();
@@ -62,16 +65,6 @@ public class PlayerControlManager {
                         MusicControlManager.currentTrackName = trackName.substring(0, trackName.lastIndexOf("(")).trim();
 
                     SoftwareCoUtils.updatePlayerControls(false);
-//                    new Thread(() -> {
-//                        try {
-//                            Thread.sleep(1000);
-//                            MusicControlManager.currentPlaylistId = finalPlaylistId;
-//                            MusicControlManager.currentTrackId = finalTrackId;
-//                            SoftwareCoUtils.updatePlayerControls(false);
-//                        } catch (Exception e) {
-//                            System.err.println(e);
-//                        }
-//                    }).start();
                 }
                 return resp;
             }
@@ -87,21 +80,10 @@ public class PlayerControlManager {
                         MusicControlManager.currentTrackName = trackName.substring(0, trackName.lastIndexOf("(")).trim();
 
                     SoftwareCoUtils.updatePlayerControls(false);
-//                    new Thread(() -> {
-//                        try {
-//                            Thread.sleep(1000);
-//                            MusicControlManager.currentPlaylistId = finalPlaylistId;
-//                            MusicControlManager.currentTrackId = finalTrackId;
-//                            SoftwareCoUtils.updatePlayerControls(false);
-//                        } catch (Exception e) {
-//                            System.err.println(e);
-//                        }
-//                    }).start();
                 }
                 return resp;
             }
-        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isSpotifyRunning() &&
-                MusicControlManager.currentDeviceId != null) {
+        } else if (hasSpotifyAccess && SoftwareCoUtils.isSpotifyRunning() && MusicControlManager.currentDeviceId != null) {
             if(playlistId != null && playlistId.length() > 5 && trackId != null)
                 MusicController.playDesktopTrackInPlaylist("Spotify", playlistId, trackId);
             else if(playlistId != null && playlistId.length() < 5 && trackId != null)
@@ -125,8 +107,8 @@ public class PlayerControlManager {
     }
 
     public static boolean playSpotifyDevices() {
-
-        if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
                 String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
@@ -135,14 +117,6 @@ public class PlayerControlManager {
                     MusicControlManager.playerCounter = 0;
                     MusicControlManager.defaultbtn = "pause";
                     SoftwareCoUtils.updatePlayerControls(false);
-//                    new Thread(() -> {
-//                        try {
-//                            Thread.sleep(1000);
-//                            SoftwareCoUtils.updatePlayerControls(false);
-//                        } catch (Exception e) {
-//                            System.err.println(e);
-//                        }
-//                    }).start();
                     return true;
                 } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
                     MusicControlManager.getSpotifyDevices();
@@ -159,9 +133,9 @@ public class PlayerControlManager {
             } else {
                 MusicControlManager.getSpotifyDevices();
             }
-        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
+        } else if (hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             boolean state = MusicController.playSpotifyDesktop();
-            if(state) {
+            if (state) {
                 MusicControlManager.defaultbtn = "pause";
             }
             SoftwareCoUtils.updatePlayerControls(false);
@@ -171,7 +145,7 @@ public class PlayerControlManager {
     }
 
     public static boolean pauseSpotifyDevices() {
-
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
         if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
@@ -181,14 +155,6 @@ public class PlayerControlManager {
                     MusicControlManager.playerCounter = 0;
                     MusicControlManager.defaultbtn = "play";
                     SoftwareCoUtils.updatePlayerControls(false);
-//                    new Thread(() -> {
-//                        try {
-//                            Thread.sleep(1000);
-//                            SoftwareCoUtils.updatePlayerControls();
-//                        } catch (Exception e) {
-//                            System.err.println(e);
-//                        }
-//                    }).start();
                     return true;
                 } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
                     MusicControlManager.getSpotifyDevices();
@@ -205,7 +171,7 @@ public class PlayerControlManager {
             } else {
                 MusicControlManager.getSpotifyDevices();
             }
-        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
+        } else if(hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             boolean state = MusicController.pauseSpotifyDesktop();
             if(state) {
                 MusicControlManager.defaultbtn = "play";
@@ -217,7 +183,7 @@ public class PlayerControlManager {
     }
 
     public static boolean previousSpotifyTrack() {
-
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
         if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
@@ -253,7 +219,7 @@ public class PlayerControlManager {
             } else {
                 MusicControlManager.getSpotifyDevices();
             }
-        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
+        } else if(hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.previousSpotifyDesktop();
             MusicControlManager.changeCurrentTrack(false);
             SoftwareCoUtils.updatePlayerControls(false);
@@ -263,7 +229,7 @@ public class PlayerControlManager {
     }
 
     public static boolean nextSpotifyTrack() {
-
+        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
         if(MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
             if(MusicControlManager.currentDeviceId != null) {
 
@@ -299,7 +265,7 @@ public class PlayerControlManager {
             } else {
                 MusicControlManager.getSpotifyDevices();
             }
-        } else if(MusicControlManager.spotifyCacheState && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
+        } else if(hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
             MusicController.nextSpotifyDesktop();
             MusicControlManager.changeCurrentTrack(true);
             SoftwareCoUtils.updatePlayerControls(false);
