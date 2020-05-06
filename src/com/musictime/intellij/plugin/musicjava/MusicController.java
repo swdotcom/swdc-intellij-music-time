@@ -34,7 +34,8 @@ public class MusicController {
      */
     public static SoftwareResponse playSpotifyPlaylist(String deviceId, String playlistId, String trackId, String accessToken) {
 
-        if(deviceId == null) {
+        deviceId = deviceId == null ? MusicStore.getCurrentDeviceId() : deviceId;
+        if (deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
             deviceId = MusicStore.getCurrentDeviceId();
         }
@@ -82,7 +83,8 @@ public class MusicController {
      */
     public static SoftwareResponse playSpotifyWebTrack(String deviceId, String trackId, String accessToken) {
 
-        if(deviceId == null) {
+        deviceId = deviceId == null ? MusicStore.getCurrentDeviceId() : deviceId;
+        if (deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
             deviceId = MusicStore.getCurrentDeviceId();
         }
@@ -117,7 +119,8 @@ public class MusicController {
      */
     public static SoftwareResponse playSpotifyTracks(String deviceId, String trackId, List<String> tracks, String accessToken) {
 
-        if(deviceId == null) {
+        deviceId = deviceId == null ? MusicStore.getCurrentDeviceId() : deviceId;
+        if (deviceId == null) {
             Apis.getSpotifyDevices(accessToken);
             deviceId = MusicStore.getCurrentDeviceId();
         }

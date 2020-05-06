@@ -63,8 +63,9 @@ public class PlaylistMouseListener extends MouseAdapter {
                     if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
                         MusicControlManager.deviceActivated = false;
                         boolean launchState = MusicControlManager.launchPlayer(false, true);
-                        if(launchState)
-                            MusicToolWindow.lazilyCheckPlayer(20, root.getId(), node.getId(), node.getName());
+                        if (launchState) {
+                            MusicToolWindow.lazilyCheckPlayer(5, root.getId(), node.getId(), node.getName());
+                        }
                     } else {
                         SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId(), node.getName());
                         if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
@@ -89,8 +90,9 @@ public class PlaylistMouseListener extends MouseAdapter {
                         if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
                             MusicControlManager.deviceActivated = false;
                             boolean launchState = MusicControlManager.launchPlayer(false, true);
-                            if(launchState)
-                                MusicToolWindow.lazilyCheckPlayer(20, node.getId(), child.getId(), child.getName());
+                            if (launchState) {
+                                MusicToolWindow.lazilyCheckPlayer(5, node.getId(), child.getId(), child.getName());
+                            }
                         } else {
                             SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId(), child.getName());
                             if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {

@@ -207,8 +207,13 @@ public class MusicControlManager {
 
         if(userStatus == null) {
             JsonObject obj = getUserProfile();
-            if (obj != null)
+            if (obj != null) {
                 userStatus = obj.get("product").getAsString();
+            }
+        }
+
+        if (MusicControlManager.spotifyDeviceIds != null && MusicControlManager.spotifyDeviceIds.size() > 0) {
+            return true;
         }
 
         if(!skipPopup) {
@@ -396,18 +401,8 @@ public class MusicControlManager {
 
     // Lazily update devices
     public static void lazyUpdateDevices(int retryCount, boolean activateDevice, boolean isWeb) {
-        if (!hasSpotifyAccess() && !deviceActivated && retryCount > 0) {
-            final int newRetryCount = retryCount - 1;
-            // Update devices for every 3 second
-            new Thread(() -> {
-                try {
-                    Thread.sleep(3000);
-                    lazyUpdateDevices(newRetryCount, activateDevice, isWeb);
-                }
-                catch (Exception e){
-                    System.err.println(e);
-                }
-            }).start();
+        if (!hasSpotifyAccess()) {
+            return;
         }
 
         MusicControlManager.getSpotifyDevices(); // API call
@@ -432,6 +427,20 @@ public class MusicControlManager {
                     }
                 }
             }
+        }
+
+        if (!deviceActivated && retryCount > 0) {
+            final int newRetryCount = retryCount - 1;
+            // Update devices for every 3 second
+            new Thread(() -> {
+                try {
+                    Thread.sleep(3000);
+                    lazyUpdateDevices(newRetryCount, activateDevice, isWeb);
+                }
+                catch (Exception e){
+                    System.err.println(e);
+                }
+            }).start();
         }
     }
 
@@ -463,7 +472,6 @@ public class MusicControlManager {
     }
 
     public static JsonObject getSpotifyDevices() {
-
         String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
         SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyDevices(accessToken);
         if (resp.isOk()) {
@@ -471,7 +479,6 @@ public class MusicControlManager {
             if (obj != null && obj.has("devices")) {
                 spotifyDeviceIds.clear();
                 spotifyDevices.clear();
-                //currentDeviceName = null;
                 for(JsonElement array : obj.get("devices").getAsJsonArray()) {
                     JsonObject device = array.getAsJsonObject();
                     if(device.get("type").getAsString().equals("Computer")) {
@@ -512,8 +519,6 @@ public class MusicControlManager {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");
             }
             return obj;
-        } else if(resp.getCode() == 401) {
-            refreshAccessToken();
         }
         return null;
     }

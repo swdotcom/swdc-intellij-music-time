@@ -1067,7 +1067,7 @@ public class MusicToolWindow {
                 final int newRetryCount = retryCount - 1;
                 new Thread(() -> {
                     try {
-                        Thread.sleep(3000);
+                        Thread.sleep(4000);
                         lazilyCheckPlayer(newRetryCount, playlist, track, trackName);
                     } catch (Exception ex) {
                         System.err.println(ex);
@@ -1085,6 +1085,8 @@ public class MusicToolWindow {
                 }
                 MusicControlManager.deviceActivated = false;
             }
+        } else {
+            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track, trackName);
         }
     }
 }

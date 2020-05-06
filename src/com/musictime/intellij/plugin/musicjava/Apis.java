@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import org.apache.commons.lang.StringUtils;
@@ -71,9 +72,13 @@ public class Apis {
      * accessToken - spotify access token
      */
     public static Object getSpotifyDevices(String accessToken) {
-
         String api = "/v1/me/player/devices";
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        if (resp != null && resp.getCode() == 401) {
+            refreshAccessToken(null, null, null);
+            // try again
+            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        }
         if (resp.isOk()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("devices")) {
@@ -91,13 +96,6 @@ public class Apis {
                 }
             } else {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");
-            }
-        } else if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    refreshAccessToken(null, null, null);
-                }
             }
         }
         return resp;
@@ -138,15 +136,18 @@ public class Apis {
         String api = "/v1/me";
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
         JsonObject obj = resp.getJsonObj();
+        if (obj != null && obj.has("error")) {
+            if (MusicControlManager.requiresSpotifyAccessTokenRefresh(obj)) {
+                refreshAccessToken(null, null, null);
+                resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+                obj = resp.getJsonObj();
+            }
+        }
         if (resp.isOk()) {
             MusicStore.setSpotifyUserId(obj.get("id").getAsString());
             MusicStore.setSpotifyAccountType(obj.get("product").getAsString());
             MusicStore.setSpotifyAccessToken(accessToken);
             return resp;
-        } else if (obj != null && obj.has("error")) {
-            if(MusicControlManager.requiresSpotifyAccessTokenRefresh(obj)) {
-                refreshAccessToken(null, null, null);
-            }
         }
         return resp;
     }
