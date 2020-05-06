@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.Util;
 
@@ -22,7 +23,7 @@ public class PlaylistManager {
 
     public static boolean pauseTrigger = false;
     public static long pauseTriggerTime = 0;
-    public static boolean isDeviceChecked = false;
+    private static boolean gatheringTrack = false;
 
     public static JsonObject getUserPlaylists() {
 
@@ -110,14 +111,19 @@ public class PlaylistManager {
         return null;
     }
 
-    public static JsonObject getSpotifyWebCurrentTrack() {
+    public static void gatherMusicInfo() {
+
+        if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
+            return;
+        }
+
+        gatheringTrack = true;
 
         String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
         SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack(accessToken);
         if (resp.isOk() && resp.getCode() == 200) {
-            if(isDeviceChecked) {
+            if(MusicControlManager.currentDeviceName == null) {
                 MusicControlManager.getSpotifyDevices(); // API call
-                isDeviceChecked = false;
             }
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
@@ -200,24 +206,15 @@ public class PlaylistManager {
 
             SoftwareCoUtils.updatePlayerControls(false);
 
-            return resp.getJsonObj();
         } else if(resp.getCode() == 204) {
-            if(!isDeviceChecked) {
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(5000);
-                        MusicControlManager.getSpotifyDevices(); // API call
-                        isDeviceChecked = true;
-                    }
-                    catch (Exception e){
-                        System.err.println(e);
-                    }
-                }).start();
+            if (MusicControlManager.currentDeviceName != null) {
+                MusicControlManager.getSpotifyDevices();
+                MusicControlManager.currentDeviceName = null;
+                MusicControlManager.currentTrackName = null;
+                SoftwareCoSessionManager.playerState = 0;
+                MusicControlManager.defaultbtn = "play";
+                MusicToolWindow.refresh();
             }
-            MusicControlManager.currentDeviceName = null;
-            MusicControlManager.currentTrackName = null;
-            SoftwareCoSessionManager.playerState = 0;
-            MusicControlManager.defaultbtn = "play";
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
@@ -226,7 +223,8 @@ public class PlaylistManager {
                 }
             }
         }
-        return null;
+
+        gatheringTrack = false;
     }
 
     public static JsonObject getSpotifyDesktopCurrentTrack() {

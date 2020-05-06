@@ -63,8 +63,7 @@ public class MusicController {
         if (resp == null) {
             return new SoftwareResponse();
         }
-        // check to see if the song is playing
-        playSongIfNotPlaying(deviceId, accessToken);
+
         return resp;
     }
 
@@ -104,9 +103,6 @@ public class MusicController {
         if (resp == null) {
             return new SoftwareResponse();
         }
-
-        // check to see if the song is playing
-        playSongIfNotPlaying(deviceId, accessToken);
 
         return resp;
     }
@@ -155,26 +151,7 @@ public class MusicController {
             return new SoftwareResponse();
         }
 
-        // check to see if the song is playing
-        playSongIfNotPlaying(deviceId, accessToken);
-
         return resp;
-    }
-
-    private static void playSongIfNotPlaying(String deviceId, String accessToken) {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                // check to see if the song is playing
-                JsonObject jsonObj = PlaylistManager.getSpotifyWebCurrentTrack();
-
-                if (jsonObj != null && jsonObj.has("is_playing")) {
-                    if (!jsonObj.get("is_playing").getAsBoolean()) {
-                        PlayerControlManager.playSpotifyDevices();
-                    }
-                }
-            }
-        }, 3000);
     }
 
     //***** Player controls ****************

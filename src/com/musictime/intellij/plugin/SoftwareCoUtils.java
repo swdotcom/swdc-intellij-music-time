@@ -743,13 +743,10 @@ public class SoftwareCoUtils {
 
     public static synchronized void updatePlayerControls(boolean recursiveCall) {
         if (MusicControlManager.hasSpotifyAccess()) {
-            if(recursiveCall) {
-                PlaylistManager.getSpotifyWebCurrentTrack();  // get current track to update status bar
-            }
 
             PlayListCommands.updatePlaylists(5, null); // API call
 
-            if(MusicControlManager.userStatus != null && !MusicControlManager.userStatus.equals("premium")) {
+            if (MusicControlManager.userStatus != null && !MusicControlManager.userStatus.equals("premium")) {
                 String headPhoneIcon = "headphone.png";
                 SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Premium", "Current Track");
             } else {

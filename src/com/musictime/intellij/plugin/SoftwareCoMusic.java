@@ -226,7 +226,19 @@ public class SoftwareCoMusic implements ApplicationComponent {
             });
         }
 
+        // initiate gather music info
+        initiateGatherMusicInfo();
+
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
+    }
+
+    private void initiateGatherMusicInfo() {
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                PlaylistManager.gatherMusicInfo();
+            }
+        }, 5000, 5000);
     }
 
     public static String getRootPath() {
