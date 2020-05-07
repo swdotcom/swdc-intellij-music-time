@@ -61,6 +61,17 @@ public class PlaylistController {
 
         String api = "/v1/me/tracks?limit=50&offset=0";
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+        if (resp != null && !resp.isOk() && !resp.getJsonObj().isJsonNull()) {
+            JsonObject tracks = resp.getJsonObj();
+            if (tracks != null && tracks.has("error")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
+                    // refresh
+                    MusicControlManager.refreshAccessToken();
+                    // fetch again
+                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accessToken);
+                }
+            }
+        }
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -72,13 +83,6 @@ public class PlaylistController {
 
             } else {
                 LOG.log(Level.INFO, "Music Time: Unable to get Liked Tracks, null response");
-            }
-        } else if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    MusicControlManager.refreshAccessToken();
-                }
             }
         }
         return resp;
