@@ -956,29 +956,37 @@ public class MusicToolWindow {
             JsonObject obj = PlayListCommands.recommendedTracks;
             if (obj != null && obj.has("tracks") && obj.getAsJsonArray("tracks").size() > 0) {
                 JsonArray tracks = obj.getAsJsonArray("tracks");
-                int index = (PlayListCommands.currentBatch * 10) - 10;
-                for (int i = 0; i < 10; i++) {
-                    JsonObject track = tracks.get(index).getAsJsonObject();
-                    JsonArray artists = track.getAsJsonArray("artists");
-                    String artistNames = "";
-                    if (artists.size() > 0) {
-                        for (JsonElement artistArray : artists) {
-                            artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
-                        }
-                        artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
-                    }
-                    String trackName = track.get("name").getAsString();
-                    if (trackName.length() > 40) {
-                        trackName = trackName.substring(0, 36) + "...";
-                        if (artistNames.length() > 0)
-                            trackName += " (" + artistNames + ")";
-                    } else if (artistNames.length() > 0) {
-                        trackName += " (" + artistNames + ")";
-                    }
+                if (tracks != null && tracks.size() > 0) {
+                    int index = (PlayListCommands.currentBatch * 10) - 10;
 
-                    PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
-                    recommendedPlaylist.add(node);
-                    index++;
+                    for (int i = 0; i < 10; i++) {
+                        // start back at the beginning of the tracks list if we've reached the end
+                        if (tracks.size() <= index) {
+                            // start back at the beginning
+                            index = 0;
+                        }
+                        JsonObject track = tracks.get(index).getAsJsonObject();
+                        JsonArray artists = track.getAsJsonArray("artists");
+                        String artistNames = "";
+                        if (artists.size() > 0) {
+                            for (JsonElement artistArray : artists) {
+                                artistNames += artistArray.getAsJsonObject().get("name").getAsString() + ", ";
+                            }
+                            artistNames = artistNames.substring(0, artistNames.lastIndexOf(","));
+                        }
+                        String trackName = track.get("name").getAsString();
+                        if (trackName.length() > 40) {
+                            trackName = trackName.substring(0, 36) + "...";
+                            if (artistNames.length() > 0)
+                                trackName += " (" + artistNames + ")";
+                        } else if (artistNames.length() > 0) {
+                            trackName += " (" + artistNames + ")";
+                        }
+
+                        PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
+                        recommendedPlaylist.add(node);
+                        index++;
+                    }
                 }
             } else {
                 PlaylistTreeNode node = new PlaylistTreeNode("Your tracks will appear here", null);
