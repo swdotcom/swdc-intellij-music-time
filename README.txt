@@ -60,7 +60,7 @@ GETTING STARTED
 FIND YOUR MOST PRODUCTIVE MUSIC
 -------------------------------
 
-As you listen to music while you code, we calculate a productivity score by combining your coding metrics with your listening history and data from over 10,000 developers.
+As you listen to music while you code, we calculate a productivity score by combining your coding metrics with your listening history and data from over 50,000 developers.
 
 Here are the different ways you can discover your most productive music.
 
