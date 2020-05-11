@@ -68,8 +68,8 @@ public class SoftwareCoUtils {
 
     public static JsonParser jsonParser = new JsonParser();
 
-    // sublime = 1, vs code = 2, eclipse = 3, intellij = 4, visual studio = 6, atom = 7
-    public static int pluginId = 4;
+    // 16 = intellij music time
+    public static int pluginId = 16;
     public static String VERSION = null;
 
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();

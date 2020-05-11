@@ -8,9 +8,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
-import com.musictime.intellij.plugin.music.MusicControlManager;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
@@ -21,9 +19,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 public class KeystrokeCount {
 
