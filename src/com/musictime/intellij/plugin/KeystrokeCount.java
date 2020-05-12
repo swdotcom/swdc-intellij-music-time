@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
+import com.musictime.intellij.plugin.music.TrackInfo;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -275,19 +276,27 @@ public class KeystrokeCount {
 
         public FileInfo() { }
 
-        public void reduceOtherFileInfo(JsonObject jsonObj) {
+        public void reduceOtherFileInfo(TrackInfo trackInfo, JsonObject jsonObj) {
             try {
                 Type type = new TypeToken<FileInfo>() { }.getType();
                 FileInfo otherFileInfo = SoftwareCoMusic.gson.fromJson(jsonObj, type);
                 if (otherFileInfo != null) {
                     this.add += otherFileInfo.add;
+                    trackInfo.setAdd(trackInfo.getAdd() + otherFileInfo.add);
                     this.paste += otherFileInfo.paste;
+                    trackInfo.setPaste(trackInfo.getPaste() + otherFileInfo.paste);
                     this.open += otherFileInfo.open;
+                    trackInfo.setOpen(trackInfo.getOpen() + otherFileInfo.open);
                     this.close += otherFileInfo.close;
+                    trackInfo.setClose(trackInfo.getClose() + otherFileInfo.close);
                     this.delete += otherFileInfo.delete;
+                    trackInfo.setDelete(trackInfo.getDelete() + otherFileInfo.delete);
                     this.netkeys += otherFileInfo.netkeys;
+                    trackInfo.setNetkeys(trackInfo.getNetkeys() + otherFileInfo.netkeys);
                     this.linesAdded += otherFileInfo.linesAdded;
+                    trackInfo.setLinesAdded(trackInfo.getLinesAdded() + otherFileInfo.linesAdded);
                     this.linesRemoved += otherFileInfo.linesRemoved;
+                    trackInfo.setLinesRemoved(trackInfo.getLinesRemoved() + otherFileInfo.linesRemoved);
                     if (this.end < otherFileInfo.end) {
                         this.end = otherFileInfo.end;
                     }

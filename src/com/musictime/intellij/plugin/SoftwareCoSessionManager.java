@@ -41,18 +41,6 @@ public class SoftwareCoSessionManager {
     private static JsonArray keystrokeData = new JsonArray();
     public static int playerState = 0; // 0 = inactive & 1 = active
 
-    /* cache data*/
-    private static int keyStrokes = 0;
-    private static int add = 0;
-    private static int paste = 0;
-    private static int delete = 0;
-    private static int netkeys = 0;
-    private static int linesAdded = 0;
-    private static int linesRemoved = 0;
-    private static int open = 0;
-    private static int close = 0;
-    private static Map<String, JsonObject> musicData = new HashMap<>();
-
     public static long start = 0L;
     public static long local_start = 0L;
     private static long lastAppAvailableCheck = 0;
@@ -63,19 +51,6 @@ public class SoftwareCoSessionManager {
             instance = new SoftwareCoSessionManager();
         }
         return instance;
-    }
-
-    public static void resetCacheData() {
-        add = 0;
-        paste = 0;
-        delete = 0;
-        netkeys = 0;
-        linesAdded = 0;
-        linesRemoved = 0;
-        open = 0;
-        close = 0;
-        keyStrokes = 0;
-        musicData = new HashMap<>();
     }
 
     public static boolean softwareSessionFileExists() {
@@ -252,8 +227,26 @@ public class SoftwareCoSessionManager {
     }
 
     public static void processMusicPayload(JsonObject object) {
-
         TrackInfo track = TrackInfoManager.getTrackInfo();
+
+        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+
+        long end = timesData.now;
+        long end_local = timesData.local_now;
+        if (start == 0) {
+            track.setStart(end - track.getDuration());
+            track.setLocal_start(end_local - track.getDuration());
+        } else {
+            track.setStart(start);
+            track.setLocal_start(local_start);
+        }
+        track.setEnd(end);
+        track.setLocal_end(end_local);
+        track.setOffset(timesData.offset);
+        track.setTimezone(timesData.timezone);
+        track.setPluginId(SoftwareCoUtils.pluginId);
+        track.setOs(SoftwareCoUtils.getOs());
+        track.setVersion(SoftwareCoMusic.getVersion());
 
         if(object.has("item")) {
             JsonObject item = object.get("item").getAsJsonObject();
@@ -382,7 +375,10 @@ public class SoftwareCoSessionManager {
                 if (latestKeystrokeCount != null &&
                         (latestKeystrokeCount.getStart() >= track.getStart() ||
                                 latestKeystrokeCount.getEnd() >= track.getStart())) {
-
+                    if (latestKeystrokeCount.getEnd() == 0) {
+                        latestKeystrokeCount.setEnd(timesData.now);
+                        latestKeystrokeCount.setLocal_end(timesData.local_now);
+                    }
                     // merge
                     mergeKeystrokeCountToTrackSource(track, latestKeystrokeCount);
                 }
@@ -395,36 +391,16 @@ public class SoftwareCoSessionManager {
         List<KeystrokeCount> keystrokeCountList = FileManager.getCodeTimePayloads();
         if (keystrokeCountList != null && keystrokeCountList.size() > 0) {
             for (KeystrokeCount countObj : keystrokeCountList) {
+                if (countObj.getEnd() == 0) {
+                    latestKeystrokeCount.setEnd(timesData.now);
+                    latestKeystrokeCount.setLocal_end(timesData.local_now);
+                }
                 if (countObj.getStart() >= track.getStart() ||
                     countObj.getEnd() >= track.getStart()) {
 
                     // merge
                     mergeKeystrokeCountToTrackSource(track, countObj);
                 }
-            }
-        }
-
-        // merge the source data to the top level
-        Map<String, JsonObject> existingSource = track.getSource();
-        if (existingSource != null && existingSource.size() > 0) {
-            for (String key : existingSource.keySet()) {
-                JsonObject fileInfoJson = existingSource.get(key);
-                int add = fileInfoJson.get("add") != null ? fileInfoJson.get("add").getAsInt() : 0;
-                track.setAdd(track.getAdd() + add);
-                int paste = fileInfoJson.get("paste") != null ? fileInfoJson.get("paste").getAsInt() : 0;
-                track.setPaste(track.getPaste() + paste);
-                int open = fileInfoJson.get("open") != null ? fileInfoJson.get("open").getAsInt() : 0;
-                track.setOpen(track.getOpen() + open);
-                int close = fileInfoJson.get("close") != null ? fileInfoJson.get("close").getAsInt() : 0;
-                track.setClose(track.getClose() + close);
-                int delete = fileInfoJson.get("delete") != null ? fileInfoJson.get("delete").getAsInt() : 0;
-                track.setDelete(track.getDelete() + delete);
-                int netkeys = fileInfoJson.get("netkeys") != null ? fileInfoJson.get("netkeys").getAsInt() : 0;
-                track.setNetkeys(track.getNetkeys() + netkeys);
-                int linesAdded = fileInfoJson.get("linesAdded") != null ? fileInfoJson.get("linesAdded").getAsInt() : 0;
-                track.setLinesAdded(track.getLinesAdded() + linesAdded);
-                int linesRemoved = fileInfoJson.get("linesRemoved") != null ? fileInfoJson.get("linesRemoved").getAsInt() : 0;
-                track.setLinesRemoved(track.getLinesRemoved() + linesRemoved);
             }
         }
 
@@ -436,24 +412,7 @@ public class SoftwareCoSessionManager {
             track.setLoved(false);
         }
 
-        // process any offline data?
-        // processMusicData();
-
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-        long end = timesData.now;
-        long end_local = timesData.local_now;
-        if(start == 0) {
-            track.setStart(end - track.getDuration());
-            track.setLocal_start(end_local - track.getDuration());
-        } else {
-            track.setStart(start);
-            track.setLocal_start(local_start);
-        }
-        track.setEnd(end);
-        track.setLocal_end(end_local);
-        track.setOffset(timesData.offset);
-        track.setTimezone(timesData.timezone);
-
+        track.setKeystrokes(track.getAdd() + track.getDelete() + track.getPaste());
         final String payload = SoftwareCoMusic.gson.toJson(track);
 
         sendMusicOfflineData();
@@ -461,7 +420,6 @@ public class SoftwareCoSessionManager {
 
         // Reset song session payload
         TrackInfoManager.resetTrackInfo();
-        resetCacheData();
     }
 
     private static void mergeKeystrokeCountToTrackSource(TrackInfo track, KeystrokeCount keystrokeCount) {
@@ -492,7 +450,7 @@ public class SoftwareCoSessionManager {
                 JsonObject existingFileInfoJson = existingSource.get(key);
                 if (existingFileInfoJson != null) {
                     // merge it
-                    fileInfo.reduceOtherFileInfo(existingFileInfoJson);
+                    fileInfo.reduceOtherFileInfo(track, existingFileInfoJson);
                 }
                 existingSource.put(key, fileInfo.getAsJson());
             }
@@ -518,109 +476,6 @@ public class SoftwareCoSessionManager {
             output.close();
         } catch (Exception e) {
             log.warning("Music Time: Error appending to the Software song session file, error: " + e.getMessage());
-        }
-    }
-
-    public static void processMusicData() {
-        final String dataStoreFile = FileManager.getMusicDataFile(false);
-        File f = new File(dataStoreFile);
-
-        if (f.exists()) {
-            // found a data file, check if there's content
-            StringBuffer sb = new StringBuffer();
-            try {
-                FileInputStream fis = new FileInputStream(f);
-
-                //Construct BufferedReader from InputStreamReader
-                BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-
-                String line = null;
-                while ((line = br.readLine()) != null) {
-                    if (line.length() > 0) {
-                        sb.append(line).append(",");
-                    }
-                }
-
-                br.close();
-
-                if (sb.length() > 0) {
-                    // we have data to send
-                    String payloads = sb.toString();
-                    payloads = payloads.substring(0, payloads.lastIndexOf(","));
-                    payloads = "[" + payloads + "]";
-
-                    JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
-
-                    // delete the file
-                    deleteFile(dataStoreFile);
-
-                    /* process keystroke data */
-                    processKeystrokes(jsonArray);
-
-                } else {
-                    log.info("Music Time: No keystroke data to send");
-                }
-            } catch (Exception e) {
-                log.warning("Music Time: Error trying to read music data file, error: " + e.getMessage());
-            }
-        } else {
-            if(keystrokeData.size() > 0) {
-                /* process keystroke data */
-                processKeystrokes(keystrokeData);
-                keystrokeData = new JsonArray();
-            } else {
-                log.info("Music Time: No keystroke data to send");
-            }
-        }
-    }
-
-    private static void processKeystrokes(JsonArray jsonArray) {
-        // go through the array
-        for (int i = 0; i < jsonArray.size(); i++) {
-            JsonObject obj = jsonArray.get(i).getAsJsonObject();
-            add += obj.get("add").getAsInt();
-            paste += obj.get("paste").getAsInt();
-            delete += obj.get("delete").getAsInt();
-            netkeys += obj.get("netkeys").getAsInt();
-            linesAdded += obj.get("linesAdded").getAsInt();
-            linesRemoved += obj.get("linesRemoved").getAsInt();
-            open += obj.get("open").getAsInt();
-            close += obj.get("close").getAsInt();
-            keyStrokes += obj.get("keystrokes").getAsInt();
-
-            /* source data */
-            JsonObject source = obj.get("source").getAsJsonObject();
-            Set<String> keys = source.keySet();
-            for(String key : keys) {
-                JsonObject data = musicData.get(key);
-                if(data == null) {
-                    data = source.get(key).getAsJsonObject();
-                    musicData.put(key, data);
-                } else {
-                    JsonObject val = source.get(key).getAsJsonObject();
-                    int add = data.get("add").getAsInt() + val.get("add").getAsInt();
-                    data.addProperty("add", add);
-                    int paste = data.get("paste").getAsInt() + val.get("paste").getAsInt();
-                    data.addProperty("paste", paste);
-                    int open = data.get("open").getAsInt() + val.get("open").getAsInt();
-                    data.addProperty("open", open);
-                    int close = data.get("close").getAsInt() + val.get("close").getAsInt();
-                    data.addProperty("close", close);
-                    int delete = data.get("delete").getAsInt() + val.get("delete").getAsInt();
-                    data.addProperty("delete", delete);
-                    data.addProperty("length", val.get("length").getAsInt());
-                    int netkeys = data.get("netkeys").getAsInt() + val.get("netkeys").getAsInt();
-                    data.addProperty("netkeys", netkeys);
-                    data.addProperty("lines", val.get("lines").getAsInt());
-                    int linesAdded = data.get("linesAdded").getAsInt() + val.get("linesAdded").getAsInt();
-                    data.addProperty("linesAdded", linesAdded);
-                    int linesRemoved = data.get("linesRemoved").getAsInt() + val.get("linesRemoved").getAsInt();
-                    data.addProperty("linesRemoved", linesRemoved);
-                    data.addProperty("end", val.get("end").getAsLong());
-                    data.addProperty("local_end", val.get("local_end").getAsLong());
-                    musicData.put(key, data);
-                }
-            }
         }
     }
 

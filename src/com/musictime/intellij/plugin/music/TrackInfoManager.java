@@ -2,6 +2,8 @@ package com.musictime.intellij.plugin.music;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.musictime.intellij.plugin.SoftwareCoMusic;
+import com.musictime.intellij.plugin.SoftwareCoUtils;
 
 import java.util.HashMap;
 
@@ -53,14 +55,14 @@ public class TrackInfoManager {
         instance.setLinesRemoved(0);
         instance.setOpen(0);
         instance.setClose(0);
-        instance.setVersion("");
-        instance.setPluginId(0);
+        instance.setVersion(SoftwareCoMusic.getVersion());
+        instance.setPluginId(SoftwareCoUtils.pluginId);
         instance.setKeystrokes(0);
         instance.setStart(0L);
         instance.setLocal_start(0L);
         instance.setEnd(0L);
         instance.setLocal_end(0L);
-        instance.setOs("");
+        instance.setOs(SoftwareCoUtils.getOs());
         instance.setTimezone("");
         instance.setSource(new HashMap<>());
     }

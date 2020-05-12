@@ -80,9 +80,6 @@ public class SoftwareCoUtils {
     private static JsonObject lastResourceInfo = new JsonObject();
 
     private static boolean appAvailable = true;
-    private static boolean showStatusText = true;
-    private static String lastMsg = "";
-    private static String lastTooltip = "";
 
     private static int DASHBOARD_LABEL_WIDTH = 25;
     private static int DASHBOARD_VALUE_WIDTH = 25;
@@ -371,10 +368,6 @@ public class SoftwareCoUtils {
     private static void updateStatusBar(final String kpmIcon, final String kpmMsg,
                                         final String timeIcon, final String timeMsg,
                                         final String tooltip) {
-        if ( showStatusText ) {
-            lastMsg = kpmMsg;
-            lastTooltip = tooltip;
-        }
 
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
