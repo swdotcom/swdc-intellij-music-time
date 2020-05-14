@@ -7,7 +7,6 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.musicjava.Apis;
-import com.musictime.intellij.plugin.musicjava.Util;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
@@ -20,13 +19,15 @@ import java.util.logging.Logger;
 public class PlaylistManager {
 
     public static final Logger LOG = Logger.getLogger("PlaylistManager");
-    public static String previousTrack = "";
-    public static JsonObject previousTrackData = null;
+    public static String previousTrackName = "";
+    public static JsonObject currentTrackData = null;
     public static boolean skipPrevious = false;
 
     public static boolean pauseTrigger = false;
     public static long pauseTriggerTime = 0;
     private static boolean gatheringTrack = false;
+    private static long endCheckThresholdMillis = 1000 * 19;
+    private static Timer endCheckTimer = null;
 
     public static JsonObject getUserPlaylists() {
 
@@ -123,6 +124,37 @@ public class PlaylistManager {
         }, 1000);
     }
 
+    public static void trackEndCheck() {
+        // PlaylistManager.currentTrackData
+        // get progress_ms from the top level track data and duration_ms from the track data "item"
+        if (PlaylistManager.currentTrackData != null && PlaylistManager.currentTrackData.has("item")) {
+            JsonObject track = PlaylistManager.currentTrackData.get("item").getAsJsonObject();
+            long duration_ms = track.get("duration_ms").getAsLong();
+            long progress_ms = PlaylistManager.currentTrackData.has("progress_ms") ?
+                    PlaylistManager.currentTrackData.get("progress_ms").getAsLong() : 0;
+            long diff = duration_ms - progress_ms;
+
+            // the diff has to be less than the threshold (19 seconds)
+            // and a previous timer should be null before sending another fetch
+            if (diff > 0 && diff <= endCheckThresholdMillis && endCheckTimer == null) {
+                diff += 1000;
+                scheduleGatherMusicInfo(diff);
+            }
+        }
+    }
+
+    private static void scheduleGatherMusicInfo(long timeout) {
+        endCheckTimer = new Timer();
+        endCheckTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("GATHERING MUSIC INFO");
+                gatherMusicInfo();
+                endCheckTimer = null;
+            }
+        }, timeout);
+    }
+
     public static void gatherMusicInfo() {
 
         if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
@@ -147,10 +179,10 @@ public class PlaylistManager {
                     MusicControlManager.getSpotifyDevices(); // API call
                 }
 
-                JsonObject tracks = resp.getJsonObj();
-                if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
-                    JsonObject track = tracks.get("item").getAsJsonObject();
-                    boolean isPlaying = tracks.get("is_playing").getAsBoolean();
+                JsonObject trackInfo = resp.getJsonObj();
+                if (trackInfo != null && trackInfo.has("item") && !trackInfo.get("item").isJsonNull()) {
+                    JsonObject track = trackInfo.get("item").getAsJsonObject();
+                    boolean isPlaying = trackInfo.get("is_playing").getAsBoolean();
                     MusicControlManager.currentTrackId = track.get("id").getAsString();
                     MusicControlManager.currentTrackName = track.get("name").getAsString();
 
@@ -160,8 +192,8 @@ public class PlaylistManager {
                     }
 
                     // set context
-                    if (tracks.has("context") && !tracks.get("context").isJsonNull()) {
-                        JsonObject context = tracks.get("context").getAsJsonObject();
+                    if (trackInfo.has("context") && !trackInfo.get("context").isJsonNull()) {
+                        JsonObject context = trackInfo.get("context").getAsJsonObject();
                         String[] uri = context.get("uri").getAsString().split(":");
                         if (uri[uri.length - 2].equals("playlist")) {
                             MusicControlManager.currentPlaylistId = uri[uri.length - 1];
@@ -171,7 +203,7 @@ public class PlaylistManager {
                     }
 
                     boolean hasCurrentTrack = (StringUtils.isNotBlank(MusicControlManager.currentTrackName)) ? true : false;
-                    boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrack)) ? true : false;
+                    boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
                     boolean initializePrevTrack = (hasCurrentTrack && !hasPrevTrack) ? true : false;
                     boolean longPaused = (timesData.now - PlaylistManager.pauseTriggerTime) > 60 ? true : false;
 
@@ -181,22 +213,25 @@ public class PlaylistManager {
                     // has current track, has prev track, track names don't match
                     if ((longPaused && hasPrevTrack) || (!hasCurrentTrack && hasPrevTrack) ||
                             (hasCurrentTrack && hasPrevTrack
-                                    && !MusicControlManager.currentTrackName.equals(PlaylistManager.previousTrack))) {
+                                    && !MusicControlManager.currentTrackName.equals(PlaylistManager.previousTrackName))) {
                         sendPreviousTrack = true;
                     }
 
-                    if (sendPreviousTrack && PlaylistManager.previousTrackData != null) {
+                    if (sendPreviousTrack && PlaylistManager.currentTrackData != null) {
                         // process music payload
-                        SoftwareCoSessionManager.processMusicPayload(PlaylistManager.previousTrackData);
+                        SoftwareCoSessionManager.processMusicPayload(PlaylistManager.currentTrackData);
                     }
 
                     if (sendPreviousTrack || initializePrevTrack) {
                         SoftwareCoSessionManager.start = timesData.now;
                         SoftwareCoSessionManager.local_start = timesData.local_now;
-                        PlaylistManager.previousTrack = MusicControlManager.currentTrackName;
-                        PlaylistManager.previousTrackData = tracks;
+                        PlaylistManager.previousTrackName = MusicControlManager.currentTrackName;
                         PlaylistManager.pauseTriggerTime = 0;
                     }
+
+                    // always update the current track data, but after we've checked if
+                    // the previous track should be sent, so here is good
+                    PlaylistManager.currentTrackData = trackInfo;
 
                     if (hasCurrentTrack) {
                         if (isPlaying) {
@@ -208,6 +243,7 @@ public class PlaylistManager {
                             PlayListCommands.updatePlaylists(5, null);
                             SoftwareCoSessionManager.playerState = 0;
                             if (PlaylistManager.pauseTriggerTime == 0) {
+                                // reset to now, now that it's paused and pauseTriggerTime equals zero
                                 PlaylistManager.pauseTriggerTime = timesData.now;
                             }
                         }
@@ -217,8 +253,8 @@ public class PlaylistManager {
                         SoftwareCoSessionManager.playerState = 0;
                     }
 
-                    if (tracks.has("actions")) {
-                        JsonObject obj = tracks.getAsJsonObject("actions");
+                    if (trackInfo.has("actions")) {
+                        JsonObject obj = trackInfo.getAsJsonObject("actions");
                         JsonObject actions = obj.getAsJsonObject("disallows");
                         if (actions.has("skipping_prev")) {
                             skipPrevious = actions.get("skipping_prev").getAsBoolean();

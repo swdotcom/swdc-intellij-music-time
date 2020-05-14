@@ -3,7 +3,6 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlaylistManager;

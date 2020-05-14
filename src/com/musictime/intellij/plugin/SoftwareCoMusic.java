@@ -233,12 +233,22 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     private void initiateGatherMusicInfo() {
+        // fetch currently playing track every 20 seconds
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 PlaylistManager.gatherMusicInfo();
             }
         }, 5000, 20000);
+
+        // a timer to check if the song is close to ending and will call gather music info once the song should end
+        // every 5 seconds
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                PlaylistManager.trackEndCheck();
+            }
+        }, 10000, 5000);
     }
 
     public static String getRootPath() {

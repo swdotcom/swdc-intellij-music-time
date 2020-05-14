@@ -10,8 +10,6 @@ import com.musictime.intellij.plugin.musicjava.MusicController;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class PlayerControlManager {
