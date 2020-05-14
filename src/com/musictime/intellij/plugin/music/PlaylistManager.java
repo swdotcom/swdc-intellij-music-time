@@ -12,6 +12,8 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -112,6 +114,15 @@ public class PlaylistManager {
         return null;
     }
 
+    public static void gatherTrackTimer() {
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                gatherMusicInfo();
+            }
+        }, 1000);
+    }
+
     public static void gatherMusicInfo() {
 
         if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
@@ -125,118 +136,122 @@ public class PlaylistManager {
         }
 
         gatheringTrack = true;
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack(accessToken);
+        try {
+            SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+            String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+            SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack(accessToken);
 
-        if (resp.isOk() && resp.getCode() == 200) {
+            if (resp.isOk() && resp.getCode() == 200) {
 
-            if (MusicControlManager.currentDeviceName == null) {
-                MusicControlManager.getSpotifyDevices(); // API call
-            }
-
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
-                JsonObject track = tracks.get("item").getAsJsonObject();
-                boolean isPlaying = tracks.get("is_playing").getAsBoolean();
-                MusicControlManager.currentTrackId = track.get("id").getAsString();
-                MusicControlManager.currentTrackName = track.get("name").getAsString();
-
-                if (isPlaying) {
-                    // reset to zero every time we know it's playing
-                    PlaylistManager.pauseTriggerTime = 0;
+                if (MusicControlManager.currentDeviceName == null) {
+                    MusicControlManager.getSpotifyDevices(); // API call
                 }
 
-                // set context
-                if (tracks.has("context") && !tracks.get("context").isJsonNull()) {
-                    JsonObject context = tracks.get("context").getAsJsonObject();
-                    String[] uri = context.get("uri").getAsString().split(":");
-                    if (uri[uri.length - 2].equals("playlist")) {
-                        MusicControlManager.currentPlaylistId = uri[uri.length - 1];
-                    }
-                } else if (MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() > 5) {
-                    MusicControlManager.currentPlaylistId = null;
-                }
+                JsonObject tracks = resp.getJsonObj();
+                if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
+                    JsonObject track = tracks.get("item").getAsJsonObject();
+                    boolean isPlaying = tracks.get("is_playing").getAsBoolean();
+                    MusicControlManager.currentTrackId = track.get("id").getAsString();
+                    MusicControlManager.currentTrackName = track.get("name").getAsString();
 
-                boolean hasCurrentTrack = (StringUtils.isNotBlank(MusicControlManager.currentTrackName)) ? true : false;
-                boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrack)) ? true : false;
-                boolean initializePrevTrack = (hasCurrentTrack && !hasPrevTrack) ? true : false;
-                boolean longPaused = (timesData.now - PlaylistManager.pauseTriggerTime) > 60 ? true : false;
-
-                boolean sendPreviousTrack = false;
-                // long paused and has prev track
-                // no current track and has prev track
-                // has current track, has prev track, track names don't match
-                if ((longPaused && hasPrevTrack) || (!hasCurrentTrack && hasPrevTrack) ||
-                        (hasCurrentTrack && hasPrevTrack
-                                && !MusicControlManager.currentTrackName.equals(PlaylistManager.previousTrack))) {
-                    sendPreviousTrack = true;
-                }
-
-                if (sendPreviousTrack && PlaylistManager.previousTrackData != null) {
-                    // process music payload
-                    SoftwareCoSessionManager.processMusicPayload(PlaylistManager.previousTrackData);
-                }
-
-                if (sendPreviousTrack || initializePrevTrack) {
-                    SoftwareCoSessionManager.start = timesData.now;
-                    SoftwareCoSessionManager.local_start = timesData.local_now;
-                    PlaylistManager.previousTrack = MusicControlManager.currentTrackName;
-                    PlaylistManager.previousTrackData = tracks;
-                    PlaylistManager.pauseTriggerTime = 0;
-                }
-
-                if (hasCurrentTrack) {
                     if (isPlaying) {
-                        MusicControlManager.defaultbtn = "pause";
-                        PlayListCommands.updatePlaylists(5, null);
-                        SoftwareCoSessionManager.playerState = 1;
+                        // reset to zero every time we know it's playing
+                        PlaylistManager.pauseTriggerTime = 0;
+                    }
+
+                    // set context
+                    if (tracks.has("context") && !tracks.get("context").isJsonNull()) {
+                        JsonObject context = tracks.get("context").getAsJsonObject();
+                        String[] uri = context.get("uri").getAsString().split(":");
+                        if (uri[uri.length - 2].equals("playlist")) {
+                            MusicControlManager.currentPlaylistId = uri[uri.length - 1];
+                        }
+                    } else if (MusicControlManager.currentPlaylistId != null && MusicControlManager.currentPlaylistId.length() > 5) {
+                        MusicControlManager.currentPlaylistId = null;
+                    }
+
+                    boolean hasCurrentTrack = (StringUtils.isNotBlank(MusicControlManager.currentTrackName)) ? true : false;
+                    boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrack)) ? true : false;
+                    boolean initializePrevTrack = (hasCurrentTrack && !hasPrevTrack) ? true : false;
+                    boolean longPaused = (timesData.now - PlaylistManager.pauseTriggerTime) > 60 ? true : false;
+
+                    boolean sendPreviousTrack = false;
+                    // long paused and has prev track
+                    // no current track and has prev track
+                    // has current track, has prev track, track names don't match
+                    if ((longPaused && hasPrevTrack) || (!hasCurrentTrack && hasPrevTrack) ||
+                            (hasCurrentTrack && hasPrevTrack
+                                    && !MusicControlManager.currentTrackName.equals(PlaylistManager.previousTrack))) {
+                        sendPreviousTrack = true;
+                    }
+
+                    if (sendPreviousTrack && PlaylistManager.previousTrackData != null) {
+                        // process music payload
+                        SoftwareCoSessionManager.processMusicPayload(PlaylistManager.previousTrackData);
+                    }
+
+                    if (sendPreviousTrack || initializePrevTrack) {
+                        SoftwareCoSessionManager.start = timesData.now;
+                        SoftwareCoSessionManager.local_start = timesData.local_now;
+                        PlaylistManager.previousTrack = MusicControlManager.currentTrackName;
+                        PlaylistManager.previousTrackData = tracks;
+                        PlaylistManager.pauseTriggerTime = 0;
+                    }
+
+                    if (hasCurrentTrack) {
+                        if (isPlaying) {
+                            MusicControlManager.defaultbtn = "pause";
+                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoSessionManager.playerState = 1;
+                        } else {
+                            MusicControlManager.defaultbtn = "play";
+                            PlayListCommands.updatePlaylists(5, null);
+                            SoftwareCoSessionManager.playerState = 0;
+                            if (PlaylistManager.pauseTriggerTime == 0) {
+                                PlaylistManager.pauseTriggerTime = timesData.now;
+                            }
+                        }
                     } else {
                         MusicControlManager.defaultbtn = "play";
-                        PlayListCommands.updatePlaylists(5, null);
+                        MusicControlManager.currentTrackName = null;
                         SoftwareCoSessionManager.playerState = 0;
-                        if (PlaylistManager.pauseTriggerTime == 0) {
-                            PlaylistManager.pauseTriggerTime = timesData.now;
+                    }
+
+                    if (tracks.has("actions")) {
+                        JsonObject obj = tracks.getAsJsonObject("actions");
+                        JsonObject actions = obj.getAsJsonObject("disallows");
+                        if (actions.has("skipping_prev")) {
+                            skipPrevious = actions.get("skipping_prev").getAsBoolean();
+                        } else {
+                            skipPrevious = false;
                         }
                     }
-                } else {
-                    MusicControlManager.defaultbtn = "play";
-                    MusicControlManager.currentTrackName = null;
-                    SoftwareCoSessionManager.playerState = 0;
                 }
 
-                if(tracks.has("actions")) {
-                    JsonObject obj = tracks.getAsJsonObject("actions");
-                    JsonObject actions = obj.getAsJsonObject("disallows");
-                    if(actions.has("skipping_prev")) {
-                        skipPrevious = actions.get("skipping_prev").getAsBoolean();
-                    } else {
-                        skipPrevious = false;
+                SoftwareCoUtils.updatePlayerControls(false);
+
+            } else if (resp.getCode() == 204) {
+                if (MusicControlManager.currentDeviceName != null) {
+                    MusicControlManager.getSpotifyDevices();
+                    MusicControlManager.currentDeviceName = null;
+                    MusicControlManager.currentTrackName = null;
+                    SoftwareCoSessionManager.playerState = 0;
+                    MusicControlManager.defaultbtn = "play";
+                    MusicToolWindow.refresh();
+                }
+            } else if (!resp.getJsonObj().isJsonNull()) {
+                JsonObject tracks = resp.getJsonObj();
+                if (tracks != null && tracks.has("error")) {
+                    if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
+                        MusicControlManager.refreshAccessToken();
                     }
                 }
             }
-
-            SoftwareCoUtils.updatePlayerControls(false);
-
-        } else if(resp.getCode() == 204) {
-            if (MusicControlManager.currentDeviceName != null) {
-                MusicControlManager.getSpotifyDevices();
-                MusicControlManager.currentDeviceName = null;
-                MusicControlManager.currentTrackName = null;
-                SoftwareCoSessionManager.playerState = 0;
-                MusicControlManager.defaultbtn = "play";
-                MusicToolWindow.refresh();
-            }
-        } else if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    MusicControlManager.refreshAccessToken();
-                }
-            }
+        } catch (Exception e) {
+            //
+        } finally {
+            gatheringTrack = false;
         }
-
-        gatheringTrack = false;
     }
 
 }

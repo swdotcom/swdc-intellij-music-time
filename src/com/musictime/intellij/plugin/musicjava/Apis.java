@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
+import com.musictime.intellij.plugin.music.PlaylistManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.net.util.Base64;
 import org.apache.http.client.methods.HttpGet;
@@ -15,6 +16,8 @@ import org.apache.http.client.methods.HttpPut;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -121,6 +124,12 @@ public class Apis {
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
         if (resp.getCode() == 204) {
             getSpotifyDevices(accessToken);
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    PlaylistManager.gatherMusicInfo();
+                }
+            }, 1000);
             return true;
         }
         return false;

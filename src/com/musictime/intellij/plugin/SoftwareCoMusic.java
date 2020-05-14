@@ -238,7 +238,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
             public void run() {
                 PlaylistManager.gatherMusicInfo();
             }
-        }, 5000, 5000);
+        }, 5000, 20000);
     }
 
     public static String getRootPath() {
