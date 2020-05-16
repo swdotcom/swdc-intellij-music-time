@@ -962,6 +962,7 @@ public class MusicToolWindow {
                     for (int i = 0; i < 10; i++) {
                         // start back at the beginning of the tracks list if we've reached the end
                         if (tracks.size() <= index) {
+                            PlayListCommands.currentBatch = 1;
                             // start back at the beginning
                             index = 0;
                         }
