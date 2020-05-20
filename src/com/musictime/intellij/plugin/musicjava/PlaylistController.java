@@ -235,6 +235,7 @@ public class PlaylistController {
      */
     public static Object addTracksInPlaylist(String playlistId, Set<String> tracks) {
 
+        SoftwareResponse resp = null;
         if(playlistId != null) {
             JsonArray arr = new JsonArray();
             Object[] array = tracks.toArray();
@@ -246,7 +247,7 @@ public class PlaylistController {
             obj.addProperty("position", 0);
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
-            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+            resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
             if (resp.isOk()) {
                 return resp;
             } else if(!resp.getJsonObj().isJsonNull()) {
@@ -262,7 +263,10 @@ public class PlaylistController {
                 }
             }
         }
-        return new SoftwareResponse();
+        if (resp == null) {
+            return new SoftwareResponse();
+        }
+        return resp;
     }
 
     /*
@@ -272,7 +276,7 @@ public class PlaylistController {
      * tracks - tracks to be replaced with current tracks in playlist
      */
     public static Object updatePlaylist(String playlistId, JsonObject tracks) {
-
+        SoftwareResponse resp = null;
         if(playlistId != null) {
             JsonArray arr = new JsonArray();
             if (tracks != null && tracks.has("items")) {
@@ -286,7 +290,7 @@ public class PlaylistController {
             obj.add("uris", arr);
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
-            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+            resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
             if (resp.isOk()) {
                 return resp;
             } else if(!resp.getJsonObj().isJsonNull()) {
@@ -302,7 +306,10 @@ public class PlaylistController {
                 }
             }
         }
-        return new SoftwareResponse();
+        if (resp == null) {
+            return new SoftwareResponse();
+        }
+        return resp;
     }
 
     /*
@@ -312,7 +319,7 @@ public class PlaylistController {
      * tracks - list of tracks to remove from playlist
      */
     public static Object removeTracksInPlaylist(String playlistId, Set<String> tracks) {
-
+        SoftwareResponse resp = null;
         if(playlistId != null) {
             JsonArray arr = new JsonArray();
             Object[] array = tracks.toArray();
@@ -325,7 +332,7 @@ public class PlaylistController {
             obj.add("tracks", arr);
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
-            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+            resp = Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
             if (resp.isOk()) {
                 return resp;
             } else if(!resp.getJsonObj().isJsonNull()) {
@@ -341,7 +348,10 @@ public class PlaylistController {
                 }
             }
         }
-        return new SoftwareResponse();
+        if (resp == null) {
+            return new SoftwareResponse();
+        }
+        return resp;
     }
 
     /*

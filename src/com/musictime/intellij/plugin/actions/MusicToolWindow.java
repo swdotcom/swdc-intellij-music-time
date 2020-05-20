@@ -339,13 +339,13 @@ public class MusicToolWindow {
 
             DefaultListModel listModel = new DefaultListModel();
 
-            /* Learn more */
-            Icon readmeIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/readme.png");
-            JLabel learnMore = new JLabel();
-            learnMore.setIcon(readmeIcon);
-            learnMore.setText("Learn more");
-            learnMore.setToolTipText("View the Music Time Readme to learn more");
-            listModel.add(listIndex, learnMore);
+            /* Open dashboard */
+            Icon dashboardIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/dashboard.png");
+            JLabel openDashboard = new JLabel();
+            openDashboard.setIcon(dashboardIcon);
+            openDashboard.setText("Open dashboard");
+            openDashboard.setToolTipText("View your latest music matrix right here in your editor");
+            listModel.add(listIndex, openDashboard);
             listIndex++;
 
             /* Web analytics */
@@ -357,13 +357,13 @@ public class MusicToolWindow {
             listModel.add(listIndex, webAnalytics);
             listIndex++;
 
-            /* Open dashboard */
-            Icon dashboardIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/dashboard.png");
-            JLabel openDashboard = new JLabel();
-            openDashboard.setIcon(dashboardIcon);
-            openDashboard.setText("Open dashboard");
-            openDashboard.setToolTipText("View your latest music matrix right here in your editor");
-            listModel.add(listIndex, openDashboard);
+            /* Learn more */
+            Icon readmeIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/readme.png");
+            JLabel learnMore = new JLabel();
+            learnMore.setIcon(readmeIcon);
+            learnMore.setText("Learn more");
+            learnMore.setToolTipText("View the Music Time Readme to learn more");
+            listModel.add(listIndex, learnMore);
             listIndex++;
 
             /* Device section */
