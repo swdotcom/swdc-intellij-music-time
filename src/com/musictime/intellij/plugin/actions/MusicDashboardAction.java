@@ -22,9 +22,8 @@ public class MusicDashboardAction extends AnAction {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
         boolean isLoggedIn = (!sessionFileExists || !hasJwt || !hasSpotifyAccess)
                 ? false : true;
-        boolean serverOnline = SoftwareCoSessionManager.isServerOnline();
 
-        event.getPresentation().setVisible(isLoggedIn && serverOnline);
+        event.getPresentation().setVisible(isLoggedIn);
         event.getPresentation().setEnabled(true);
     }
 }

@@ -168,6 +168,7 @@ public class PlaylistManager {
         }
 
         gatheringTrack = true;
+        System.out.println("gathering music");
         try {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
             String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");

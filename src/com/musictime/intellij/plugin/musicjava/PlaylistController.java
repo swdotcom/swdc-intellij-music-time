@@ -42,10 +42,23 @@ public class PlaylistController {
                 LOG.log(Level.INFO, "Music Time: Unable to get Top Tracks, null response");
             }
         } else if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
+            JsonObject jsonResp = resp.getJsonObj();
+            if (jsonResp != null && jsonResp.has("error")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
                     MusicControlManager.refreshAccessToken();
+                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+                    if (resp.isOk()) {
+                        JsonObject obj = resp.getJsonObj();
+                        if (obj != null && obj.has("items")) {
+                            topTracks.clear();
+                            for(JsonElement array : obj.get("items").getAsJsonArray()) {
+                                JsonObject track = array.getAsJsonObject();
+                                topTracks.put(track.get("id").getAsString(), track.get("name").getAsString());
+                            }
+                        } else {
+                            LOG.log(Level.INFO, "Music Time: Unable to get Top Tracks, null response");
+                        }
+                    }
                 }
             }
         }
@@ -165,6 +178,17 @@ public class PlaylistController {
             SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
             if (resp.isOk()) {
                 return resp;
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject jsonResp = resp.getJsonObj();
+                if (jsonResp != null && jsonResp.has("error")) {
+                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
+                        MusicControlManager.refreshAccessToken();
+                        resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+                        if (resp.isOk()) {
+                            return resp;
+                        }
+                    }
+                }
             }
         }
         return new SoftwareResponse();
@@ -188,6 +212,17 @@ public class PlaylistController {
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
         if (resp.isOk()) {
             Apis.getUserPlaylists(MusicStore.getSpotifyUserId(), MusicStore.getSpotifyAccessToken());
+        } else if(!resp.getJsonObj().isJsonNull()) {
+            JsonObject jsonResp = resp.getJsonObj();
+            if (jsonResp != null && jsonResp.has("error")) {
+                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
+                    MusicControlManager.refreshAccessToken();
+                    resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+                    if (resp.isOk()) {
+                        return resp;
+                    }
+                }
+            }
         }
         return resp;
     }
@@ -212,8 +247,19 @@ public class PlaylistController {
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
             SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
-            if (resp.isOk() || resp.getCode() == 403) {
+            if (resp.isOk()) {
                 return resp;
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject jsonResp = resp.getJsonObj();
+                if (jsonResp != null && jsonResp.has("error")) {
+                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
+                        MusicControlManager.refreshAccessToken();
+                        resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+                        if (resp.isOk()) {
+                            return resp;
+                        }
+                    }
+                }
             }
         }
         return new SoftwareResponse();
@@ -243,6 +289,17 @@ public class PlaylistController {
             SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
             if (resp.isOk()) {
                 return resp;
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject jsonResp = resp.getJsonObj();
+                if (jsonResp != null && jsonResp.has("error")) {
+                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
+                        MusicControlManager.refreshAccessToken();
+                        resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+                        if (resp.isOk()) {
+                            return resp;
+                        }
+                    }
+                }
             }
         }
         return new SoftwareResponse();
@@ -269,8 +326,19 @@ public class PlaylistController {
 
             String api = "/v1/playlists/" + playlistId + "/tracks";
             SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
-            if (resp.isOk() || resp.getCode() == 403) {
+            if (resp.isOk()) {
                 return resp;
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject jsonResp = resp.getJsonObj();
+                if (jsonResp != null && jsonResp.has("error")) {
+                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
+                        MusicControlManager.refreshAccessToken();
+                        resp = Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
+                        if (resp.isOk()) {
+                            return resp;
+                        }
+                    }
+                }
             }
         }
         return new SoftwareResponse();
@@ -287,6 +355,17 @@ public class PlaylistController {
             SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
             if (resp.isOk()) {
                 return true;
+            } else if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject jsonResp = resp.getJsonObj();
+                if (jsonResp != null && jsonResp.has("error")) {
+                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(jsonResp)) {
+                        MusicControlManager.refreshAccessToken();
+                        resp = Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+                        if (resp.isOk()) {
+                            return true;
+                        }
+                    }
+                }
             }
         }
         return false;

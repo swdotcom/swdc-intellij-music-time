@@ -953,9 +953,9 @@ public class SoftwareCoUtils {
     }
 
     public static void sendHeartbeat(String reason) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
+
         String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (serverIsOnline && jwt != null) {
+        if (jwt != null) {
 
             long start = Math.round(System.currentTimeMillis() / 1000);
 
@@ -993,9 +993,8 @@ public class SoftwareCoUtils {
 
     // sendLikedTrack(like: true|false, trackId, type: spotify|itunes)
     public static void sendLikedTrack(boolean like, String trackId, String type) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
         String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (serverIsOnline && jwt != null) {
+        if (jwt != null) {
 
             JsonObject payload = new JsonObject();
             payload.addProperty("liked", like);

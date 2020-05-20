@@ -162,8 +162,7 @@ public class SlackControlManager {
     }
 
     protected static void lazilyFetchSlackStatus(int retryCount) {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        slackCacheState = isSlackConnected(serverIsOnline);
+        slackCacheState = isSlackConnected();
 
         if (!slackCacheState && retryCount > 0) {
             final int newRetryCount = retryCount - 1;
@@ -181,7 +180,7 @@ public class SlackControlManager {
         }
     }
 
-    private static boolean isSlackConnected(boolean serverIsOnline) {
+    private static boolean isSlackConnected() {
         JsonObject userObj = SoftwareCoUtils.getUser();
         if (userObj != null && userObj.has("email")) {
             // check if the email is valid

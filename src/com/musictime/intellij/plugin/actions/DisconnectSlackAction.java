@@ -22,9 +22,8 @@ public class DisconnectSlackAction extends AnAction {
         boolean isLoggedIn = (!sessionFileExists || !hasJwt || !SlackControlManager.isSlackConncted())
                 ? false : true;
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
-        boolean serverOnline = SoftwareCoSessionManager.isServerOnline();
 
-        event.getPresentation().setVisible(hasSpotifyAccess && isLoggedIn && serverOnline);
+        event.getPresentation().setVisible(hasSpotifyAccess && isLoggedIn);
         event.getPresentation().setEnabled(true);
     }
 }
