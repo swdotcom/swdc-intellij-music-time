@@ -780,7 +780,7 @@ public class MusicToolWindow {
                 userPlaylistSeparator.setForeground(new Color(255, 255, 255, 63));
                 dataPanel.add(userPlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
                 //*****************************************************************************************************************************
-                Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist.png");
+                Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist-16x16.png");
                 for (String playlistId : PlayListCommands.userPlaylistIds) {
                     PlaylistTreeNode userPlaylist = new PlaylistTreeNode(PlayListCommands.userPlaylists.get(playlistId), playlistId);
                     DefaultTreeModel userPlaylistModel = new DefaultTreeModel(userPlaylist);
