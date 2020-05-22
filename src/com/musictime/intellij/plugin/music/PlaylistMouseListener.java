@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 
 import javax.swing.*;
@@ -43,7 +44,7 @@ public class PlaylistMouseListener extends MouseAdapter {
         } else if(e.getButton() == 1) {
 
             DeviceManager.getDevices();
-            DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+            DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
 
 
             /* retrieve the node that was selected */

@@ -12,6 +12,7 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
 import org.apache.batik.svggen.font.table.Device;
 import org.apache.http.client.methods.HttpPut;
@@ -195,8 +196,8 @@ public class MusicControlManager {
 
     public static synchronized boolean launchPlayer(boolean skipPopup, boolean activateDevice) {
 
-        List<DeviceManager.DeviceInfo> deviceInfos = DeviceManager.getDevices();
-        DeviceManager.DeviceInfo activeDevice = DeviceManager.getActiveDevice();
+        List<DeviceInfo> deviceInfos = DeviceManager.getDevices();
+        DeviceInfo activeDevice = DeviceManager.getActiveDevice();
         boolean hasWebDevice = DeviceManager.hasWebDevice();
         boolean hasDesktopDevice = DeviceManager.hasDesktopDevice();
 
@@ -207,7 +208,7 @@ public class MusicControlManager {
         String userStatus = MusicStore.getSpotifyAccountType();
         if (!skipPopup) {
             List<String> devices = new ArrayList<>();
-            for (DeviceManager.DeviceInfo info : deviceInfos) {
+            for (DeviceInfo info : deviceInfos) {
                 String name = info.name;
                 devices.add(info.name);
             }
@@ -239,7 +240,7 @@ public class MusicControlManager {
 
                     String deviceId = "";
                     String playerDescription = "";
-                    for (DeviceManager.DeviceInfo info : deviceInfos) {
+                    for (DeviceInfo info : deviceInfos) {
                         if (info.name.equals(deviceName)) {
                             deviceId = info.id;
                             playerDescription = info.playerDescription;
@@ -342,7 +343,7 @@ public class MusicControlManager {
                         lazyUpdateDevices(3, activateDevice, false);
                     } else if(SoftwareCoUtils.isWindows()) {
                         DeviceManager.getDevices();
-                        DeviceManager.DeviceInfo activeDevice = DeviceManager.getActiveDevice();
+                        DeviceInfo activeDevice = DeviceManager.getActiveDevice();
                         if(activeDevice.playerType.equals("desktop")) {
                             lazyUpdateDevices(3, activateDevice, false);
                         } else {

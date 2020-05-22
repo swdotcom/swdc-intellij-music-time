@@ -10,6 +10,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.music.*;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
@@ -375,8 +376,8 @@ public class MusicToolWindow {
             Icon spotifyIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
             JLabel deviceState = new JLabel();
             deviceState.setIcon(spotifyIcon);
-            DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
-            List<DeviceManager.DeviceInfo> deviceInfoList = DeviceManager.getDevices();
+            DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+            List<DeviceInfo> deviceInfoList = DeviceManager.getDevices();
             if (CollectionUtils.isNotEmpty(deviceInfoList)) {
                 if (currentDevice != null) {
                     if (currentDevice.is_active) {

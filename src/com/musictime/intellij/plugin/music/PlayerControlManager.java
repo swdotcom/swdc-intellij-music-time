@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicController;
@@ -34,7 +35,7 @@ public class PlayerControlManager {
             boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
             boolean isNonNamedPlaylist = (playlistId.equals(PlayListCommands.recommendedPlaylistId) || playlistId.equals(PlayListCommands.likedPlaylistId)) ? true : false;
 
-            DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+            DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
             if (isNonNamedPlaylist && hasPremiumUserStatus) {
                 if (currentDevice != null) {
                     JsonObject obj;
@@ -114,7 +115,7 @@ public class PlayerControlManager {
 
     public static boolean playSpotifyDevices() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
-        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (currentDevice != null) {
@@ -156,7 +157,7 @@ public class PlayerControlManager {
 
     public static boolean pauseSpotifyDevices() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
-        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (currentDevice != null) {
@@ -199,7 +200,7 @@ public class PlayerControlManager {
 
     public static boolean previousSpotifyTrack() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
-        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (currentDevice != null) {
@@ -249,7 +250,7 @@ public class PlayerControlManager {
 
     public static boolean nextSpotifyTrack() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
-        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (currentDevice != null) {

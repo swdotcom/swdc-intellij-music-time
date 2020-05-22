@@ -6,6 +6,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
@@ -146,7 +147,7 @@ public class PlaylistManager {
 
         // skip checking for a currently playing device if there's no
         // device and no previously playing track
-        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         if (currentDevice == null && MusicControlManager.currentTrackName == null) {
             return;
         }
