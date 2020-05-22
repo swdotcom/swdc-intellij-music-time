@@ -186,9 +186,6 @@ public class SlackControlManager {
             // check if the email is valid
             String email = userObj.get("email").getAsString();
             if (SoftwareCoUtils.validateEmail(email)) {
-                String pluginJwt = userObj.get("plugin_jwt").getAsString();
-                FileManager.setItem("jwt", pluginJwt);
-                FileManager.setItem("name", email);
                 for(JsonElement array : userObj.get("auths").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("slack")) {
                         if(ACCESS_TOKEN == null) {

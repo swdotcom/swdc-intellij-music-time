@@ -78,7 +78,7 @@ public class SoftwareCoSessionManager {
 
     public static boolean jwtExists() {
         String jwt = FileManager.getItem("jwt");
-        return (jwt != null && !jwt.equals("")) ? true : false;
+        return (StringUtils.isBlank(jwt)) ? true : false;
     }
 
     public static Project getOpenProject() {
@@ -561,26 +561,6 @@ public class SoftwareCoSessionManager {
             return true;
         }
         return false;
-    }
-
-    private static JsonObject getSoftwareSessionAsJson() {
-        JsonObject data = null;
-
-        String sessionFile = FileManager.getSoftwareSessionFile(true);
-        File f = new File(sessionFile);
-        if (f.exists()) {
-            try {
-                byte[] encoded = Files.readAllBytes(Paths.get(sessionFile));
-                String content = new String(encoded, Charset.defaultCharset());
-                if (content != null) {
-                    // json parse it
-                    data = SoftwareCoMusic.jsonParser.parse(content).getAsJsonObject();
-                }
-            } catch (Exception e) {
-                log.warning("Music Time: Error trying to read and json parse the session file, error: " + e.getMessage());
-            }
-        }
-        return (data == null) ? new JsonObject() : data;
     }
 
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {

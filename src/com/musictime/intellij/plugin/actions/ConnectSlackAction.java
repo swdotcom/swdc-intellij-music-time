@@ -6,8 +6,10 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.UnsupportedEncodingException;
@@ -25,8 +27,8 @@ public class ConnectSlackAction extends AnAction {
     @Override
     public void update(AnActionEvent event) {
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
-        boolean hasJwt = SoftwareCoSessionManager.jwtExists();
-        boolean isLoggedIn = (!sessionFileExists || !hasJwt || !SlackControlManager.isSlackConncted())
+        String name = FileManager.getItem("name");
+        boolean isLoggedIn = (!sessionFileExists || StringUtils.isBlank(name) || !SlackControlManager.isSlackConncted())
                 ? false : true;
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
 

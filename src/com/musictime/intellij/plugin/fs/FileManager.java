@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -27,6 +28,7 @@ public class FileManager {
     public static final Logger log = Logger.getLogger("FileManager");
 
     private static Semaphore semaphore = new Semaphore(1);
+    private static HashMap<String, Object> sessionMap = new HashMap<>();
 
     private static Timer _timer = null;
 
@@ -149,7 +151,7 @@ public class FileManager {
         return softwareDataDir;
     }
 
-    public static String getSoftwareSessionFile(boolean autoCreate) {
+    public static synchronized String getSoftwareSessionFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\session.json";
@@ -376,6 +378,7 @@ public class FileManager {
 
                 byte[] encoded = Files.readAllBytes(p);
                 String content = new String(encoded, Charset.defaultCharset());
+                System.out.println("----- session.json content: '" + content + "'");
                 if (content != null) {
                     // json parse it
                     sessionJson = SoftwareCoUtils.jsonParser.parse(content).getAsJsonObject();
@@ -391,7 +394,13 @@ public class FileManager {
         return sessionJson;
     }
 
-    public static void setItem(String key, String val) {
+    public static synchronized void setItem(String key, String val) {
+        if (val == null || val.equals("null")) {
+            sessionMap.remove(key);
+            val = "";
+        } else {
+            sessionMap.put(key, val);
+        }
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
 
@@ -401,11 +410,36 @@ public class FileManager {
         saveFileContent(sessionFile, content);
     }
 
-    public static String getItem(String key) {
+    public static synchronized String getItem(String key) {
+        String val = (String) sessionMap.get(key);
+        if (val != null) {
+            return val;
+        }
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
-            return sessionJson.get(key).getAsString();
+            val = sessionJson.get(key).getAsString();
         }
-        return null;
+        return val;
+    }
+
+    private static void updateJwtIfNull(String key) {
+        if (key.equals("jwt")) {
+            String val = (String) sessionMap.get(key);
+            if (val != null && !val.equals("null")) {
+                // check the actual file
+                JsonObject sessionJson = getSoftwareSessionAsJson();
+                if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
+                    String jwtVal = sessionJson.get(key).getAsString();
+                    if (jwtVal == null || jwtVal.equals("null")) {
+                        // update it
+                        sessionJson.addProperty("jwt", val);
+                        String content = sessionJson.toString();
+                        String sessionFile = getSoftwareSessionFile(true);
+
+                        saveFileContent(sessionFile, content);
+                    }
+                }
+            }
+        }
     }
 }

@@ -31,7 +31,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     public static MessageBusConnection connection;
 
-
     private SoftwareCoMusicManager musicMgr = SoftwareCoMusicManager.getInstance();
     private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
     private AsyncManager asyncManager = AsyncManager.getInstance();
@@ -95,7 +94,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
         }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         String jwt = FileManager.getItem("jwt");
-        if (!sessionFileExists || jwt == null) {
+        if (!sessionFileExists || StringUtils.isBlank(jwt)) {
             if (!serverIsOnline) {
                 // server isn't online, check again in 1 min
                 if (retry_counter == 0) {
@@ -113,25 +112,10 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 getPluginName();
 
                 if (StringUtils.isBlank(jwt)) {
-                    jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
-                    FileManager.setItem("jwt", jwt);
-                }
-
-                if (jwt == null) {
-                    // it failed, try again later
-                    if (retry_counter == 0) {
-                        SoftwareCoUtils.showOfflinePrompt();
-                    }
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(check_online_interval_ms);
-                            initComponent();
-                        } catch (Exception e) {
-                            System.err.println(e);
-                        }
-                    }).start();
-                } else {
+                    SoftwareCoUtils.getAppJwt(serverIsOnline);
                     initializePlugin(true);
+                } else {
+                    initializePlugin(false);
                 }
             }
         } else {
@@ -201,13 +185,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
             asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 15);
         }
 
-        if(!MusicControlManager.hasSpotifyAccess()) {
+        if (!MusicControlManager.hasSpotifyAccess()) {
             String headPhoneIcon = "headphone.png";
             boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
             String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, connectLabel, connectLabel);
         } else {
-
             // check to see if we need to re-authenticate
             if (hasExpiredAccessToken()) {
                 // disconnect

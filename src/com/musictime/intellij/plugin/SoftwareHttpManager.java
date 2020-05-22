@@ -20,13 +20,11 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
     private String api;
     private String httpMethodName;
     private HttpClient httpClient;
-    private String overridingJwt;
 
-    public SoftwareHttpManager(String api, String httpMethodName, String payload, String overridingJwt, HttpClient httpClient) {
+    public SoftwareHttpManager(String api, String httpMethodName, String payload, HttpClient httpClient) {
         this.payload = payload;
         this.api = api;
         this.httpMethodName = httpMethodName;
-        this.overridingJwt = overridingJwt;
         this.httpClient = httpClient;
     }
 
@@ -66,11 +64,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
             }
 
 
-            String jwtToken = (this.overridingJwt != null) ? this.overridingJwt : FileManager.getItem("jwt");
-            // obtain the jwt session token if we have it
-            if (jwtToken != null) {
-                req.addHeader("Authorization", jwtToken);
-            }
+            req.addHeader("Authorization", FileManager.getItem("jwt"));
 
             req.addHeader("Content-type", "application/json");
 

@@ -38,6 +38,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.velocity.texen.util.FileUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -177,24 +178,22 @@ public class SoftwareCoUtils {
 
         SoftwareResponse softwareResponse = new SoftwareResponse();
 
-        String jwt = FileManager.getItem("jwt");
-
         SoftwareHttpManager httpTask = null;
         if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
                 || api.contains("/users/plugin/accounts")) {
             // if the server is having issues, we'll timeout within 5 seconds for these calls
-            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
+            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, httpClient);
         } else {
             if (httpMethodName.equals(HttpPost.METHOD_NAME)) {
                 // continue, POSTS encapsulated "invokeLater" with a timeout of 5 seconds
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, pingClient);
+                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, pingClient);
             } else {
                 if (!appAvailable) {
                     // bail out
                     softwareResponse.setIsOk(false);
                     return softwareResponse;
                 }
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
+                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, httpClient);
             }
         }
         Future<HttpResponse> response = EXECUTOR_SERVICE.submit(httpTask);
@@ -802,17 +801,16 @@ public class SoftwareCoUtils {
         return username;
     }
 
-    public static String getAppJwt(boolean serverIsOnline) {
+    public static void getAppJwt(boolean serverIsOnline) {
         if (serverIsOnline) {
             long now = Math.round(System.currentTimeMillis() / 1000);
             String api = "/data/apptoken?token=" + now;
             SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
             if (resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
-                return obj.get("jwt").getAsString();
+                FileManager.setItem("jwt", obj.get("jwt").getAsString());
             }
         }
-        return null;
     }
 
     public static JsonObject getUser() {
@@ -865,8 +863,6 @@ public class SoftwareCoUtils {
 
     public static void getAndUpdateClientInfo() {
         // To find client info
-        String jwt = FileManager.getItem("jwt");
-        LOG.log(Level.INFO, SoftwareCoMusic.getPluginName() + ": JWT: " + jwt);
         String api = "/auth/spotify/clientInfo";
         SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp.isOk()) {

@@ -148,7 +148,6 @@ public class MusicControlManager {
         JsonObject payload = new JsonObject();
         payload.add("tracks", batch);
         String jsonPayload = payload.toString();
-        String jwt = FileManager.getItem("jwt");
 
         SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, jsonPayload, false);
         if (!resp.isOk()) {
@@ -162,7 +161,6 @@ public class MusicControlManager {
          *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
          */
         String jwt = FileManager.getItem("jwt");
-
         String api = Client.api_endpoint + "/auth/spotify?token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
         BrowserUtil.browse(api);
     }

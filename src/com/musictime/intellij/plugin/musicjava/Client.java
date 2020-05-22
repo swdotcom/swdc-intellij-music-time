@@ -83,9 +83,8 @@ public class Client {
         Future<HttpResponse> response = null;
 
         if (!isSpotifyApiCall) {
-            String jwt = encodedAuth == null ? FileManager.getItem("jwt") : encodedAuth;
             // if the server is having issues, we'll timeout within 5 seconds for these calls
-            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
+            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);
         } else {
             String accesstoken = encodedAuth == null ? FileManager.getItem("spotify_access_token") : encodedAuth;
