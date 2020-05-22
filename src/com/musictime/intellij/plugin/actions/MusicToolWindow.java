@@ -12,6 +12,8 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.*;
 import com.musictime.intellij.plugin.musicjava.Apis;
+import com.musictime.intellij.plugin.musicjava.DeviceManager;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
@@ -23,6 +25,7 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -74,7 +77,7 @@ public class MusicToolWindow {
                                 tree.setExpandedState(tree.getPathForRow(0), false);
                             }
                         }
-                        MusicControlManager.getSpotifyDevices(); // API call
+                        DeviceManager.getDevices(); // API call
                         PlayListCommands.updatePlaylists(0, null);
                     } else {
                         refreshButton();
@@ -372,17 +375,16 @@ public class MusicToolWindow {
             Icon spotifyIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
             JLabel deviceState = new JLabel();
             deviceState.setIcon(spotifyIcon);
-            if (MusicControlManager.spotifyDeviceIds.size() > 0) {
-                if (MusicControlManager.currentDeviceId != null) {
-                    if (MusicControlManager.currentDeviceName != null) {
-                        deviceState.setText("Listening on " + MusicControlManager.currentDeviceName);
+            DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+            List<DeviceManager.DeviceInfo> deviceInfoList = DeviceManager.getDevices();
+            if (CollectionUtils.isNotEmpty(deviceInfoList)) {
+                if (currentDevice != null) {
+                    if (currentDevice.is_active) {
+                        deviceState.setText("Listening on " + currentDevice.name);
                         deviceState.setToolTipText("Listening on a Spotify device");
-                    } else if (MusicControlManager.cacheDeviceName != null) {
-                        deviceState.setText("Available on " + MusicControlManager.cacheDeviceName);
-                        deviceState.setToolTipText("Available on a Spotify device");
                     } else {
-                        deviceState.setText("Available Spotify devices");
-                        deviceState.setToolTipText("Available Spotify devices");
+                        deviceState.setText("Available on " + currentDevice.name);
+                        deviceState.setToolTipText("Available on a Spotify device");
                     }
                 } else {
                     deviceState.setText("Available Spotify devices");
@@ -1077,7 +1079,7 @@ public class MusicToolWindow {
 
     public static void lazilyCheckPlayer(int retryCount, String playlist, String track, String trackName) {
         if (MusicControlManager.currentTrackName == null) {
-            if (!MusicControlManager.deviceActivated && retryCount > 0) {
+            if (!DeviceManager.hasActiveWebOrDesktopDevice() && retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
                 new Thread(() -> {
                     try {
@@ -1087,7 +1089,7 @@ public class MusicToolWindow {
                         System.err.println(ex);
                     }
                 }).start();
-            } else if (MusicControlManager.deviceActivated) {
+            } else if (DeviceManager.hasActiveWebOrDesktopDevice()) {
                 SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track, trackName);
                 if (response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                     JsonObject error = response.getJsonObj().getAsJsonObject("error");
@@ -1097,7 +1099,6 @@ public class MusicToolWindow {
                         SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
                     }
                 }
-                MusicControlManager.deviceActivated = false;
             }
         } else {
             SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track, trackName);

@@ -7,6 +7,7 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.musicjava.Apis;
+import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
 import org.apache.commons.lang.StringUtils;
 
@@ -145,21 +146,17 @@ public class PlaylistManager {
 
         // skip checking for a currently playing device if there's no
         // device and no previously playing track
-        if (MusicControlManager.currentDeviceName == null && MusicControlManager.currentTrackName == null) {
+        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        if (currentDevice == null && MusicControlManager.currentTrackName == null) {
             return;
         }
 
         gatheringTrack = true;
-        System.out.println("gathering music");
         try {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
             SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack();
 
             if (resp != null && resp.isOk() && resp.getCode() == 200) {
-
-                if (MusicControlManager.currentDeviceName == null) {
-                    MusicControlManager.getSpotifyDevices(); // API call
-                }
 
                 JsonObject trackInfo = resp.getJsonObj();
                 if (trackInfo != null && trackInfo.has("item") && !trackInfo.get("item").isJsonNull()) {
@@ -249,9 +246,8 @@ public class PlaylistManager {
                 SoftwareCoUtils.updatePlayerControls(false);
 
             } else if (resp.getCode() == 204) {
-                if (MusicControlManager.currentDeviceName != null) {
-                    MusicControlManager.getSpotifyDevices();
-                    MusicControlManager.currentDeviceName = null;
+                if (currentDevice != null) {
+                    DeviceManager.getDevices(true);
                     MusicControlManager.currentTrackName = null;
                     SoftwareCoSessionManager.playerState = 0;
                     MusicControlManager.defaultbtn = "play";

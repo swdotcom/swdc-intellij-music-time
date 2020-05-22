@@ -76,11 +76,6 @@ public class SoftwareCoSessionManager {
         return f.exists();
     }
 
-    public static boolean jwtExists() {
-        String jwt = FileManager.getItem("jwt");
-        return (StringUtils.isBlank(jwt)) ? true : false;
-    }
-
     public static Project getOpenProject() {
         ProjectManager projMgr = ProjectManager.getInstance();
         Project[] projects = projMgr.getOpenProjects();
@@ -556,8 +551,8 @@ public class SoftwareCoSessionManager {
     }
 
     public static boolean requiresReAuthentication() {
-        String requiresReAuth = FileManager.getItem("requiresSpotifyReAuth");
-        if (requiresReAuth != null) {
+        boolean requiresReAuth = FileManager.getBooleanItem("requiresSpotifyReAuth");
+        if (requiresReAuth) {
             return true;
         }
         return false;

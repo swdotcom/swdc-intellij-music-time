@@ -6,6 +6,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.musicjava.Apis;
+import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicController;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
 
@@ -33,8 +34,9 @@ public class PlayerControlManager {
             boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
             boolean isNonNamedPlaylist = (playlistId.equals(PlayListCommands.recommendedPlaylistId) || playlistId.equals(PlayListCommands.likedPlaylistId)) ? true : false;
 
+            DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
             if (isNonNamedPlaylist && hasPremiumUserStatus) {
-                if (MusicControlManager.currentDeviceId != null) {
+                if (currentDevice != null) {
                     JsonObject obj;
                     List<String> tracks = new ArrayList<>();
                     if (playlistId.equals(PlayListCommands.likedPlaylistId)) {
@@ -55,7 +57,7 @@ public class PlayerControlManager {
                             }
                         }
                     }
-                    SoftwareResponse resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, trackId, tracks);
+                    SoftwareResponse resp = MusicController.playSpotifyTracks(currentDevice.id, trackId, tracks);
                     if (resp.isOk()) {
                         MusicControlManager.currentTrackId = trackId;
                         MusicControlManager.currentPlaylistId = playlistId;
@@ -68,9 +70,9 @@ public class PlayerControlManager {
                     return resp;
                 }
             } else if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
-                if (MusicControlManager.currentDeviceId != null) {
+                if (currentDevice != null) {
 
-                    SoftwareResponse resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId);
+                    SoftwareResponse resp = MusicController.playSpotifyPlaylist(currentDevice.id, playlistId, trackId);
                     if (resp.isOk()) {
                         MusicControlManager.currentTrackId = trackId;
                         MusicControlManager.currentPlaylistId = playlistId;
@@ -82,7 +84,7 @@ public class PlayerControlManager {
                     }
                     return resp;
                 }
-            } else if (hasSpotifyAccess && SoftwareCoUtils.isSpotifyRunning() && MusicControlManager.currentDeviceId != null) {
+            } else if (hasSpotifyAccess && SoftwareCoUtils.isSpotifyRunning() && currentDevice != null) {
                 if (playlistId != null && playlistId.length() > 5 && trackId != null) {
                     MusicController.playDesktopTrackInPlaylist("Spotify", playlistId, trackId);
                 } else if (playlistId != null && playlistId.length() < 5 && trackId != null) {
@@ -112,21 +114,20 @@ public class PlayerControlManager {
 
     public static boolean playSpotifyDevices() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
-                if (MusicControlManager.currentDeviceId != null) {
+                if (currentDevice != null) {
 
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.playSpotifyWeb(MusicControlManager.currentDeviceId);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.playSpotifyWeb(currentDevice.id);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         MusicControlManager.defaultbtn = "pause";
                         SoftwareCoUtils.updatePlayerControls(false);
                         return true;
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        MusicControlManager.getSpotifyDevices();
-                        if (MusicControlManager.spotifyDeviceIds.size() > 0) {
-                            if (MusicControlManager.spotifyDeviceIds.size() == 1)
-                                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                        DeviceManager.getDevices(true);
+                        if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             playSpotifyDevices();
                         }
@@ -135,7 +136,7 @@ public class PlayerControlManager {
                         SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
                     }
                 } else {
-                    MusicControlManager.getSpotifyDevices();
+                    DeviceManager.getDevices();
                 }
             } else if (hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
                 boolean state = MusicController.playSpotifyDesktop();
@@ -155,21 +156,20 @@ public class PlayerControlManager {
 
     public static boolean pauseSpotifyDevices() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
-                if (MusicControlManager.currentDeviceId != null) {
+                if (currentDevice != null) {
 
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.pauseSpotifyWeb(MusicControlManager.currentDeviceId);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.pauseSpotifyWeb(currentDevice.id);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         MusicControlManager.defaultbtn = "play";
                         SoftwareCoUtils.updatePlayerControls(false);
                         return true;
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        MusicControlManager.getSpotifyDevices();
-                        if (MusicControlManager.spotifyDeviceIds.size() > 0) {
-                            if (MusicControlManager.spotifyDeviceIds.size() == 1)
-                                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                        DeviceManager.getDevices(true);
+                        if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             pauseSpotifyDevices();
                         }
@@ -178,7 +178,7 @@ public class PlayerControlManager {
                         SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
                     }
                 } else {
-                    MusicControlManager.getSpotifyDevices();
+                    DeviceManager.getDevices();
                 }
             } else if (hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
                 boolean state = MusicController.pauseSpotifyDesktop();
@@ -199,11 +199,12 @@ public class PlayerControlManager {
 
     public static boolean previousSpotifyTrack() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
-                if (MusicControlManager.currentDeviceId != null) {
+                if (currentDevice != null) {
 
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.previousSpotifyWeb(MusicControlManager.currentDeviceId);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.previousSpotifyWeb(currentDevice.id);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         new Thread(() -> {
@@ -220,10 +221,8 @@ public class PlayerControlManager {
                         playSpotifyPlaylist(null, null, null);
                         previousSpotifyTrack();
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        MusicControlManager.getSpotifyDevices();
-                        if (MusicControlManager.spotifyDeviceIds.size() > 0) {
-                            if (MusicControlManager.spotifyDeviceIds.size() == 1)
-                                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                        DeviceManager.getDevices(true);
+                        if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             previousSpotifyTrack();
                         }
@@ -232,7 +231,7 @@ public class PlayerControlManager {
                         SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
                     }
                 } else {
-                    MusicControlManager.getSpotifyDevices();
+                    DeviceManager.getDevices();
                 }
             } else if (hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
                 MusicController.previousSpotifyDesktop();
@@ -250,11 +249,12 @@ public class PlayerControlManager {
 
     public static boolean nextSpotifyTrack() {
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         try {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
-                if (MusicControlManager.currentDeviceId != null) {
+                if (currentDevice != null) {
 
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.nextSpotifyWeb(MusicControlManager.currentDeviceId);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.nextSpotifyWeb(currentDevice.id);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         new Thread(() -> {
@@ -271,10 +271,8 @@ public class PlayerControlManager {
                         playSpotifyPlaylist(null, null, null);
                         nextSpotifyTrack();
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        MusicControlManager.getSpotifyDevices();
-                        if (MusicControlManager.spotifyDeviceIds.size() > 0) {
-                            if (MusicControlManager.spotifyDeviceIds.size() == 1)
-                                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
+                        DeviceManager.getDevices(true);
+                        if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             nextSpotifyTrack();
                         }
@@ -283,7 +281,7 @@ public class PlayerControlManager {
                         SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
                     }
                 } else {
-                    MusicControlManager.getSpotifyDevices();
+                    DeviceManager.getDevices();
                 }
             } else if (hasSpotifyAccess && SoftwareCoUtils.isMac() && SoftwareCoUtils.isSpotifyRunning()) {
                 MusicController.nextSpotifyDesktop();

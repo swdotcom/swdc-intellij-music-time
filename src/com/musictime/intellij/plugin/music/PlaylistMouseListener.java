@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.musicjava.DeviceManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -41,15 +42,10 @@ public class PlaylistMouseListener extends MouseAdapter {
             }
         } else if(e.getButton() == 1) {
 
-            MusicControlManager.getSpotifyDevices();
-            if(MusicControlManager.currentDeviceId == null && MusicControlManager.spotifyDeviceIds.size() > 0) {
-                MusicControlManager.currentDeviceId = MusicControlManager.spotifyDeviceIds.get(0);
-                MusicControlManager.currentDeviceName = MusicControlManager.spotifyDevices.get(MusicControlManager.currentDeviceId);
-                if (MusicControlManager.currentDeviceName.contains("Web Player"))
-                    MusicControlManager.playerType = "Web Player";
-                else
-                    MusicControlManager.playerType = "Desktop Player";
-            }
+            DeviceManager.getDevices();
+            DeviceManager.DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+
+
             /* retrieve the node that was selected */
             if (node.isLeaf()) {
                 PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
@@ -60,8 +56,7 @@ public class PlaylistMouseListener extends MouseAdapter {
                     else if (MusicControlManager.defaultbtn.equals("play"))
                         PlayerControlManager.playSpotifyDevices();
                 } else {
-                    if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
-                        MusicControlManager.deviceActivated = false;
+                    if (MusicControlManager.currentTrackName == null && currentDevice == null) {
                         boolean launchState = MusicControlManager.launchPlayer(false, true);
                         if (launchState) {
                             MusicToolWindow.lazilyCheckPlayer(5, root.getId(), node.getId(), node.getName());
@@ -87,8 +82,7 @@ public class PlaylistMouseListener extends MouseAdapter {
                     PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
 
                     if (child.getId() != null) {
-                        if (MusicControlManager.currentTrackName == null && MusicControlManager.currentDeviceId == null) {
-                            MusicControlManager.deviceActivated = false;
+                        if (MusicControlManager.currentTrackName == null && currentDevice == null) {
                             boolean launchState = MusicControlManager.launchPlayer(false, true);
                             if (launchState) {
                                 MusicToolWindow.lazilyCheckPlayer(5, node.getId(), child.getId(), child.getName());

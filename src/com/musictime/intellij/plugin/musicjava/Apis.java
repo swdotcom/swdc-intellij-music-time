@@ -85,24 +85,8 @@ public class Apis {
             refreshAccessToken();
             // try again
             resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
-        }
-        if (resp.isOk()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("devices")) {
-                List<String> spotifyDeviceIds = MusicStore.getSpotifyDeviceIds();
-                spotifyDeviceIds.clear();
-                for(JsonElement array : tracks.get("devices").getAsJsonArray()) {
-                    JsonObject device = array.getAsJsonObject();
-                    if(device.get("type").getAsString().equals("Computer")) {
-                        spotifyDeviceIds.add(device.get("id").getAsString());
-                        if (device.get("is_active").getAsBoolean()) {
-                            MusicStore.setCurrentDeviceId(device.get("id").getAsString());
-                            MusicStore.setCurrentDeviceName(device.get("name").getAsString());
-                        }
-                    }
-                }
-            } else {
-                LOG.log(Level.INFO, "Music Time: No Device Found, null response");
+            if (resp != null && resp.getCode() == 401) {
+                checkIfAccessExpired(resp);
             }
         }
         return resp;
@@ -403,6 +387,13 @@ public class Apis {
 
     public static boolean accessExpired() {
         SoftwareResponse resp = getUserProfile();
+        if (resp != null && resp.getCode() == 400) {
+            // Getting a 400 is worse than a 401, check if the access token is missing
+            String accessToken = FileManager.getItem("spotify_access_token");
+            if (StringUtils.isBlank(accessToken)) {
+                return true;
+            }
+        }
         if (resp != null && resp.getCode() == 401) {
             resp = getUserProfile();
             if (resp != null && resp.getCode() == 401) {

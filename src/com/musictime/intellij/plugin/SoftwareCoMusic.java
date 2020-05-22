@@ -17,6 +17,7 @@ import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Apis;
+import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Timer;
@@ -207,7 +208,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 PlayListCommands.updatePlaylists(3, null);
                 PlayListCommands.getGenre(); // API call
                 PlayListCommands.updateRecommendation("category", "Familiar"); // API call
-                MusicControlManager.getSpotifyDevices(); // API call
+                DeviceManager.getDevices(); // API call
 
                 SoftwareCoUtils.updatePlayerControls(false);
             }
@@ -243,12 +244,18 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     public static boolean hasExpiredAccessToken() {
-        String checkedSpotifyAccess = FileManager.getItem("intellij_checkedSpotifyAccess");
+        boolean checkedSpotifyAccess = FileManager.getBooleanItem("intellij_checkedSpotifyAccess");
         String accessToken = FileManager.getItem("spotify_access_token");
-        if (checkedSpotifyAccess == null && accessToken != null) {
-            FileManager.setItem("intellij_checkedSpotifyAccess", "true");
-            FileManager.setItem("requiresSpotifyReAuth", "true");
-            return Apis.accessExpired();
+        String name = FileManager.getItem("name");
+        if ((!checkedSpotifyAccess && !StringUtils.isNotBlank(accessToken)) ||
+                (StringUtils.isBlank(accessToken) && StringUtils.isNotBlank(name))){
+            boolean expired = Apis.accessExpired();
+            if (expired) {
+                FileManager.setBooleanItem("requiresSpotifyReAuth", true);
+            }
+            FileManager.setBooleanItem("intellij_checkedSpotifyAccess", true);
+
+            return expired;
         }
         return false;
     }

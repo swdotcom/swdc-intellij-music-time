@@ -130,7 +130,7 @@ public class PlaylistController {
     public static Object sendPlaylistToSoftware(String payload) {
 
         String api = "/music/playlist/generated";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, payload, false);
+        SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, payload);
 
         return resp;
     }
@@ -143,7 +143,7 @@ public class PlaylistController {
     public static Object getRecommendedTracks() {
 
         String api = "/music/recommendations?limit=40";
-        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, false);
+        SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null);
         if(resp.isOk()) {
             recommendedTracks.clear();
             JsonArray array = (JsonArray) SoftwareCoMusic.jsonParser.parse(resp.getJsonStr());

@@ -126,9 +126,7 @@ public class SlackControlManager {
     public static boolean isSlackConncted() { return slackCacheState; }
 
     public static void connectSlack() throws UnsupportedEncodingException {
-
-        String jwt = FileManager.getItem("jwt");
-        String encodedJwt = URLEncoder.encode(jwt, "UTF-8");
+        String encodedJwt = URLEncoder.encode(FileManager.getItem("jwt"), "UTF-8");
         String api = Client.api_endpoint + "/auth/slack?integrate=slack&plugin=musictime&token=" + encodedJwt;
         BrowserUtil.browse(api);
 

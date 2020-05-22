@@ -75,17 +75,17 @@ public class SpotifyHttpManager implements Callable<HttpResponse> {
                     break;
             }
 
-
             String accessToken = this.overridingJwt;
             // obtain the jwt session token if we have it
             if (accessToken != null) {
                 req.addHeader("Authorization", accessToken);
             }
 
-            if(accessToken.contains("Basic"))
+            if(accessToken.contains("Basic")) {
                 req.addHeader("Content-Type", "application/x-www-form-urlencoded");
-            else
+            } else {
                 req.addHeader("Content-Type", "application/json");
+            }
 
             if (payload != null) {
                 LOG.log(Level.INFO, Client.pluginName + ": Sending API request: {0}, payload: {1}", new Object[]{api, payload});

@@ -91,6 +91,7 @@ public class Client {
             accesstoken = "Bearer " + accesstoken;
             spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, accesstoken, httpClient);
             response = EXECUTOR_SERVICE.submit(spotifyTask);
+            LOG.log(Level.INFO, "Spotify Request: " + api);
         }
 
         //

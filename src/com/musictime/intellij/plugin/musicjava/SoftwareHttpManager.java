@@ -58,7 +58,6 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
 
 
             req.addHeader("Authorization", FileManager.getItem("jwt"));
-
             req.addHeader("Content-Type", "application/json");
 
             if (payload != null) {

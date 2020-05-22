@@ -393,20 +393,71 @@ public class FileManager {
         return sessionJson;
     }
 
-    public static synchronized void setItem(String key, String val) {
-        if (val == null || val.equals("null")) {
+    public static synchronized void setNumericItem(String key, Long val) {
+        if (val == null) {
             sessionMap.remove(key);
-            val = "";
         } else {
             sessionMap.put(key, val);
         }
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
+        writeItem(sessionJson);
+    }
+
+    public static synchronized void setBooleanItem(String key, boolean val) {
+        sessionMap.put(key, val);
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        sessionJson.addProperty(key, val);
+        writeItem(sessionJson);
+    }
+
+    public static synchronized void setItem(String key, String val) {
+        if (val == null || val.equals("")) {
+            sessionMap.remove(key);
+        } else {
+            sessionMap.put(key, val);
+        }
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        if (val != null) {
+            sessionJson.addProperty(key, val);
+        } else {
+            sessionJson.add(key, null);
+        }
+        writeItem(sessionJson);
+    }
+
+    private static synchronized void writeItem(JsonObject sessionJson) {
 
         String content = sessionJson.toString();
         String sessionFile = getSoftwareSessionFile(true);
 
         saveFileContent(sessionFile, content);
+    }
+
+    public static synchronized boolean getBooleanItem(String key) {
+        Boolean val = (Boolean) sessionMap.get(key);
+        if (val != null) {
+            return val;
+        }
+
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
+            return sessionJson.get(key).getAsBoolean();
+        }
+        return false;
+    }
+
+    public static synchronized Long getNumericItem(String key) {
+        Long val = (Long) sessionMap.get(key);
+        if (val != null) {
+            return val;
+        }
+
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
+            val = sessionJson.get(key).getAsLong();
+        }
+        return val;
     }
 
     public static synchronized String getItem(String key) {
@@ -419,26 +470,5 @@ public class FileManager {
             val = sessionJson.get(key).getAsString();
         }
         return val;
-    }
-
-    private static void updateJwtIfNull(String key) {
-        if (key.equals("jwt")) {
-            String val = (String) sessionMap.get(key);
-            if (val != null && !val.equals("null")) {
-                // check the actual file
-                JsonObject sessionJson = getSoftwareSessionAsJson();
-                if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
-                    String jwtVal = sessionJson.get(key).getAsString();
-                    if (jwtVal == null || jwtVal.equals("null")) {
-                        // update it
-                        sessionJson.addProperty("jwt", val);
-                        String content = sessionJson.toString();
-                        String sessionFile = getSoftwareSessionFile(true);
-
-                        saveFileContent(sessionFile, content);
-                    }
-                }
-            }
-        }
     }
 }
