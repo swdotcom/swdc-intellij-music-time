@@ -189,6 +189,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     private void initializeUserInfo(boolean initializedUser) {
+        SoftwareCoUtils.getAndUpdateClientInfo();
+
         // get the user status (jwt, email, spotify, slack)
         SoftwareCoUtils.getMusicTimeUserStatus();
 
@@ -201,11 +203,13 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
         if(!MusicControlManager.hasSpotifyAccess()) {
             String headPhoneIcon = "headphone.png";
-            SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
+            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+            String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
+            SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, connectLabel, connectLabel);
         } else {
 
             // check to see if we need to re-authenticate
-            if (requiresReAuthentication()) {
+            if (hasExpiredAccessToken()) {
                 // disconnect
                 MusicControlManager.disConnectSpotify();
 
@@ -246,20 +250,20 @@ public class SoftwareCoMusic implements ApplicationComponent {
             public void run() {
                 String email = SoftwareCoSessionManager.getItem("name");
                 String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
-                String[] options = new String[] {"Cancel", "Reconnect"};
+                String[] options = new String[] {"Reconnect", "Cancel"};
                 int response = Messages.showDialog(infoMsg, SoftwareCoMusic.getPluginName(), options, 0, Messages.getInformationIcon());
-                if (response == 1) {
+                if (response == 0) {
                     MusicControlManager.connectSpotify();
                 }
             }
         });
     }
 
-    public static boolean requiresReAuthentication() {
+    public static boolean hasExpiredAccessToken() {
         String checkedSpotifyAccess = SoftwareCoSessionManager.getItem("intellij_checkedSpotifyAccess");
         String accessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
         if (checkedSpotifyAccess == null && accessToken != null) {
-            SoftwareCoSessionManager.setBooleanItem("vscode_checkedSpotifyAccess", true);
+            SoftwareCoSessionManager.setBooleanItem("intellij_checkedSpotifyAccess", true);
             SoftwareCoSessionManager.setBooleanItem("requiresSpotifyReAuth", true);
             return Apis.accessExpired();
         }

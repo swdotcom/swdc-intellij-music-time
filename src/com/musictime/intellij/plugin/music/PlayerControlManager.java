@@ -55,7 +55,6 @@ public class PlayerControlManager {
                             }
                         }
                     }
-                    String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
                     SoftwareResponse resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, trackId, tracks);
                     if (resp.isOk()) {
                         MusicControlManager.currentTrackId = trackId;
@@ -70,7 +69,7 @@ public class PlayerControlManager {
                 }
             } else if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (MusicControlManager.currentDeviceId != null) {
-                    String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
+
                     SoftwareResponse resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId);
                     if (resp.isOk()) {
                         MusicControlManager.currentTrackId = trackId;
@@ -117,8 +116,7 @@ public class PlayerControlManager {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (MusicControlManager.currentDeviceId != null) {
 
-                    String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.playSpotifyWeb(MusicControlManager.currentDeviceId, accessToken);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.playSpotifyWeb(MusicControlManager.currentDeviceId);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         MusicControlManager.defaultbtn = "pause";
@@ -161,8 +159,7 @@ public class PlayerControlManager {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (MusicControlManager.currentDeviceId != null) {
 
-                    String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.pauseSpotifyWeb(MusicControlManager.currentDeviceId, accessToken);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.pauseSpotifyWeb(MusicControlManager.currentDeviceId);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         MusicControlManager.defaultbtn = "play";
@@ -206,8 +203,7 @@ public class PlayerControlManager {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (MusicControlManager.currentDeviceId != null) {
 
-                    String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.previousSpotifyWeb(MusicControlManager.currentDeviceId, accessToken);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.previousSpotifyWeb(MusicControlManager.currentDeviceId);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         new Thread(() -> {
@@ -258,8 +254,7 @@ public class PlayerControlManager {
             if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (MusicControlManager.currentDeviceId != null) {
 
-                    String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                    SoftwareResponse resp = (SoftwareResponse) MusicController.nextSpotifyWeb(MusicControlManager.currentDeviceId, accessToken);
+                    SoftwareResponse resp = (SoftwareResponse) MusicController.nextSpotifyWeb(MusicControlManager.currentDeviceId);
                     if (resp.isOk()) {
                         MusicControlManager.playerCounter = 0;
                         new Thread(() -> {
@@ -308,8 +303,7 @@ public class PlayerControlManager {
 
         try {
             if (trackId != null) {
-                String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                SoftwareResponse resp = (SoftwareResponse) MusicController.likeSpotifyWeb(like, trackId, accessToken);
+                SoftwareResponse resp = (SoftwareResponse) MusicController.likeSpotifyWeb(like, trackId);
                 if (resp.isOk()) {
                     MusicControlManager.playerCounter = 0;
                     new Thread(() -> {

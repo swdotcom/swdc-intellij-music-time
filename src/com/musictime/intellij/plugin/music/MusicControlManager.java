@@ -86,7 +86,9 @@ public class MusicControlManager {
 
         resetSpotify();
         String headPhoneIcon = "headphone.png";
-        SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
+        SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Reconnect Spotify", "Reconnect Spotify");
+        // refresh the tree view
+        MusicToolWindow.refresh();
     }
 
     public static void connectSpotify() {
@@ -147,7 +149,8 @@ public class MusicControlManager {
         payload.add("tracks", batch);
         String jsonPayload = payload.toString();
         String jwt = SoftwareCoSessionManager.getItem("jwt");
-        SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, jsonPayload, jwt, false);
+
+        SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, jsonPayload, false);
         if (!resp.isOk()) {
             LOG.info("Error posting seed songs: " + resp.getErrorMessage());
         }
@@ -448,21 +451,7 @@ public class MusicControlManager {
     }
 
     public static void refreshAccessToken() {
-        if (MusicStore.SPOTIFY_CLIENT_ID == null) {
-            SoftwareCoUtils.getAndUpdateClientInfo();
-        }
-
-        if (MusicStore.SPOTIFY_REFRESH_TOKEN == null) {
-            SoftwareCoUtils.getMusicTimeUserStatus();
-        }
-
-        SoftwareResponse resp = (SoftwareResponse) Apis.refreshAccessToken(MusicStore.SPOTIFY_REFRESH_TOKEN, MusicStore.SPOTIFY_CLIENT_ID, MusicStore.SPOTIFY_CLIENT_SECRET);
-        if (resp.isOk()) {
-            JsonObject obj = resp.getJsonObj();
-            MusicStore.SPOTIFY_ACCESS_TOKEN = obj.get("access_token").getAsString();
-            SoftwareCoSessionManager.setItem("spotify_access_token", MusicStore.SPOTIFY_ACCESS_TOKEN);
-            LOG.log(Level.INFO, "Music Time: New Access Token: " + MusicStore.SPOTIFY_ACCESS_TOKEN);
-        }
+        SoftwareResponse resp = (SoftwareResponse) Apis.refreshAccessToken();
     }
 
     public static JsonObject getSpotifyDevices() {

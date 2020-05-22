@@ -589,6 +589,14 @@ public class SoftwareCoSessionManager {
         return null;
     }
 
+    public static boolean requiresReAuthentication() {
+        String requiresReAuth = SoftwareCoSessionManager.getItem("requiresSpotifyReAuth");
+        if (requiresReAuth != null) {
+            return true;
+        }
+        return false;
+    }
+
     private static JsonObject getSoftwareSessionAsJson() {
         JsonObject data = null;
 

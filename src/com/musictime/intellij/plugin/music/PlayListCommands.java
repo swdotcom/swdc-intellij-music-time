@@ -284,7 +284,7 @@ public class PlayListCommands {
     public static JsonObject getTopSpotifyTracks() {
 
         SoftwareResponse resp = (SoftwareResponse) PlaylistController.getTopSpotifyTracks();
-        if (resp.isOk()) {
+        if (resp != null && resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
                 MusicControlManager.topTracks.clear();
@@ -301,9 +301,7 @@ public class PlayListCommands {
     }
 
     public static JsonObject getLikedSpotifyTracks() {
-
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        SoftwareResponse resp = (SoftwareResponse) PlaylistController.getLikedSpotifyTracks(accessToken);
+        SoftwareResponse resp = (SoftwareResponse) PlaylistController.getLikedSpotifyTracks();
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -427,8 +425,7 @@ public class PlayListCommands {
     }
 
     public static JsonObject getGenre() {
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        JsonObject obj = (JsonObject) PlaylistController.getGenre(accessToken);
+        JsonObject obj = (JsonObject) PlaylistController.getGenre();
         if(obj != null && obj.has("genres")) {
             JsonArray genre = obj.getAsJsonArray("genres");
             PlayListCommands.genres.clear();
@@ -440,8 +437,7 @@ public class PlayListCommands {
     }
 
     public static JsonObject getRecommendationForTracks(Map<String, String> queryParameter) {
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        JsonObject obj = (JsonObject) PlaylistController.getRecommendationForTracks(accessToken, queryParameter);
+        JsonObject obj = (JsonObject) PlaylistController.getRecommendationForTracks(queryParameter);
         if(obj != null && obj.has("tracks")) {
             PlayListCommands.recommendedTracks = obj;
         }

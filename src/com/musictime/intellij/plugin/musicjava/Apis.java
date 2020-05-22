@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
+import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlaylistManager;
@@ -42,30 +43,29 @@ public class Apis {
      * clientId - spotify client id
      * clientSecret - spotify client secret
      */
-    public static Object refreshAccessToken(String refreshToken, String clientId, String clientSecret) {
-        if(refreshToken == null) {
-            refreshToken = MusicStore.getSpotifyRefreshToken();
-        } else {
-            MusicStore.setSpotifyRefreshToken(refreshToken);
+    public static Object refreshAccessToken() {
+        if (MusicStore.SPOTIFY_CLIENT_ID == null) {
+            SoftwareCoUtils.getAndUpdateClientInfo();
         }
 
-        if(clientId == null && clientSecret == null) {
-            clientId = MusicStore.getSpotifyClientId();
-            clientSecret = MusicStore.getSpotifyClientSecret();
-        } else {
-            MusicStore.setSpotifyClientId(clientId);
-            MusicStore.setSpotifyClientSecret(clientSecret);
+        String refreshToken = SoftwareCoSessionManager.getItem("spotify_refresh_token");
+        if (refreshToken == null) {
+            SoftwareCoUtils.getMusicTimeUserStatus();
         }
+
+        String clientId = MusicStore.getSpotifyClientId();
+        String clientSecret = MusicStore.getSpotifyClientSecret();
 
         String api = "/api/token?grant_type=refresh_token&refresh_token=" + refreshToken;
         String authPayload = clientId + ":" + clientSecret;
         byte[] bytesEncoded = Base64.encodeBase64(authPayload.getBytes());
         String encodedAuthPayload = "Basic " + new String(bytesEncoded);
 
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null, encodedAuthPayload);
+        SoftwareResponse resp = Client.makeSpotifyApiCallWithAuth(api, HttpPost.METHOD_NAME, null, encodedAuthPayload);
+
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
-            MusicStore.setSpotifyAccessToken(obj.get("access_token").getAsString());
+            SoftwareCoSessionManager.setItem("spotify_access_token", obj.get("access_token").getAsString());
         } else {
             checkIfAccessExpired(resp);
         }
@@ -78,17 +78,12 @@ public class Apis {
      * accessToken - spotify access token
      */
     public static Object getSpotifyDevices() {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return null;
-        }
-        accesstoken = "Bearer " + accesstoken;
         String api = "/v1/me/player/devices";
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp != null && resp.getCode() == 401) {
-            refreshAccessToken(null, null, null);
+            refreshAccessToken();
             // try again
-            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
         }
         if (resp.isOk()) {
             JsonObject tracks = resp.getJsonObj();
@@ -119,11 +114,6 @@ public class Apis {
      * deviceId - spotify device id
      */
     public static boolean activateDevice(String deviceId) {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return false;
-        }
-        accesstoken = "Bearer " + accesstoken;
         JsonObject obj = new JsonObject();
         if(deviceId != null) {
             JsonArray array = new JsonArray();
@@ -133,7 +123,7 @@ public class Apis {
         obj.addProperty("play", true);
 
         String api = "/v1/me/player";
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accesstoken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
         if (resp.getCode() == 204) {
             getSpotifyDevices();
             new Timer().schedule(new TimerTask() {
@@ -153,25 +143,24 @@ public class Apis {
      * accessToken - spotify access token
      */
     public static SoftwareResponse getUserProfile() {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return null;
-        }
-        accesstoken = "Bearer " + accesstoken;
         String api = "/v1/me";
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
-        JsonObject obj = resp.getJsonObj();
-        if (obj != null && obj.has("error")) {
-            if (MusicControlManager.requiresSpotifyAccessTokenRefresh(obj)) {
-                refreshAccessToken(null, null, null);
-                resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
-                obj = resp.getJsonObj();
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
+        if (resp != null && resp.getCode() == 401) {
+            // refresh the token
+            refreshAccessToken();
+            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
+            if (resp != null && resp.getCode() == 401) {
+                // refresh the token
+                refreshAccessToken();
+                resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
             }
         }
+
+        JsonObject obj = resp.getJsonObj();
+
         if (resp.isOk()) {
             MusicStore.setSpotifyUserId(obj.get("id").getAsString());
             MusicStore.setSpotifyAccountType(obj.get("product").getAsString());
-            MusicStore.setSpotifyAccessToken(accesstoken);
             return resp;
         }
         return resp;
@@ -251,21 +240,15 @@ public class Apis {
      * accessToken - spotify access token
      */
     public static Object getPlaylists(String spotifyUserId) {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return null;
-        }
-
-        accesstoken = "Bearer " + accesstoken;
         String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
         if(resp.isOk()) {
             return resp;
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
                 if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    refreshAccessToken(null, null, null);
+                    refreshAccessToken();
                 }
             }
         }
@@ -301,7 +284,7 @@ public class Apis {
             }
 
             String api = "/v1/search?type=track&q="+encodedKeywords+"&limit=50";
-            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
             if (resp.isOk()) {
                 JsonObject data = resp.getJsonObj();
                 if (data.has("tracks") && data.get("tracks").getAsJsonObject().has("items")) {
@@ -310,8 +293,8 @@ public class Apis {
             } else if(!resp.getJsonObj().isJsonNull()) {
                 JsonObject data = resp.getJsonObj();
                 if (MusicControlManager.requiresSpotifyAccessTokenRefresh(data)) {
-                    refreshAccessToken(null, null, null);
-                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, "Bearer " + MusicStore.getSpotifyAccessToken());
+                    refreshAccessToken();
+                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
                 }
             }
             if (resp != null && resp.isOk()) {
@@ -331,15 +314,9 @@ public class Apis {
      * playlistId - spotify playlist id
      */
     public static Object getTracksByPlaylistId(String playlistId) {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return null;
-        }
-
-        accesstoken = "Bearer " + accesstoken;
         if (playlistId != null) {
             String api = "/v1/playlists/" + playlistId;
-            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
             if (resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
@@ -356,7 +333,7 @@ public class Apis {
                 JsonObject tracks = resp.getJsonObj();
                 if (tracks != null && tracks.has("error")) {
                     if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                        refreshAccessToken(null, null, null);
+                        refreshAccessToken();
                     }
                 }
             }
@@ -371,16 +348,9 @@ public class Apis {
      * trackId - spotify track id
      */
     public static Object getTrackById(String trackId) {
-
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return null;
-        }
-
-        accesstoken = "Bearer " + accesstoken;
         if (trackId != null) {
             String api = "/v1/tracks/" + trackId;
-            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+            SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
 
             return resp;
         }
@@ -393,14 +363,8 @@ public class Apis {
      * accessToken - spotify access token
      */
     public static Object getSpotifyWebCurrentTrack() {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return null;
-        }
-
-        accesstoken = "Bearer " + accesstoken;
         String api = "/v1/me/player/currently-playing";
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp.isOk() && resp.getCode() == 200) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
@@ -420,7 +384,7 @@ public class Apis {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
                 if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    refreshAccessToken(null, null, null);
+                    refreshAccessToken();
                 }
             }
         }
@@ -437,16 +401,9 @@ public class Apis {
     }
 
     public static boolean accessExpired() {
-        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
-        if (accesstoken == null) {
-            return false;
-        }
-        accesstoken = "Bearer " + accesstoken;
-        String api = "/v1/me";
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+        SoftwareResponse resp = getUserProfile();
         if (resp != null && resp.getCode() == 401) {
-            refreshAccessToken(null, null, null);
-            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null, accesstoken);
+            resp = getUserProfile();
             if (resp != null && resp.getCode() == 401) {
                 return true;
             }
@@ -458,8 +415,7 @@ public class Apis {
         if (resp != null && resp.getCode() == 401) {
             String spotifyAccessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
             if (StringUtils.isNotBlank(spotifyAccessToken)) {
-                resp = getUserProfile();
-                if (resp != null && resp.getCode() == 401) {
+                if (accessExpired()) {
                     // disconnect spotify
                     MusicControlManager.disConnectSpotify();
                 }

@@ -373,6 +373,8 @@ public class SoftwareCoUtils {
             public void run() {
                 ProjectManager pm = ProjectManager.getInstance();
                 if (pm != null && pm.getOpenProjects() != null && pm.getOpenProjects().length > 0) {
+                    boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+                    String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
                     try {
                         Project p = pm.getOpenProjects()[0];
                         final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
@@ -415,7 +417,7 @@ public class SoftwareCoUtils {
                             statusBar.removeWidget(connectspotifyId);
                         }
 
-                        if(tooltip.equals("Connect Spotify")) {
+                        if(tooltip.equals(connectLabel)) {
                             String headphoneIconVal = kpmIcon;
                             final String headphoneMsgVal = kpmMsg != null ? kpmMsg : SoftwareCoMusic.getPluginName();
                             if (headphoneIconVal != null) {
@@ -750,7 +752,9 @@ public class SoftwareCoUtils {
             }
         } else {
             String headPhoneIcon = "headphone.png";
-            SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
+            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+            String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
+            SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, connectLabel, connectLabel);
             PlayListCommands.updatePlaylists(5, null);
         }
     }
@@ -933,10 +937,8 @@ public class SoftwareCoUtils {
                             JsonObject auth = auths.get(i).getAsJsonObject();
                             if (auth.has("type")) {
                                 if (auth.get("type").getAsString().equals("spotify")) {
-                                    MusicStore.SPOTIFY_ACCESS_TOKEN = auth.get("access_token").getAsString();
-                                    SoftwareCoSessionManager.setItem("spotify_access_token", MusicStore.SPOTIFY_ACCESS_TOKEN);
-                                    MusicStore.SPOTIFY_REFRESH_TOKEN = auth.get("refresh_token").getAsString();
-                                    SoftwareCoSessionManager.setItem("spotify_access_token", MusicStore.SPOTIFY_REFRESH_TOKEN);
+                                    SoftwareCoSessionManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
+                                    SoftwareCoSessionManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
                                 } else if (auth.get("type").getAsString().equals("slack")) {
                                     SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
                                     SoftwareCoSessionManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);

@@ -276,9 +276,11 @@ public class MusicToolWindow {
             refresh.setVisible(false);
             DefaultListModel listModel = new DefaultListModel();
 
+            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+            String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
             Icon icon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
             JLabel connectedState = new JLabel();
-            connectedState.setText("Connect Spotify");
+            connectedState.setText(connectLabel);
             connectedState.setIcon(icon);
             connectedState.setOpaque(true);
 
@@ -302,7 +304,7 @@ public class MusicToolWindow {
 
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
-                    if (label.getText().equals("Connect Spotify")) {
+                    if (label.getText().equals(connectLabel)) {
                         MusicControlManager.connectSpotify();
                     }
                 }
@@ -887,9 +889,12 @@ public class MusicToolWindow {
             recommendRefresh.setVisible(false);
             DefaultListModel listModel = new DefaultListModel();
 
+            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+            String connectLabel = requiresReAuth ? "Reconnect Spotify to see recommendations" : "Connect Spotify to see recommendations";
+
             Icon icon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
             JLabel connectedState = new JLabel();
-            connectedState.setText("Connect Spotify to see recommendations");
+            connectedState.setText(connectLabel);
             connectedState.setIcon(icon);
             connectedState.setOpaque(true);
 
@@ -913,7 +918,7 @@ public class MusicToolWindow {
 
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
-                    if (label.getText().equals("Connect Spotify to see recommendations")) {
+                    if (label.getText().equals(connectLabel)) {
                         MusicControlManager.connectSpotify();
                     }
                 }

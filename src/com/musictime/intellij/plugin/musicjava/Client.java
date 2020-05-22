@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -55,15 +56,23 @@ public class Client {
         httpClient = HttpClientBuilder.create().build();
     }
 
-    public static SoftwareResponse makeSpotifyApiCall(String api, String httpMethodName, String payload, String overridingJwt) {
-        return makeApiCall(api, httpMethodName, payload, overridingJwt, true);
+    public static SoftwareResponse makeSpotifyApiCallWithAuth(String api, String httpMethodName, String payload, String encodedAuth) {
+        return apiCall(api, httpMethodName, payload, true, encodedAuth);
+    }
+
+    public static SoftwareResponse makeSpotifyApiCall(String api, String httpMethodName, String payload) {
+        return apiCall(api, httpMethodName, payload, true, null);
     }
 
     public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
-        return makeApiCall(api, httpMethodName, payload, null, false);
+        return apiCall(api, httpMethodName, payload, false, null);
     }
 
-    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, String overridingJwt, boolean isSpotifyApiCall) {
+    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, boolean isSpotifyApiCall) {
+        return apiCall(api, httpMethodName, payload, isSpotifyApiCall, null);
+    }
+
+    private static SoftwareResponse apiCall(String api, String httpMethodName, String payload, boolean isSpotifyApiCall, String encodedAuth) {
 
         SoftwareResponse softwareResponse = new SoftwareResponse();
 
@@ -73,11 +82,14 @@ public class Client {
         Future<HttpResponse> response = null;
 
         if (!isSpotifyApiCall) {
+            String jwt = encodedAuth == null ? SoftwareCoSessionManager.getItem("jwt") : encodedAuth;
             // if the server is having issues, we'll timeout within 5 seconds for these calls
-            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
+            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);
         } else {
-            spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
+            String accesstoken = encodedAuth == null ? SoftwareCoSessionManager.getItem("spotify_access_token") : encodedAuth;
+            accesstoken = "Bearer " + accesstoken;
+            spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, accesstoken, httpClient);
             response = EXECUTOR_SERVICE.submit(spotifyTask);
         }
 

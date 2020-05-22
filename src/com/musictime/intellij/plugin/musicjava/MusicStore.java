@@ -6,8 +6,6 @@ import java.util.List;
 public class MusicStore {
     public static String SPOTIFY_CLIENT_ID = null;
     public static String SPOTIFY_CLIENT_SECRET = null;
-    public static String SPOTIFY_ACCESS_TOKEN = null;
-    public static String SPOTIFY_REFRESH_TOKEN = null;
     public static String spotifyAccountType = null; // Premium or Non-Premium
     public static String spotifyUserId = null;
 
@@ -24,16 +22,9 @@ public class MusicStore {
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();
 
-    public static void setConfig(String clientId, String clientSecret, String accessToken, String refreshToken, boolean cacheState) {
-        SPOTIFY_CLIENT_ID = clientId;
-        SPOTIFY_CLIENT_SECRET = clientSecret;
-        SPOTIFY_ACCESS_TOKEN = accessToken;
-        SPOTIFY_REFRESH_TOKEN = refreshToken;
-    }
-
     public static void resetConfig() {
-        SPOTIFY_ACCESS_TOKEN = null;
-        SPOTIFY_REFRESH_TOKEN = null;
+        spotifyAccountType = null; // Premium or Non-Premium
+        spotifyUserId = null;
     }
 
     public static String getSpotifyClientId() {
@@ -50,22 +41,6 @@ public class MusicStore {
 
     public static void setSpotifyClientSecret(String spotifyClientSecret) {
         SPOTIFY_CLIENT_SECRET = spotifyClientSecret;
-    }
-
-    public static String getSpotifyAccessToken() {
-        return SPOTIFY_ACCESS_TOKEN;
-    }
-
-    public static void setSpotifyAccessToken(String spotifyAccessToken) {
-        SPOTIFY_ACCESS_TOKEN = spotifyAccessToken;
-    }
-
-    public static String getSpotifyRefreshToken() {
-        return SPOTIFY_REFRESH_TOKEN;
-    }
-
-    public static void setSpotifyRefreshToken(String spotifyRefreshToken) {
-        SPOTIFY_REFRESH_TOKEN = spotifyRefreshToken;
     }
 
     public static String getSpotifyAccountType() {
