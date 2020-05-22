@@ -1,7 +1,6 @@
 package com.musictime.intellij.plugin;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManager;
@@ -11,11 +10,13 @@ import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
+import com.musictime.intellij.plugin.musicjava.Apis;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Timer;
@@ -93,8 +94,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
             SoftwareCoSessionManager.deleteFile(readmeFile);
         }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
-        boolean jwtExists = SoftwareCoSessionManager.jwtExists();
-        if (!sessionFileExists || !jwtExists) {
+        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        if (!sessionFileExists || jwt == null) {
             if (!serverIsOnline) {
                 // server isn't online, check again in 1 min
                 if (retry_counter == 0) {
@@ -111,7 +112,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
             } else {
                 getPluginName();
 
-                String jwt = SoftwareCoSessionManager.getItem("jwt");
                 if (StringUtils.isBlank(jwt)) {
                     jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
                     SoftwareCoSessionManager.setItem("jwt", jwt);
@@ -192,32 +192,41 @@ public class SoftwareCoMusic implements ApplicationComponent {
         // get the user status (jwt, email, spotify, slack)
         SoftwareCoUtils.getMusicTimeUserStatus();
 
+        // create the 15 minute interval timer to send code time payloads if code time is NOT installed
         if (!SoftwareCoUtils.isCodeTimeInstalled()) {
-            // every 30 minutes
+            // every 15 minutes
             final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
-            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 30);
+            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 15);
         }
 
         if(!MusicControlManager.hasSpotifyAccess()) {
             String headPhoneIcon = "headphone.png";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Spotify", "Connect Spotify");
         } else {
-            JsonObject obj = MusicControlManager.getUserProfile();
-            if (obj != null) {
-                MusicControlManager.userStatus = obj.get("product").getAsString();
+
+            // check to see if we need to re-authenticate
+            if (requiresReAuthentication()) {
+                // disconnect
+                MusicControlManager.disConnectSpotify();
+
+                // show message
+                showReconnectPrompt();
+            } else {
+
+                Apis.getUserProfile();
+
+                PlaylistManager.getUserPlaylists(); // API call
+                PlayListCommands.updatePlaylists(0, null);
+                PlayListCommands.updatePlaylists(3, null);
+                PlayListCommands.getGenre(); // API call
+                PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+                MusicControlManager.getSpotifyDevices(); // API call
+
+                SoftwareCoUtils.updatePlayerControls(false);
             }
-
-            PlaylistManager.getUserPlaylists(); // API call
-            PlayListCommands.updatePlaylists(0, null);
-            PlayListCommands.updatePlaylists(3, null);
-            PlayListCommands.getGenre(); // API call
-            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
-            MusicControlManager.getSpotifyDevices(); // API call
-
-            SoftwareCoUtils.updatePlayerControls(false);
         }
 
-        if(initializedUser) {
+        if (initializedUser) {
             log.log(Level.INFO, "Initial launching README file");
             ApplicationManager.getApplication().invokeLater(new Runnable() {
                 public void run() {
@@ -230,6 +239,31 @@ public class SoftwareCoMusic implements ApplicationComponent {
         initiateGatherMusicInfo();
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
+    }
+
+    public static void showReconnectPrompt() {
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            public void run() {
+                String email = SoftwareCoSessionManager.getItem("name");
+                String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
+                String[] options = new String[] {"Cancel", "Reconnect"};
+                int response = Messages.showDialog(infoMsg, SoftwareCoMusic.getPluginName(), options, 0, Messages.getInformationIcon());
+                if (response == 1) {
+                    MusicControlManager.connectSpotify();
+                }
+            }
+        });
+    }
+
+    public static boolean requiresReAuthentication() {
+        String checkedSpotifyAccess = SoftwareCoSessionManager.getItem("intellij_checkedSpotifyAccess");
+        String accessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
+        if (checkedSpotifyAccess == null && accessToken != null) {
+            SoftwareCoSessionManager.setBooleanItem("vscode_checkedSpotifyAccess", true);
+            SoftwareCoSessionManager.setBooleanItem("requiresSpotifyReAuth", true);
+            return Apis.accessExpired();
+        }
+        return false;
     }
 
     private void initiateGatherMusicInfo() {

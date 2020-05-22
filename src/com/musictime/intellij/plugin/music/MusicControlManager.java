@@ -12,7 +12,6 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.musicjava.*;
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.HttpPut;
 
 import javax.swing.*;
@@ -29,9 +28,7 @@ public class MusicControlManager {
     public static final Logger LOG = Logger.getLogger("MusicControlManager");
 
     // Spotify variables
-    public static String userStatus = null; // premium or non-premium
     public static String defaultbtn = "play"; // play or pause
-    public static String spotifyUserId = null;
 
     public static List<String> playlistids = new ArrayList<>();
     public static String currentPlaylistId = null;
@@ -56,7 +53,6 @@ public class MusicControlManager {
     public static Map<String, String> myAITopTracks = new HashMap<>();
 
     public static void resetSpotify() {
-        spotifyUserId = null;
         tracksByPlaylistId.clear();
         currentTrackId = null;
         currentTrackName = null;
@@ -65,7 +61,6 @@ public class MusicControlManager {
         spotifyDeviceIds.clear();
         currentDeviceId = null;
         currentDeviceName = null;
-        userStatus = null;
         playerCounter = 0;
         defaultbtn = "play";
         spotifyStatus = "Not Connected";
@@ -76,6 +71,8 @@ public class MusicControlManager {
         myAITopTracks.clear();
         PlayListCommands.counter = 0;
         MusicToolWindow.reset();
+        MusicStore.setSpotifyUserId(null);
+        MusicStore.setSpotifyAccountType(null);
     }
 
     public static void disConnectSpotify() {
@@ -93,7 +90,6 @@ public class MusicControlManager {
     }
 
     public static void connectSpotify() {
-        spotifyUserId = null;
         spotifyDeviceIds.clear();
         currentDeviceId = null;
         currentDeviceName = null;
@@ -106,7 +102,15 @@ public class MusicControlManager {
         authSpotify();
 
         // Periodically check that the user has connected
-        lazilyFetchSpotifyStatus(40);
+        new Thread(() -> {
+            try {
+                Thread.sleep(10000);
+                lazilyFetchSpotifyStatus(30);
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
     }
 
     public static void seedLikedSongSessions() {
@@ -158,7 +162,6 @@ public class MusicControlManager {
 
         String api = Client.api_endpoint + "/auth/spotify?token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
         BrowserUtil.browse(api);
-
     }
 
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
@@ -179,10 +182,7 @@ public class MusicControlManager {
             spotifyStatus = "Connected";
             SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
             // get the spotify user profile
-            JsonObject obj = getUserProfile();
-            if (obj != null) {
-                userStatus = obj.get("product").getAsString();
-            }
+            Apis.getUserProfile();
 
             // fetch the user playlists (ai and top 40)
             PlaylistManager.getUserPlaylists(); // API call
@@ -205,17 +205,11 @@ public class MusicControlManager {
 
     public static synchronized boolean launchPlayer(boolean skipPopup, boolean activateDevice) {
 
-        if(userStatus == null) {
-            JsonObject obj = getUserProfile();
-            if (obj != null) {
-                userStatus = obj.get("product").getAsString();
-            }
-        }
-
         if (MusicControlManager.spotifyDeviceIds != null && MusicControlManager.spotifyDeviceIds.size() > 0) {
             return true;
         }
 
+        String userStatus = MusicStore.getSpotifyAccountType();
         if(!skipPopup) {
             boolean webPlayer = false;
             boolean desktopPlayer = false;
@@ -472,9 +466,8 @@ public class MusicControlManager {
     }
 
     public static JsonObject getSpotifyDevices() {
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyDevices(accessToken);
-        if (resp.isOk()) {
+        SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyDevices();
+        if (resp != null && resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("devices")) {
                 spotifyDeviceIds.clear();
@@ -519,29 +512,18 @@ public class MusicControlManager {
                 LOG.log(Level.INFO, "Music Time: No Device Found, null response");
             }
             return obj;
+        } else {
+            spotifyDeviceIds.clear();
+            spotifyDevices.clear();
+            currentDeviceId = null;
+            currentDeviceName = null;
+            cacheDeviceName = null;
         }
         return null;
     }
 
     public static boolean activateDevice(String deviceId) {
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        return Apis.activateDevice(accessToken, deviceId);
-    }
-
-    public static JsonObject getUserProfile() {
-
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        SoftwareResponse resp = (SoftwareResponse) Apis.getUserProfile(accessToken);
-        JsonObject obj = resp.getJsonObj();
-        if (resp.isOk()) {
-            spotifyUserId = obj.get("id").getAsString();
-            return obj;
-        } else if (obj != null && obj.has("error")) {
-            if (requiresSpotifyAccessTokenRefresh(obj)) {
-                refreshAccessToken();
-            }
-        }
-        return null;
+        return Apis.activateDevice(deviceId);
     }
 
     public static boolean requiresSpotifyAccessTokenRefresh(JsonObject resp) {

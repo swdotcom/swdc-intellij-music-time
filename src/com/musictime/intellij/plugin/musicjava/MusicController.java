@@ -2,6 +2,7 @@ package com.musictime.intellij.plugin.musicjava;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import org.apache.http.client.methods.HttpDelete;
@@ -23,15 +24,18 @@ public class MusicController {
      * trackId - spotify track id
      * accessToken - spotify access token
      */
-    public static SoftwareResponse playSpotifyPlaylist(String deviceId, String playlistId, String trackId, String accessToken) {
+    public static SoftwareResponse playSpotifyPlaylist(String deviceId, String playlistId, String trackId) {
 
         deviceId = deviceId == null ? MusicStore.getCurrentDeviceId() : deviceId;
         if (deviceId == null) {
-            Apis.getSpotifyDevices(accessToken);
+            Apis.getSpotifyDevices();
             deviceId = MusicStore.getCurrentDeviceId();
         }
 
         SoftwareResponse resp = null;
+
+        String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
+        accesstoken = "Bearer " + accesstoken;
 
         if(playlistId != null && playlistId.length() > 5) {
             JsonObject obj = new JsonObject();
@@ -46,10 +50,10 @@ public class MusicController {
 
             if (deviceId != null) {
                 String api = "/v1/me/player/play?device_id=" + deviceId;
-                resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+                resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accesstoken);
             }
         } else {
-            resp = playSpotifyWebTrack(deviceId, trackId, accessToken);
+            resp = playSpotifyWebTrack(deviceId, trackId);
         }
 
         if (resp == null) {
@@ -72,11 +76,11 @@ public class MusicController {
      * trackId - spotify track id
      * accessToken - spotify access token
      */
-    public static SoftwareResponse playSpotifyWebTrack(String deviceId, String trackId, String accessToken) {
+    public static SoftwareResponse playSpotifyWebTrack(String deviceId, String trackId) {
 
         deviceId = deviceId == null ? MusicStore.getCurrentDeviceId() : deviceId;
         if (deviceId == null) {
-            Apis.getSpotifyDevices(accessToken);
+            Apis.getSpotifyDevices();
             deviceId = MusicStore.getCurrentDeviceId();
         }
 
@@ -89,8 +93,11 @@ public class MusicController {
 
         SoftwareResponse resp = null;
         if(deviceId != null) {
+            String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
+            accesstoken = "Bearer " + accesstoken;
+
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accesstoken);
         }
 
         if (resp == null) {
@@ -108,11 +115,11 @@ public class MusicController {
      * tracks - list of tracks to play as context (max 50)
      * accessToken - spotify access token
      */
-    public static SoftwareResponse playSpotifyTracks(String deviceId, String trackId, List<String> tracks, String accessToken) {
+    public static SoftwareResponse playSpotifyTracks(String deviceId, String trackId, List<String> tracks) {
 
         deviceId = deviceId == null ? MusicStore.getCurrentDeviceId() : deviceId;
         if (deviceId == null) {
-            Apis.getSpotifyDevices(accessToken);
+            Apis.getSpotifyDevices();
             deviceId = MusicStore.getCurrentDeviceId();
         }
 
@@ -137,8 +144,10 @@ public class MusicController {
 
         SoftwareResponse resp = null;
         if(deviceId != null) {
+            String accesstoken = SoftwareCoSessionManager.getItem("spotify_access_token");
+            accesstoken = "Bearer " + accesstoken;
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accessToken);
+            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString(), accesstoken);
         }
 
         if (resp == null) {

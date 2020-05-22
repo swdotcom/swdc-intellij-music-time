@@ -36,7 +36,6 @@ public class SoftwareCoSessionManager {
 
     private static SoftwareCoSessionManager instance = null;
     public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
-    private static Map<String, String> sessionMap = new HashMap<>();
 
     private static JsonArray keystrokeData = new JsonArray();
     public static int playerState = 0; // 0 = inactive & 1 = active
@@ -556,11 +555,19 @@ public class SoftwareCoSessionManager {
         }
     }
 
-    public static void setItem(String key, String val) {
-        sessionMap.put(key, val);
+    public static void setBooleanItem(String key, boolean val) {
         JsonObject jsonObj = getSoftwareSessionAsJson();
         jsonObj.addProperty(key, val);
+        writeItem(jsonObj);
+    }
 
+    public static void setItem(String key, String val) {
+        JsonObject jsonObj = getSoftwareSessionAsJson();
+        jsonObj.addProperty(key, val);
+        writeItem(jsonObj);
+    }
+
+    private static void writeItem(JsonObject jsonObj) {
         String content = jsonObj.toString();
 
         String sessionFile = FileManager.getSoftwareSessionFile(true);
@@ -570,15 +577,11 @@ public class SoftwareCoSessionManager {
             output.write(content);
             output.close();
         } catch (Exception e) {
-            log.warning("Music Time: Failed to write the key value pair (" + key + ", " + val + ") into the session, error: " + e.getMessage());
+            log.warning("Music Time: Failed to write the key value pair into the session, error: " + e.getMessage());
         }
     }
 
     public static String getItem(String key) {
-        String val = sessionMap.get(key);
-        if (val != null) {
-            return val;
-        }
         JsonObject jsonObj = getSoftwareSessionAsJson();
         if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
             return jsonObj.get(key).getAsString();

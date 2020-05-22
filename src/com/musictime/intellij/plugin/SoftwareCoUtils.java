@@ -739,7 +739,9 @@ public class SoftwareCoUtils {
 
             PlayListCommands.updatePlaylists(5, null); // API call
 
-            if (MusicControlManager.userStatus != null && !MusicControlManager.userStatus.equals("premium")) {
+            String accountType = MusicStore.getSpotifyAccountType();
+
+            if (accountType != null && !accountType.equals("premium")) {
                 String headPhoneIcon = "headphone.png";
                 SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Premium", "Current Track");
             } else {

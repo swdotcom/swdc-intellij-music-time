@@ -5,7 +5,9 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.MusicController;
+import com.musictime.intellij.plugin.musicjava.MusicStore;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -23,14 +25,11 @@ public class PlayerControlManager {
         }
 
         try {
-            if (MusicControlManager.userStatus == null) {
-                JsonObject obj = MusicControlManager.getUserProfile();
-                if (obj != null) {
-                    MusicControlManager.userStatus = obj.get("product").getAsString();
-                }
+            if (MusicStore.getSpotifyAccountType() == null) {
+                Apis.getUserProfile();
             }
 
-            boolean hasPremiumUserStatus = MusicControlManager.userStatus != null && MusicControlManager.userStatus.equals("premium") ? true : false;
+            boolean hasPremiumUserStatus = MusicStore.getSpotifyAccountType() != null && MusicStore.getSpotifyAccountType().equals("premium") ? true : false;
             boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
             boolean isNonNamedPlaylist = (playlistId.equals(PlayListCommands.recommendedPlaylistId) || playlistId.equals(PlayListCommands.likedPlaylistId)) ? true : false;
 
@@ -57,7 +56,7 @@ public class PlayerControlManager {
                         }
                     }
                     String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                    SoftwareResponse resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, trackId, tracks, accessToken);
+                    SoftwareResponse resp = MusicController.playSpotifyTracks(MusicControlManager.currentDeviceId, trackId, tracks);
                     if (resp.isOk()) {
                         MusicControlManager.currentTrackId = trackId;
                         MusicControlManager.currentPlaylistId = playlistId;
@@ -72,7 +71,7 @@ public class PlayerControlManager {
             } else if (MusicControlManager.playerType.equals("Web Player") || SoftwareCoUtils.isWindows()) {
                 if (MusicControlManager.currentDeviceId != null) {
                     String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-                    SoftwareResponse resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId, accessToken);
+                    SoftwareResponse resp = MusicController.playSpotifyPlaylist(MusicControlManager.currentDeviceId, playlistId, trackId);
                     if (resp.isOk()) {
                         MusicControlManager.currentTrackId = trackId;
                         MusicControlManager.currentPlaylistId = playlistId;

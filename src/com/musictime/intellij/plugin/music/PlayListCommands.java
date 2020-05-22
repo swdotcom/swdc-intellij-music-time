@@ -403,8 +403,7 @@ public class PlayListCommands {
 
     public static JsonObject getAITopTracks() {
         if(myAIPlaylistId != null) {
-            String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-            JsonObject obj = (JsonObject) PlaylistController.getAITopTracks(accessToken, myAIPlaylistId);
+            JsonObject obj = (JsonObject) PlaylistController.getAITopTracks(myAIPlaylistId);
             if (obj != null && obj.has("tracks")) {
                 JsonObject tracks = obj.get("tracks").getAsJsonObject();
                 MusicControlManager.myAITopTracks.clear();

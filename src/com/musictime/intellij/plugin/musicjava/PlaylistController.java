@@ -106,7 +106,7 @@ public class PlaylistController {
      */
     public static Object generateAIPlaylist() {
         if(MusicStore.spotifyUserId == null) {
-            Apis.getUserProfile(MusicStore.getSpotifyAccessToken());
+            Apis.getUserProfile();
         }
 
         JsonObject obj = new JsonObject();
@@ -116,7 +116,7 @@ public class PlaylistController {
         String api = "/v1/users/" + MusicStore.spotifyUserId + "/playlists";
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
         if (resp.isOk()) {
-            Apis.getUserPlaylists(MusicStore.getSpotifyUserId(), MusicStore.getSpotifyAccessToken());
+            Apis.getUserPlaylists(MusicStore.getSpotifyUserId());
         }
         return resp;
     }
@@ -201,7 +201,7 @@ public class PlaylistController {
      */
     public static Object createPlaylist(String playlistName) {
         if(MusicStore.spotifyUserId == null) {
-            Apis.getUserProfile(MusicStore.getSpotifyAccessToken());
+            Apis.getUserProfile();
         }
 
         JsonObject obj = new JsonObject();
@@ -211,7 +211,7 @@ public class PlaylistController {
         String api = "/v1/users/" + MusicStore.spotifyUserId + "/playlists";
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, obj.toString(), "Bearer " + MusicStore.getSpotifyAccessToken());
         if (resp.isOk()) {
-            Apis.getUserPlaylists(MusicStore.getSpotifyUserId(), MusicStore.getSpotifyAccessToken());
+            Apis.getUserPlaylists(MusicStore.getSpotifyUserId());
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject jsonResp = resp.getJsonObj();
             if (jsonResp != null && jsonResp.has("error")) {
@@ -387,9 +387,9 @@ public class PlaylistController {
      * accessToken - spotify access token
      * playlistId - spotify playlist id
      */
-    public static Object getAITopTracks(String accessToken, String playlistId) {
+    public static Object getAITopTracks(String playlistId) {
         if(playlistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(accessToken, playlistId);
+            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(playlistId);
             if(resp != null) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {

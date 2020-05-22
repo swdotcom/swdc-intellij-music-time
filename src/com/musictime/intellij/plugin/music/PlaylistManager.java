@@ -7,6 +7,7 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.musicjava.Apis;
+import com.musictime.intellij.plugin.musicjava.MusicStore;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
@@ -31,13 +32,12 @@ public class PlaylistManager {
 
     public static JsonObject getUserPlaylists() {
 
-        if (MusicControlManager.spotifyUserId == null) {
-            MusicControlManager.getUserProfile();
+        if (MusicStore.getSpotifyUserId() == null) {
+            Apis.getUserProfile();
         }
 
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        SoftwareResponse resp = (SoftwareResponse) Apis.getUserPlaylists(MusicControlManager.spotifyUserId, accessToken);
-        if (resp.isOk()) {
+        SoftwareResponse resp = (SoftwareResponse) Apis.getUserPlaylists(MusicStore.getSpotifyUserId());
+        if (resp != null && resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
                 MusicControlManager.playlistids.clear();
@@ -68,9 +68,8 @@ public class PlaylistManager {
     public static JsonObject getTracksByPlaylistId(String playlistId) {
 
         if(playlistId != null) {
-            String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(accessToken, playlistId);
-            if (resp.isOk()) {
+            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(playlistId);
+            if (resp != null && resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
                     JsonObject tracks = obj.get("tracks").getAsJsonObject();
@@ -92,27 +91,10 @@ public class PlaylistManager {
     public static JsonObject getTrackById(String trackId) {
 
         SoftwareResponse resp = (SoftwareResponse) Apis.getTrackById(trackId);
-        if (resp.isOk()) {
+        if (resp != null && resp.isOk()) {
             return resp.getJsonObj();
         }
         return new JsonObject();
-    }
-
-    public static JsonObject getSpotifyWebRecentTrack() {
-
-        String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-        SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebRecentTrack(accessToken);
-        if (resp.isOk()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("items")) {
-                for(JsonElement array : tracks.get("items").getAsJsonArray()) {
-                    JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                    MusicControlManager.currentTrackId = track.get("id").getAsString();
-                }
-            }
-            return resp.getJsonObj();
-        }
-        return null;
     }
 
     public static void gatherTrackTimer() {
@@ -171,10 +153,9 @@ public class PlaylistManager {
         System.out.println("gathering music");
         try {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-            String accessToken = "Bearer " + SoftwareCoSessionManager.getItem("spotify_access_token");
-            SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack(accessToken);
+            SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack();
 
-            if (resp.isOk() && resp.getCode() == 200) {
+            if (resp != null && resp.isOk() && resp.getCode() == 200) {
 
                 if (MusicControlManager.currentDeviceName == null) {
                     MusicControlManager.getSpotifyDevices(); // API call
