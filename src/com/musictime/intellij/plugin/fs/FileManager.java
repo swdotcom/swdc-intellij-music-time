@@ -377,11 +377,10 @@ public class FileManager {
                 Path p = Paths.get(sessionFile);
 
                 byte[] encoded = Files.readAllBytes(p);
-                String content = new String(encoded, Charset.defaultCharset());
-                System.out.println("----- session.json content: '" + content + "'");
+                String content = new String(encoded, Charset.forName("UTF-8"));
                 if (content != null) {
                     // json parse it
-                    sessionJson = SoftwareCoUtils.jsonParser.parse(content).getAsJsonObject();
+                    sessionJson = SoftwareCoUtils.jsonParser.parse(cleanJsonString(content)).getAsJsonObject();
                 }
 
             } catch (Exception e) {
