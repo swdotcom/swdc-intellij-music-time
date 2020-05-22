@@ -32,47 +32,10 @@ public class Util {
         return SystemInfo.isMac;
     }
 
-    public static void updateServerStatus(boolean isOnlineStatus) {
-        appAvailable = isOnlineStatus;
-    }
-
-    public static boolean isAppAvailable() {
-        return appAvailable;
-    }
-
     public static String getUserHomeDir() {
         return System.getProperty("user.home");
     }
 
-    public synchronized static boolean isServerOnline() {
-        long nowInSec = Math.round(System.currentTimeMillis() / 1000);
-        // 5 min threshold
-        boolean pastThreshold = (nowInSec - lastAppAvailableCheck > (60 * 5)) ? true : false;
-        if (pastThreshold) {
-            SoftwareResponse resp = Client.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
-            updateServerStatus(resp.isOk());
-            lastAppAvailableCheck = nowInSec;
-        }
-        return isAppAvailable();
-    }
-
-    public static String getItem(String key) {
-        String val = sessionMap.get(key);
-        if (val != null) {
-            return val;
-        }
-        return null;
-    }
-
-    public static void setItem(String key, String val) { sessionMap.put(key, val); }
-
-    public static void showMsgPrompt(String infoMsg) {
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
-            public void run() {
-                Messages.showInfoMessage(infoMsg, Client.pluginName);
-            }
-        });
-    }
 
     // Apple scripts *************************************************************************
 

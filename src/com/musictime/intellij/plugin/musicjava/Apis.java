@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlaylistManager;
 import org.apache.commons.lang.StringUtils;
@@ -48,7 +49,7 @@ public class Apis {
             SoftwareCoUtils.getAndUpdateClientInfo();
         }
 
-        String refreshToken = SoftwareCoSessionManager.getItem("spotify_refresh_token");
+        String refreshToken = FileManager.getItem("spotify_refresh_token");
         if (refreshToken == null) {
             SoftwareCoUtils.getMusicTimeUserStatus();
         }
@@ -65,7 +66,7 @@ public class Apis {
 
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
-            SoftwareCoSessionManager.setItem("spotify_access_token", obj.get("access_token").getAsString());
+            FileManager.setItem("spotify_access_token", obj.get("access_token").getAsString());
         } else {
             checkIfAccessExpired(resp);
         }
@@ -413,7 +414,7 @@ public class Apis {
 
     private static void checkIfAccessExpired(SoftwareResponse resp) {
         if (resp != null && resp.getCode() == 401) {
-            String spotifyAccessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
+            String spotifyAccessToken = FileManager.getItem("spotify_access_token");
             if (StringUtils.isNotBlank(spotifyAccessToken)) {
                 if (accessExpired()) {
                     // disconnect spotify

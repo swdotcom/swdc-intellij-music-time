@@ -94,7 +94,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
             SoftwareCoSessionManager.deleteFile(readmeFile);
         }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        String jwt = FileManager.getItem("jwt");
         if (!sessionFileExists || jwt == null) {
             if (!serverIsOnline) {
                 // server isn't online, check again in 1 min
@@ -114,7 +114,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
                 if (StringUtils.isBlank(jwt)) {
                     jwt = SoftwareCoUtils.getAppJwt(serverIsOnline);
-                    SoftwareCoSessionManager.setItem("jwt", jwt);
+                    FileManager.setItem("jwt", jwt);
                 }
 
                 if (jwt == null) {
@@ -160,7 +160,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private void checkUserStatusIfNotRegistered() {
         new Thread(() -> {
             try {
-                String email = SoftwareCoSessionManager.getItem("name");
+                String email = FileManager.getItem("name");
                 if (StringUtils.isBlank(email)) {
                     SoftwareCoUtils.getMusicTimeUserStatus();
                 }
@@ -248,7 +248,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
     public static void showReconnectPrompt() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
-                String email = SoftwareCoSessionManager.getItem("name");
+                String email = FileManager.getItem("name");
                 String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
                 String[] options = new String[] {"Reconnect", "Cancel"};
                 int response = Messages.showDialog(infoMsg, SoftwareCoMusic.getPluginName(), options, 0, Messages.getInformationIcon());
@@ -260,11 +260,11 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     public static boolean hasExpiredAccessToken() {
-        String checkedSpotifyAccess = SoftwareCoSessionManager.getItem("intellij_checkedSpotifyAccess");
-        String accessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
+        String checkedSpotifyAccess = FileManager.getItem("intellij_checkedSpotifyAccess");
+        String accessToken = FileManager.getItem("spotify_access_token");
         if (checkedSpotifyAccess == null && accessToken != null) {
-            SoftwareCoSessionManager.setBooleanItem("intellij_checkedSpotifyAccess", true);
-            SoftwareCoSessionManager.setBooleanItem("requiresSpotifyReAuth", true);
+            FileManager.setItem("intellij_checkedSpotifyAccess", "true");
+            FileManager.setItem("requiresSpotifyReAuth", "true");
             return Apis.accessExpired();
         }
         return false;

@@ -1,5 +1,6 @@
 package com.musictime.intellij.plugin;
 
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.Client;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -65,7 +66,7 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
             }
 
 
-            String jwtToken = (this.overridingJwt != null) ? this.overridingJwt : SoftwareCoSessionManager.getItem("jwt");
+            String jwtToken = (this.overridingJwt != null) ? this.overridingJwt : FileManager.getItem("jwt");
             // obtain the jwt session token if we have it
             if (jwtToken != null) {
                 req.addHeader("Authorization", jwtToken);

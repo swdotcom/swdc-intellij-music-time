@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.slack;
 import com.musictime.intellij.plugin.*;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.fs.FileManager;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.*;
@@ -66,7 +67,7 @@ public class SlackHttpManager implements Callable<HttpResponse> {
                     break;
             }
             if(httpMethodName.equals("POST")) {
-                String accessToken = (this.overridingJwt != null) ? this.overridingJwt : SoftwareCoSessionManager.getItem("slack_access_token");
+                String accessToken = (this.overridingJwt != null) ? this.overridingJwt : FileManager.getItem("slack_access_token");
                 // obtain the access token if we have it
                 if (accessToken != null) {
                     req.addHeader("Authorization", "Bearer " + accessToken);

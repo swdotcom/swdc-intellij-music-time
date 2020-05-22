@@ -77,7 +77,7 @@ public class SoftwareCoSessionManager {
     }
 
     public static boolean jwtExists() {
-        String jwt = getItem("jwt");
+        String jwt = FileManager.getItem("jwt");
         return (jwt != null && !jwt.equals("")) ? true : false;
     }
 
@@ -555,42 +555,8 @@ public class SoftwareCoSessionManager {
         }
     }
 
-    public static void setBooleanItem(String key, boolean val) {
-        JsonObject jsonObj = getSoftwareSessionAsJson();
-        jsonObj.addProperty(key, val);
-        writeItem(jsonObj);
-    }
-
-    public static void setItem(String key, String val) {
-        JsonObject jsonObj = getSoftwareSessionAsJson();
-        jsonObj.addProperty(key, val);
-        writeItem(jsonObj);
-    }
-
-    private static void writeItem(JsonObject jsonObj) {
-        String content = jsonObj.toString();
-
-        String sessionFile = FileManager.getSoftwareSessionFile(true);
-
-        try {
-            Writer output = new BufferedWriter(new FileWriter(sessionFile));
-            output.write(content);
-            output.close();
-        } catch (Exception e) {
-            log.warning("Music Time: Failed to write the key value pair into the session, error: " + e.getMessage());
-        }
-    }
-
-    public static String getItem(String key) {
-        JsonObject jsonObj = getSoftwareSessionAsJson();
-        if (jsonObj != null && jsonObj.has(key) && !jsonObj.get(key).isJsonNull()) {
-            return jsonObj.get(key).getAsString();
-        }
-        return null;
-    }
-
     public static boolean requiresReAuthentication() {
-        String requiresReAuth = SoftwareCoSessionManager.getItem("requiresSpotifyReAuth");
+        String requiresReAuth = FileManager.getItem("requiresSpotifyReAuth");
         if (requiresReAuth != null) {
             return true;
         }
@@ -619,12 +585,11 @@ public class SoftwareCoSessionManager {
 
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
         String dashboardFile = FileManager.getMusicDashboardFile();
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
 
         Writer writer = null;
 
         String api = "/dashboard/music";
-        SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
         if(response.isOk()) {
             String dashboardSummary = response.getJsonStr();
 
@@ -687,12 +652,15 @@ public class SoftwareCoSessionManager {
                 } catch (Exception ex) {/*ignore*/}
             }
         }
-        VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
-        if(vFile != null) {
-            OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
-            FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
-            setItem("intellij_MtReadme", "true");
-            setItem("displayedMtReadme", "true");
+        try {
+            VirtualFile vFile = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(f);
+            if (vFile != null) {
+                OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
+                FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
+                FileManager.setItem("intellij_MtReadme", "true");
+            }
+        } catch (Exception e) {
+            System.out.println("error opening file: " + e.getMessage());
         }
     }
 

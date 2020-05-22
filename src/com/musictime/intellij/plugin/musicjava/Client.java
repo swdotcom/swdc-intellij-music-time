@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.fs.FileManager;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -82,12 +83,12 @@ public class Client {
         Future<HttpResponse> response = null;
 
         if (!isSpotifyApiCall) {
-            String jwt = encodedAuth == null ? SoftwareCoSessionManager.getItem("jwt") : encodedAuth;
+            String jwt = encodedAuth == null ? FileManager.getItem("jwt") : encodedAuth;
             // if the server is having issues, we'll timeout within 5 seconds for these calls
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);
         } else {
-            String accesstoken = encodedAuth == null ? SoftwareCoSessionManager.getItem("spotify_access_token") : encodedAuth;
+            String accesstoken = encodedAuth == null ? FileManager.getItem("spotify_access_token") : encodedAuth;
             accesstoken = "Bearer " + accesstoken;
             spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, accesstoken, httpClient);
             response = EXECUTOR_SERVICE.submit(spotifyTask);

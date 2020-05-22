@@ -20,6 +20,7 @@ import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
@@ -173,29 +174,27 @@ public class SoftwareCoUtils {
     }
 
     public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
-        return makeApiCall(api, httpMethodName, payload, null);
-    }
-
-    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, String overridingJwt) {
 
         SoftwareResponse softwareResponse = new SoftwareResponse();
+
+        String jwt = FileManager.getItem("jwt");
 
         SoftwareHttpManager httpTask = null;
         if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
                 || api.contains("/users/plugin/accounts")) {
             // if the server is having issues, we'll timeout within 5 seconds for these calls
-            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
+            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
         } else {
             if (httpMethodName.equals(HttpPost.METHOD_NAME)) {
                 // continue, POSTS encapsulated "invokeLater" with a timeout of 5 seconds
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, pingClient);
+                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, pingClient);
             } else {
                 if (!appAvailable) {
                     // bail out
                     softwareResponse.setIsOk(false);
                     return softwareResponse;
                 }
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
+                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, jwt, httpClient);
             }
         }
         Future<HttpResponse> response = EXECUTOR_SERVICE.submit(httpTask);
@@ -817,10 +816,8 @@ public class SoftwareCoUtils {
     }
 
     public static JsonObject getUser() {
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-
         String api = "/users/me";
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp.isOk()) {
             // check if we have the data and jwt
             // resp.data.jwt and resp.data.user
@@ -845,7 +842,7 @@ public class SoftwareCoUtils {
 
                 if (!codeTimeInstalled) {
                     // check to see if latestPayloadTimestampEndUtc is found
-                    String val = SoftwareCoSessionManager.getItem("latestPayloadTimestampEndUtc");
+                    String val = FileManager.getItem("latestPayloadTimestampEndUtc");
                     if (StringUtils.isNotBlank(val)) {
                         codeTimeInstalled = true;
                     }
@@ -857,7 +854,7 @@ public class SoftwareCoUtils {
 
         if (!codeTimeInstalled) {
             // check to see if latestPayloadTimestampEndUtc is found
-            String val = SoftwareCoSessionManager.getItem("latestPayloadTimestampEndUtc");
+            String val = FileManager.getItem("latestPayloadTimestampEndUtc");
             if (StringUtils.isNotBlank(val)) {
                 codeTimeInstalled = true;
             }
@@ -866,21 +863,19 @@ public class SoftwareCoUtils {
         return null;
     }
 
-    public static JsonObject getAndUpdateClientInfo() {
+    public static void getAndUpdateClientInfo() {
         // To find client info
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        String jwt = FileManager.getItem("jwt");
         LOG.log(Level.INFO, SoftwareCoMusic.getPluginName() + ": JWT: " + jwt);
         String api = "/auth/spotify/clientInfo";
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp.isOk()) {
             JsonObject jsonObj = resp.getJsonObj();
             if (jsonObj != null) {
                 MusicStore.SPOTIFY_CLIENT_ID = jsonObj.get("clientId").getAsString();
                 MusicStore.SPOTIFY_CLIENT_SECRET = jsonObj.get("clientSecret").getAsString();
-                return jsonObj;
             }
         }
-        return null;
     }
 
     private static String regex = "^\\S+@\\S+\\.\\S+$";
@@ -891,16 +886,14 @@ public class SoftwareCoUtils {
     }
 
     public static boolean isLoggedIn() {
-        String email = SoftwareCoSessionManager.getItem("name");
+        String email = FileManager.getItem("name");
         return StringUtils.isNotBlank(email);
     }
 
     public static boolean getMusicTimeUserStatus() {
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
 
-        if (jwt != null) {
             String api = "/users/plugin/state";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, jwt);
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
             if (resp.isOk()) {
                 // check if we have the data and jwt
                 // resp.data.jwt and resp.data.user
@@ -914,17 +907,17 @@ public class SoftwareCoUtils {
                 // at the very minimum update the JWT
                 String dataJwt = data.get("jwt").getAsString();
                 if (StringUtils.isNotBlank(dataJwt) && !isLoggedIn()) {
-                    SoftwareCoSessionManager.setItem("jwt", dataJwt);
+                    FileManager.setItem("jwt", dataJwt);
                 }
 
                 // check if we have any data
                 if (state.equals("OK")) {
-                    SoftwareCoSessionManager.setItem("jwt", dataJwt);
+                    FileManager.setItem("jwt", dataJwt);
                     String dataEmail = data.get("email").getAsString();
 
                     // update the email
                     if (dataEmail != null) {
-                        SoftwareCoSessionManager.setItem("name", dataEmail);
+                        FileManager.setItem("name", dataEmail);
                     }
 
                     // get the user object
@@ -937,11 +930,11 @@ public class SoftwareCoUtils {
                             JsonObject auth = auths.get(i).getAsJsonObject();
                             if (auth.has("type")) {
                                 if (auth.get("type").getAsString().equals("spotify")) {
-                                    SoftwareCoSessionManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
-                                    SoftwareCoSessionManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
+                                    FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
+                                    FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
                                 } else if (auth.get("type").getAsString().equals("slack")) {
                                     SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
-                                    SoftwareCoSessionManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
+                                    FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
                                     SlackControlManager.slackCacheState = true;
                                 }
                             }
@@ -951,15 +944,12 @@ public class SoftwareCoUtils {
                     return true;
                 }
             }
-        }
 
         return false;
     }
 
     public static void sendHeartbeat(String reason) {
 
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (jwt != null) {
 
             long start = Math.round(System.currentTimeMillis() / 1000);
 
@@ -972,42 +962,35 @@ public class SoftwareCoUtils {
             payload.addProperty("trigger_annotation", reason);
 
             String api = "/data/heartbeat";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString(), jwt);
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString());
             if (!resp.isOk()) {
                 LOG.log(Level.WARNING, SoftwareCoMusic.getPluginName() + ": unable to send heartbeat ping");
             }
-        }
     }
 
     public static boolean sendSongSessionPayload(String songSession) {
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (jwt != null) {
-            LOG.info("Music Time: Sending payload: " + songSession);
 
-            String api = "/music/session";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, songSession, jwt);
-            if (!resp.isOk()) {
-                LOG.log(Level.WARNING, SoftwareCoMusic.getPluginName() + ": Unable to send song session");
-                return false;
-            }
-            return true;
+        LOG.info("Music Time: Sending payload: " + songSession);
+
+        String api = "/music/session";
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, songSession);
+        if (!resp.isOk()) {
+            LOG.log(Level.WARNING, SoftwareCoMusic.getPluginName() + ": Unable to send song session");
+            return false;
         }
-        return false;
+        return true;
     }
 
     // sendLikedTrack(like: true|false, trackId, type: spotify|itunes)
     public static void sendLikedTrack(boolean like, String trackId, String type) {
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-        if (jwt != null) {
 
-            JsonObject payload = new JsonObject();
-            payload.addProperty("liked", like);
+        JsonObject payload = new JsonObject();
+        payload.addProperty("liked", like);
 
-            String api = "/music/liked/track/" + trackId + "?type=" + type;
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString(), jwt);
-            if (!resp.isOk()) {
-                LOG.log(Level.WARNING, "Music Time: unable to send liked song to software.com");
-            }
+        String api = "/music/liked/track/" + trackId + "?type=" + type;
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString());
+        if (!resp.isOk()) {
+            LOG.log(Level.WARNING, "Music Time: unable to send liked song to software.com");
         }
     }
 

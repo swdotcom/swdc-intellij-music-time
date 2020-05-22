@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.PlaylistController;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 
@@ -326,13 +327,12 @@ public class PlayListCommands {
             PlaylistManager.getUserPlaylists();
             refreshAIPlaylist();
 
-            String jwt = SoftwareCoSessionManager.getItem("jwt");
             JsonObject obj = new JsonObject();
             obj.addProperty("playlist_id", myAIPlaylistId);
             obj.addProperty("playlistTypeId", 1);
             obj.addProperty("name", "My AI Top 40");
 
-            PlaylistController.sendPlaylistToSoftware(obj.toString(), jwt);
+            PlaylistController.sendPlaylistToSoftware(obj.toString());
             return resp.getJsonObj();
         }
         return null;
@@ -341,8 +341,7 @@ public class PlayListCommands {
     public static JsonObject refreshAIPlaylist() {
 
         if(myAIPlaylistId != null) {
-            String jwt = SoftwareCoSessionManager.getItem("jwt");
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.refreshAIPlaylist(myAIPlaylistId, jwt);
+            SoftwareResponse resp = (SoftwareResponse) PlaylistController.refreshAIPlaylist(myAIPlaylistId);
             if (resp.isOk()) {
                 myAITopTracks = getAITopTracks();
                 updatePlaylists(5, null);

@@ -127,7 +127,7 @@ public class PlaylistController {
      * payload - playlist data
      * jwt - software jwt token
      */
-    public static Object sendPlaylistToSoftware(String payload, String jwt) {
+    public static Object sendPlaylistToSoftware(String payload) {
 
         String api = "/music/playlist/generated";
         SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, payload, false);
@@ -140,7 +140,7 @@ public class PlaylistController {
      * @param
      * jwt - software jwt token
      */
-    public static Object getRecommendedTracks(String jwt) {
+    public static Object getRecommendedTracks() {
 
         String api = "/music/recommendations?limit=40";
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null, false);
@@ -162,10 +162,10 @@ public class PlaylistController {
      * playlistId - spotify playlist id
      * jwt - software jwt token
      */
-    public static Object refreshAIPlaylist(String playlistId, String jwt) {
+    public static Object refreshAIPlaylist(String playlistId) {
 
         if(playlistId != null) {
-            getRecommendedTracks(jwt);
+            getRecommendedTracks();
 
             JsonArray arr = new JsonArray();
             for(String id : recommendedTracks) {

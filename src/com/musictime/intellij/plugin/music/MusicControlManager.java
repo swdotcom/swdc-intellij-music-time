@@ -11,6 +11,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.*;
 import org.apache.http.client.methods.HttpPut;
 
@@ -76,13 +77,12 @@ public class MusicControlManager {
     }
 
     public static void disConnectSpotify() {
-        SoftwareCoSessionManager.setItem("spotify_access_token", null);
-        SoftwareCoSessionManager.setItem("spotify_refresh_token", null);
+        FileManager.setItem("spotify_access_token", null);
+        FileManager.setItem("spotify_refresh_token", null);
         MusicStore.resetConfig();
 
         String api = "/auth/spotify/disconnect";
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-        SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null, jwt);
+        SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null);
 
         resetSpotify();
         String headPhoneIcon = "headphone.png";
@@ -148,7 +148,7 @@ public class MusicControlManager {
         JsonObject payload = new JsonObject();
         payload.add("tracks", batch);
         String jsonPayload = payload.toString();
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        String jwt = FileManager.getItem("jwt");
 
         SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, jsonPayload, false);
         if (!resp.isOk()) {
@@ -161,7 +161,7 @@ public class MusicControlManager {
          * const qryStr = `token=${encodedJwt}&mac=${mac}`;
          *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
          */
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        String jwt = FileManager.getItem("jwt");
 
         String api = Client.api_endpoint + "/auth/spotify?token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
         BrowserUtil.browse(api);
@@ -442,7 +442,7 @@ public class MusicControlManager {
     }
 
     public static boolean hasSpotifyAccess() {
-        String accessToken = SoftwareCoSessionManager.getItem("spotify_access_token");
+        String accessToken = FileManager.getItem("spotify_access_token");
         return accessToken != null ? true : false;
     }
 

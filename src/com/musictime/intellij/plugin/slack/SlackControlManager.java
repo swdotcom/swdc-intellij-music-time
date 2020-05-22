@@ -6,6 +6,7 @@ import com.intellij.ide.BrowserUtil;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
+import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.musicjava.Util;
 import org.apache.http.HttpEntity;
@@ -126,7 +127,7 @@ public class SlackControlManager {
 
     public static void connectSlack() throws UnsupportedEncodingException {
 
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
+        String jwt = FileManager.getItem("jwt");
         String encodedJwt = URLEncoder.encode(jwt, "UTF-8");
         String api = Client.api_endpoint + "/auth/slack?integrate=slack&plugin=musictime&token=" + encodedJwt;
         BrowserUtil.browse(api);
@@ -138,8 +139,7 @@ public class SlackControlManager {
     public static void disconnectSlack() {
 
         String api = "/auth/slack/disconnect";
-        String jwt = SoftwareCoSessionManager.getItem("jwt");
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null, jwt);
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null);
         if (resp.isOk()) {
             boolean exist = false;
             JsonObject obj = resp.getJsonObj();
@@ -152,7 +152,7 @@ public class SlackControlManager {
                 if(!exist) {
                     slackCacheState = exist;
                     ACCESS_TOKEN = null;
-                    SoftwareCoSessionManager.setItem("slack_access_token", null);
+                    FileManager.setItem("slack_access_token", null);
                     SoftwareCoUtils.showMsgPrompt("Successfully disconnected Slack", new Color(55, 108, 137, 100));
                 }
             } else {
@@ -186,13 +186,14 @@ public class SlackControlManager {
             // check if the email is valid
             String email = userObj.get("email").getAsString();
             if (SoftwareCoUtils.validateEmail(email)) {
-                SoftwareCoSessionManager.setItem("jwt", userObj.get("plugin_jwt").getAsString());
-                SoftwareCoSessionManager.setItem("name", email);
+                String pluginJwt = userObj.get("plugin_jwt").getAsString();
+                FileManager.setItem("jwt", pluginJwt);
+                FileManager.setItem("name", email);
                 for(JsonElement array : userObj.get("auths").getAsJsonArray()) {
                     if(array.getAsJsonObject().get("type").getAsString().equals("slack")) {
                         if(ACCESS_TOKEN == null) {
                             ACCESS_TOKEN = array.getAsJsonObject().get("access_token").getAsString();
-                            SoftwareCoSessionManager.setItem("slack_access_token", ACCESS_TOKEN);
+                            FileManager.setItem("slack_access_token", ACCESS_TOKEN);
                         }
                         slackCacheState = true;
 
@@ -207,7 +208,7 @@ public class SlackControlManager {
 
     public static void getSlackChannels() {
 
-        String accessToken = SoftwareCoSessionManager.getItem("slack_access_token");
+        String accessToken = FileManager.getItem("slack_access_token");
         String api = "channels.list?token=" + accessToken + "&exclude_archived=true&exclude_members=true&pretty=1";
         SoftwareResponse resp = makeApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp.isOk()) {
@@ -226,7 +227,7 @@ public class SlackControlManager {
 
     public static boolean postMessage(String payload) {
 
-        String accessToken = SoftwareCoSessionManager.getItem("slack_access_token");
+        String accessToken = FileManager.getItem("slack_access_token");
         String api = "chat.postMessage";
         SoftwareResponse resp = makeApiCall(api, HttpPost.METHOD_NAME, payload, accessToken);
         if (resp.isOk()) {

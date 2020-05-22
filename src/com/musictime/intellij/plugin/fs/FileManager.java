@@ -13,6 +13,9 @@ import org.apache.http.client.methods.HttpPost;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -361,5 +364,48 @@ public class FileManager {
                 }
             }
         }
+    }
+
+    public static synchronized JsonObject getSoftwareSessionAsJson() {
+        JsonObject sessionJson = new JsonObject();
+        String sessionFile = getSoftwareSessionFile(true);
+        File f = new File(sessionFile);
+        if (f.exists()) {
+            try {
+                Path p = Paths.get(sessionFile);
+
+                byte[] encoded = Files.readAllBytes(p);
+                String content = new String(encoded, Charset.defaultCharset());
+                if (content != null) {
+                    // json parse it
+                    sessionJson = SoftwareCoUtils.jsonParser.parse(content).getAsJsonObject();
+                }
+
+            } catch (Exception e) {
+                //
+            }
+        }
+        if (sessionJson == null) {
+            sessionJson = new JsonObject();
+        }
+        return sessionJson;
+    }
+
+    public static void setItem(String key, String val) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        sessionJson.addProperty(key, val);
+
+        String content = sessionJson.toString();
+        String sessionFile = getSoftwareSessionFile(true);
+
+        saveFileContent(sessionFile, content);
+    }
+
+    public static String getItem(String key) {
+        JsonObject sessionJson = getSoftwareSessionAsJson();
+        if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
+            return sessionJson.get(key).getAsString();
+        }
+        return null;
     }
 }
