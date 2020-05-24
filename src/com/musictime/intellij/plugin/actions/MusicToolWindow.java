@@ -280,7 +280,7 @@ public class MusicToolWindow {
             refresh.setVisible(false);
             DefaultListModel listModel = new DefaultListModel();
 
-            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+            boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
             String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
             Icon icon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
             JLabel connectedState = new JLabel();
@@ -892,7 +892,7 @@ public class MusicToolWindow {
             recommendRefresh.setVisible(false);
             DefaultListModel listModel = new DefaultListModel();
 
-            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
+            boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
             String connectLabel = requiresReAuth ? "Reconnect Spotify to see recommendations" : "Connect Spotify to see recommendations";
 
             Icon icon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");

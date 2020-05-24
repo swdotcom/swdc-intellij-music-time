@@ -551,14 +551,6 @@ public class SoftwareCoSessionManager {
         }
     }
 
-    public static boolean requiresReAuthentication() {
-        boolean requiresReAuth = FileManager.getBooleanItem("requiresSpotifyReAuth");
-        if (requiresReAuth) {
-            return true;
-        }
-        return false;
-    }
-
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
         String dashboardFile = FileManager.getMusicDashboardFile();
 

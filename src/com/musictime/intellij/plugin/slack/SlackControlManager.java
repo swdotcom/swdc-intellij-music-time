@@ -3,12 +3,10 @@ package com.musictime.intellij.plugin.slack;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.Client;
-import com.musictime.intellij.plugin.musicjava.Util;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -99,17 +97,6 @@ public class SlackControlManager {
                             String errorMessage = "Music Time: Unable to get the response from the http request, error: " + e.getMessage();
                             softwareResponse.setErrorMessage(errorMessage);
                             LOG.log(Level.WARNING, errorMessage);
-                        }
-                    }
-
-                    if (statusCode >= 400 && statusCode < 500 && jsonObj != null) {
-                        if (jsonObj.has("code")) {
-                            String code = jsonObj.get("code").getAsString();
-                            if (code != null && code.equals("DEACTIVATED")) {
-                                SoftwareCoUtils.setStatusLineMessage(
-                                        "warning.png", "Music Time", "To see your music data, please reactivate your account.");
-                                softwareResponse.setDeactivated(true);
-                            }
                         }
                     }
                 }

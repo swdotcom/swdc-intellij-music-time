@@ -7,15 +7,14 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
-import org.apache.batik.svggen.font.table.Device;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.velocity.texen.util.FileUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MusicControlManager {
@@ -77,8 +75,7 @@ public class MusicControlManager {
         SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null);
 
         resetSpotify();
-        String headPhoneIcon = "headphone.png";
-        SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Reconnect Spotify", "Reconnect Spotify");
+        SoftwareCoUtils.setStatusLineMessage();
         // refresh the tree view
         MusicToolWindow.refresh();
     }
@@ -172,6 +169,9 @@ public class MusicControlManager {
         } else if (connected) {
             spotifyStatus = "Connected";
             SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
+
+            FileManager.setBooleanItem("requiresSpotifyReAuth", false);
+
             // get the spotify user profile
             Apis.getUserProfile();
 
@@ -397,6 +397,14 @@ public class MusicControlManager {
     public static boolean hasSpotifyAccess() {
         String accessToken = FileManager.getItem("spotify_access_token");
         return accessToken != null ? true : false;
+    }
+
+    public static boolean requiresReAuthentication() {
+        boolean requiresReAuth = FileManager.getBooleanItem("requiresSpotifyReAuth");
+        if (requiresReAuth) {
+            return true;
+        }
+        return false;
     }
 
     public static void refreshAccessToken() {

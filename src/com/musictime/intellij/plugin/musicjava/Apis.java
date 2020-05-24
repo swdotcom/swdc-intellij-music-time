@@ -3,7 +3,6 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.fs.FileManager;
@@ -17,7 +16,6 @@ import org.apache.http.client.methods.HttpPut;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -387,16 +385,6 @@ public class Apis {
 
     public static boolean accessExpired() {
         SoftwareResponse resp = getUserProfile();
-        if (resp != null) {
-            System.out.println("ACCESS EXPIRED RESPONSE: " + resp.getCode());
-        }
-//        if (resp != null && resp.getCode() == 400) {
-//            // Getting a 400 is worse than a 401, check if the access token is missing
-//            String accessToken = FileManager.getItem("spotify_access_token");
-//            if (StringUtils.isBlank(accessToken)) {
-//                return true;
-//            }
-//        }
         if (resp != null && resp.getCode() == 401) {
             resp = getUserProfile();
             if (resp != null && resp.getCode() == 401) {

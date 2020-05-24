@@ -21,10 +21,12 @@ import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
 import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Client;
+import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
 import org.apache.commons.lang.StringUtils;
@@ -38,7 +40,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.velocity.texen.util.FileUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -253,16 +254,6 @@ public class SoftwareCoUtils {
                         }
                     }
 
-                    if (statusCode >= 400 && statusCode < 500 && jsonObj != null) {
-                        if (jsonObj.has("code")) {
-                            String code = jsonObj.get("code").getAsString();
-                            if (code != null && code.equals("DEACTIVATED")) {
-                                SoftwareCoUtils.setStatusLineMessage(
-                                        "warning.png", SoftwareCoMusic.getPluginName(), "To see your coding data in Code Time, please reactivate your account.");
-                                softwareResponse.setDeactivated(true);
-                            }
-                        }
-                    }
                 }
             } catch (InterruptedException | ExecutionException e) {
                 String errorMessage = SoftwareCoMusic.getPluginName() + ": Unable to get the response from the http request for api " + api + ", error: " + e.getMessage();
@@ -325,17 +316,6 @@ public class SoftwareCoUtils {
         return sb.toString();
     }
 
-    public static synchronized void setStatusLineMessage(
-            final String singleMsg, final String tooltip) {
-        setStatusLineMessage(null, singleMsg, null, null, tooltip);
-    }
-
-    public static synchronized void setStatusLineMessage(
-            final String singleIcon, final String singleMsg,
-            final String tooltip) {
-        setStatusLineMessage(singleIcon, singleMsg, null, null, tooltip);
-    }
-
     public static Project getOpenProject() {
         ProjectManager projMgr = ProjectManager.getInstance();
         Project[] projects = projMgr.getOpenProjects();
@@ -345,10 +325,7 @@ public class SoftwareCoUtils {
         return null;
     }
 
-    public static synchronized void setStatusLineMessage(
-            final String kpmIcon, final String kpmMsg,
-            final String timeIcon, final String timeMsg,
-            final String tooltip) {
+    public static synchronized void setStatusLineMessage() {
         try {
             Project p = getOpenProject();
             if (p == null) {
@@ -357,23 +334,20 @@ public class SoftwareCoUtils {
             final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
 
             if (statusBar != null) {
-                updateStatusBar(kpmIcon, kpmMsg, timeIcon, timeMsg, tooltip);
+                updateStatusBar();
             }
         } catch (Exception e) {
             //
         }
     }
 
-    private static void updateStatusBar(final String kpmIcon, final String kpmMsg,
-                                        final String timeIcon, final String timeMsg,
-                                        final String tooltip) {
+    private static void updateStatusBar() {
 
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
                 ProjectManager pm = ProjectManager.getInstance();
                 if (pm != null && pm.getOpenProjects() != null && pm.getOpenProjects().length > 0) {
-                    boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
-                    String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
+
                     try {
                         Project p = pm.getOpenProjects()[0];
                         final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
@@ -416,85 +390,94 @@ public class SoftwareCoUtils {
                             statusBar.removeWidget(connectspotifyId);
                         }
 
+                        boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
+                        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+                        String connectLabel = null;
+                        if (requiresReAuth) {
+                            connectLabel = "Reconnect Spotify";
+                        } else if (!hasSpotifyAccess) {
+                            connectLabel = "Connect Spotify";
+                        }
+
+                        String email = FileManager.getItem("name");
                         String headphoneIconVal = "headphones.png";
                         String headphoneTooltip = "Click to see more from Music Time.";
+                        if (StringUtils.isNotBlank(email)) {
+                            headphoneTooltip += " (" + email + ")";
+                        }
+
+                        DeviceInfo deviceInfo = DeviceManager.getBestDeviceOption();
                         SoftwareCoStatusBarIconWidget headphoneIconWidget = buildStatusBarIconWidget(
                                 headphoneIconVal, headphoneTooltip, headphoneiconId);
                         statusBar.addWidget(headphoneIconWidget, headphoneiconId);
                         statusBar.updateWidget(headphoneiconId);
 
-
-                        if(tooltip.equals(connectLabel)) {
-                            final String headphoneMsgVal = kpmMsg != null ? kpmMsg : SoftwareCoMusic.getPluginName();
-                            if (headphoneIconVal != null) {
-                                SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                        headphoneMsgVal, tooltip, connectspotifyId);
-                                statusBar.addWidget(kpmWidget, connectspotifyId);
-                                statusBar.updateWidget(connectspotifyId);
-                            }
-                        } else {
-                            String likeIcon = "like.png";
-                            String unlikeIcon = "unlike.png";
-                            String preIcon = "previous.png";
-                            String pauseIcon = "pause.png";
-                            String playIcon = "play.png";
-                            String nextIcon = "next.png";
-
-                            final String musicToolTipVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
-                            if(MusicControlManager.currentTrackName != null && MusicControlManager.currentTrackName.length() > 20) {
-                                MusicControlManager.currentTrackName = MusicControlManager.currentTrackName.substring(0, 19) + "...";
-                            }
-                            final String musicMsgVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
-
-                            if (MusicControlManager.currentTrackName != null) {
-
-                                if(!PlaylistManager.skipPrevious) {
-                                    SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
-                                            preIcon, "previous", preiconId);
-                                    statusBar.addWidget(preIconWidget, preiconId);
-                                    statusBar.updateWidget(preiconId);
-                                }
-
-                                if (!MusicControlManager.defaultbtn.equals("play")) {
-                                    SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
-                                            pauseIcon, "pause", pauseiconId);
-                                    statusBar.addWidget(pauseIconWidget, pauseiconId);
-                                    statusBar.updateWidget(pauseiconId);
-                                } else {
-                                    SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
-                                            playIcon, "play", playiconId);
-                                    statusBar.addWidget(playIconWidget, playiconId);
-                                    statusBar.updateWidget(playiconId);
-                                }
-
-                                SoftwareCoStatusBarIconWidget nextIconWidget = buildStatusBarIconWidget(
-                                        nextIcon, "next", nexticonId);
-                                statusBar.addWidget(nextIconWidget, nexticonId);
-                                statusBar.updateWidget(nexticonId);
-                            }
-
-                            if(!musicMsgVal.equals("Current Track")) {
-                                SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                        musicMsgVal, musicToolTipVal, songtrackId);
-                                statusBar.addWidget(kpmWidget, songtrackId);
-                                statusBar.updateWidget(songtrackId);
-                            }
-
-                            if(MusicControlManager.currentTrackId != null) {
-                                if (MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
-                                    SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
-                                            likeIcon, "unlike", likeiconId);
-                                    statusBar.addWidget(likeIconWidget, likeiconId);
-                                    statusBar.updateWidget(likeiconId);
-                                } else {
-                                    SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
-                                            unlikeIcon, "like", unlikeiconId);
-                                    statusBar.addWidget(unlikeIconWidget, unlikeiconId);
-                                    statusBar.updateWidget(unlikeiconId);
-                                }
-                            }
-
+                        if (StringUtils.isNotBlank(connectLabel)) {
+                            SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+                                    connectLabel, connectLabel, connectspotifyId);
+                            statusBar.addWidget(kpmWidget, connectspotifyId);
+                            statusBar.updateWidget(connectspotifyId);
                         }
+
+                        String likeIcon = "like.png";
+                        String unlikeIcon = "unlike.png";
+                        String preIcon = "previous.png";
+                        String pauseIcon = "pause.png";
+                        String playIcon = "play.png";
+                        String nextIcon = "next.png";
+
+                        String trackName = MusicControlManager.currentTrackName;
+                        final String musicToolTipVal = trackName != null ? trackName : "";
+                        if (trackName != null && trackName.length() > 19) {
+                            trackName = trackName.substring(0, 18) + "...";
+                        }
+
+                        if (deviceInfo != null) {
+
+                            if(!PlaylistManager.skipPrevious) {
+                                SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
+                                        preIcon, "previous", preiconId);
+                                statusBar.addWidget(preIconWidget, preiconId);
+                                statusBar.updateWidget(preiconId);
+                            }
+
+                            if (!MusicControlManager.defaultbtn.equals("play")) {
+                                SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
+                                        pauseIcon, "pause", pauseiconId);
+                                statusBar.addWidget(pauseIconWidget, pauseiconId);
+                                statusBar.updateWidget(pauseiconId);
+                            } else {
+                                SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
+                                        playIcon, "play", playiconId);
+                                statusBar.addWidget(playIconWidget, playiconId);
+                                statusBar.updateWidget(playiconId);
+                            }
+
+                            SoftwareCoStatusBarIconWidget nextIconWidget = buildStatusBarIconWidget(
+                                    nextIcon, "next", nexticonId);
+                            statusBar.addWidget(nextIconWidget, nexticonId);
+                            statusBar.updateWidget(nexticonId);
+                        }
+
+                        SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+                                trackName, musicToolTipVal, songtrackId);
+                        statusBar.addWidget(kpmWidget, songtrackId);
+                        statusBar.updateWidget(songtrackId);
+
+                        if(MusicControlManager.currentTrackId != null) {
+                            if (MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
+                                SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
+                                        likeIcon, "unlike", likeiconId);
+                                statusBar.addWidget(likeIconWidget, likeiconId);
+                                statusBar.updateWidget(likeiconId);
+                            } else {
+                                SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
+                                        unlikeIcon, "like", unlikeiconId);
+                                statusBar.addWidget(unlikeIconWidget, unlikeiconId);
+                                statusBar.updateWidget(unlikeiconId);
+                            }
+                        }
+
                     } catch(Exception e){
                         //
                     }
@@ -743,26 +726,9 @@ public class SoftwareCoUtils {
     }
 
     public static synchronized void updatePlayerControls(boolean recursiveCall) {
-        if (MusicControlManager.hasSpotifyAccess()) {
+        PlayListCommands.updatePlaylists(5, null); // API call
 
-            PlayListCommands.updatePlaylists(5, null); // API call
-
-            String accountType = MusicStore.getSpotifyAccountType();
-
-            if (accountType != null && !accountType.equals("premium")) {
-                String headPhoneIcon = "headphone.png";
-                SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Connect Premium", "Current Track");
-            } else {
-                String headPhoneIcon = "headphone.png";
-                SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, "Current Track", "Current Track");
-            }
-        } else {
-            String headPhoneIcon = "headphone.png";
-            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
-            String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
-            SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, connectLabel, connectLabel);
-            PlayListCommands.updatePlaylists(5, null);
-        }
+        SoftwareCoUtils.setStatusLineMessage();
     }
 
     private static String getSingleLineResult(List<String> cmd, int maxLen) {

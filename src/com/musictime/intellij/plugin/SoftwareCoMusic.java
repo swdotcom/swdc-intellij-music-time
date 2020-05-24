@@ -187,10 +187,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
         }
 
         if (!MusicControlManager.hasSpotifyAccess()) {
-            String headPhoneIcon = "headphone.png";
-            boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
-            String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
-            SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, connectLabel, connectLabel);
+            SoftwareCoUtils.setStatusLineMessage();
         }
         // check to see if we need to re-authenticate
         if (hasExpiredAccessToken()) {
