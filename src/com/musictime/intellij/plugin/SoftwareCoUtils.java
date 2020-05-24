@@ -432,7 +432,7 @@ public class SoftwareCoUtils {
                             trackName = trackName.substring(0, 18) + "...";
                         }
 
-                        if (deviceInfo != null) {
+                        if (deviceInfo != null && connectLabel == null) {
 
                             if(!PlaylistManager.skipPrevious) {
                                 SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(

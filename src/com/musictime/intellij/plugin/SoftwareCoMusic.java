@@ -244,11 +244,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
         String accessToken = FileManager.getItem("spotify_access_token");
         if (!checkedSpotifyAccess && StringUtils.isNotBlank(accessToken)) {
             boolean expired = Apis.accessExpired();
-            if (expired) {
-                FileManager.setBooleanItem("requiresSpotifyReAuth", true);
-            }
             FileManager.setBooleanItem("intellij_checkedSpotifyAccess", true);
-
             return expired;
         }
         return false;

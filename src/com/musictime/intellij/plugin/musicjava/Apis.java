@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.fs.FileManager;
@@ -42,7 +43,7 @@ public class Apis {
      * clientId - spotify client id
      * clientSecret - spotify client secret
      */
-    public static Object refreshAccessToken() {
+    public static SoftwareResponse refreshAccessToken() {
         if (MusicStore.SPOTIFY_CLIENT_ID == null) {
             SoftwareCoUtils.getAndUpdateClientInfo();
         }
@@ -60,13 +61,12 @@ public class Apis {
         byte[] bytesEncoded = Base64.encodeBase64(authPayload.getBytes());
         String encodedAuthPayload = "Basic " + new String(bytesEncoded);
 
-        SoftwareResponse resp = Client.makeSpotifyApiCallWithAuth(api, HttpPost.METHOD_NAME, null, encodedAuthPayload);
+        SoftwareResponse resp = Client.makeSpotifyApiCallWithAuth(
+                api, HttpPost.METHOD_NAME, null, encodedAuthPayload);
 
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             FileManager.setItem("spotify_access_token", obj.get("access_token").getAsString());
-        } else {
-            checkIfAccessExpired(resp);
         }
         return resp;
     }
@@ -145,6 +145,8 @@ public class Apis {
             MusicStore.setSpotifyUserId(obj.get("id").getAsString());
             MusicStore.setSpotifyAccountType(obj.get("product").getAsString());
             return resp;
+        } else {
+            checkIfAccessExpired(resp);
         }
         return resp;
     }
@@ -225,14 +227,13 @@ public class Apis {
     public static Object getPlaylists(String spotifyUserId) {
         String api = "/v1/users/" + spotifyUserId + "/playlists?limit=50&offset=" + offset;
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
-        if(resp.isOk()) {
+        if (resp.isOk()) {
             return resp;
-        } else if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    refreshAccessToken();
-                }
+        } else if (resp != null && resp.getCode() == 401) {
+            refreshAccessToken();
+            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
+            if (resp != null && resp.getCode() == 401) {
+                checkIfAccessExpired(resp);
             }
         }
         return resp;
@@ -384,25 +385,56 @@ public class Apis {
     }
 
     public static boolean accessExpired() {
-        SoftwareResponse resp = getUserProfile();
+        String api = "/v1/me";
+        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
         if (resp != null && resp.getCode() == 401) {
-            resp = getUserProfile();
+
+            // refresh the token
+            refreshAccessToken();
+
+            // try to get the user one more time
+            resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
+
             if (resp != null && resp.getCode() == 401) {
-                return true;
+                // get the refresh access token resp
+                resp = refreshAccessToken();
+                if (resp != null) {
+                    if (resp.getCode() == 400) {
+                        if (!resp.getJsonObj().isJsonNull()) {
+                            // check to see if its an invalid client id
+                            String error = resp.getJsonObj().get("error").getAsString();
+                            if (error.equals("invalid_client")) {
+                                LOG.warning("Invalid client ID. Disconnecting spotify");
+                                return true;
+                            }
+                        }
+                    } else if (resp.getCode() == 401) {
+                        // still invalid
+                        LOG.warning("Unauthorized to refresh access token. Disconnecting spotify");
+                        return true;
+                    }
+                }
             }
         }
         return false;
     }
 
     private static void checkIfAccessExpired(SoftwareResponse resp) {
+
         if (resp != null && resp.getCode() == 401) {
             String spotifyAccessToken = FileManager.getItem("spotify_access_token");
+
             if (StringUtils.isNotBlank(spotifyAccessToken)) {
+
                 if (accessExpired()) {
                     // disconnect spotify
                     MusicControlManager.disConnectSpotify();
+
+                    // show reconnect prompt
+                    SoftwareCoMusic.showReconnectPrompt();
                 }
             }
         }
+
     }
 }

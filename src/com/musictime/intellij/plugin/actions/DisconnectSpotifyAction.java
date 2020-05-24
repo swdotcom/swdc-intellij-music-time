@@ -14,7 +14,9 @@ import org.jetbrains.annotations.NotNull;
 
 public class DisconnectSpotifyAction extends AnAction {
     @Override
-    public void actionPerformed(@NotNull AnActionEvent anActionEvent) { MusicControlManager.disConnectSpotify(); }
+    public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
+        MusicControlManager.disConnectSpotify();
+    }
 
     @Override
     public void update(AnActionEvent event) {

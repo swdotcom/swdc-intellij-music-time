@@ -86,9 +86,14 @@ public class Client {
             httpTask = new SoftwareHttpManager(api, httpMethodName, payload, httpClient);
             response = EXECUTOR_SERVICE.submit(httpTask);
         } else {
-            String accesstoken = encodedAuth == null ? FileManager.getItem("spotify_access_token") : encodedAuth;
-            accesstoken = "Bearer " + accesstoken;
-            spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, accesstoken, httpClient);
+            if (encodedAuth != null) {
+                // this is used for spotify access token refresh
+                spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, encodedAuth, httpClient);
+            } else {
+                // all other spotify calls
+                String accesstoken = "Bearer " + FileManager.getItem("spotify_access_token");
+                spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, accesstoken, httpClient);
+            }
             response = EXECUTOR_SERVICE.submit(spotifyTask);
         }
 

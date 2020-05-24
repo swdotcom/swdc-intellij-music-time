@@ -25,6 +25,14 @@ public class MusicStore {
     public static void resetConfig() {
         spotifyAccountType = null; // Premium or Non-Premium
         spotifyUserId = null;
+        playlistIds = new ArrayList<>();
+        currentPlaylistId = null;
+        currentTrackId = null;
+        currentTrackName = null;
+        tracksByPlaylistId = new ArrayList<>();
+        spotifyDeviceIds = new ArrayList<>();
+        currentDeviceName = null;
+        currentDeviceId = null;
     }
 
     public static String getSpotifyClientId() {

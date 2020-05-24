@@ -778,7 +778,8 @@ public class MusicToolWindow {
 
             //*********************************************************************************************************************
             // Add User Playlists
-            if (PlayListCommands.userPlaylistIds.size() > 0) {
+            List<String> playlistIds = PlayListCommands.userPlaylistIds;
+            if (playlistIds.size() > 0) {
                 //*****************************************************************************************************************************
                 JSeparator userPlaylistSeparator = new JSeparator();
                 userPlaylistSeparator.setAlignmentY(0.0f);
@@ -786,7 +787,8 @@ public class MusicToolWindow {
                 dataPanel.add(userPlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
                 //*****************************************************************************************************************************
                 Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist-16x16.png");
-                for (String playlistId : PlayListCommands.userPlaylistIds) {
+
+                for (String playlistId : playlistIds) {
                     PlaylistTreeNode userPlaylist = new PlaylistTreeNode(PlayListCommands.userPlaylists.get(playlistId), playlistId);
                     DefaultTreeModel userPlaylistModel = new DefaultTreeModel(userPlaylist);
                     userPlaylist.setModel(userPlaylistModel);

@@ -62,20 +62,23 @@ public class MusicControlManager {
         myAITopTracks.clear();
         PlayListCommands.counter = 0;
         MusicToolWindow.reset();
-        MusicStore.setSpotifyUserId(null);
-        MusicStore.setSpotifyAccountType(null);
+        MusicStore.resetConfig();
+        DeviceManager.clearDevices();
     }
 
     public static void disConnectSpotify() {
-        FileManager.setItem("spotify_access_token", null);
-        FileManager.setItem("spotify_refresh_token", null);
-        MusicStore.resetConfig();
 
         String api = "/auth/spotify/disconnect";
         SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null);
 
+        FileManager.setItem("spotify_access_token", null);
+        FileManager.setItem("spotify_refresh_token", null);
+        FileManager.setBooleanItem("requiresSpotifyReAuth", true);
+
         resetSpotify();
+
         SoftwareCoUtils.setStatusLineMessage();
+
         // refresh the tree view
         MusicToolWindow.refresh();
     }
