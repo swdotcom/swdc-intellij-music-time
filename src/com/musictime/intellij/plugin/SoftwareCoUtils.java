@@ -415,8 +415,15 @@ public class SoftwareCoUtils {
                             statusBar.removeWidget(connectspotifyId);
                         }
 
+                        String headphoneIconVal = "headphones.png";
+                        String headphoneTooltip = "Click to see more from Music Time.";
+                        SoftwareCoStatusBarIconWidget headphoneIconWidget = buildStatusBarIconWidget(
+                                headphoneIconVal, headphoneTooltip, headphoneiconId);
+                        statusBar.addWidget(headphoneIconWidget, headphoneiconId);
+                        statusBar.updateWidget(headphoneiconId);
+
+
                         if(tooltip.equals(connectLabel)) {
-                            String headphoneIconVal = kpmIcon;
                             final String headphoneMsgVal = kpmMsg != null ? kpmMsg : SoftwareCoMusic.getPluginName();
                             if (headphoneIconVal != null) {
                                 SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
@@ -425,67 +432,67 @@ public class SoftwareCoUtils {
                                 statusBar.updateWidget(connectspotifyId);
                             }
                         } else {
-                            String headphoneIconVal = kpmIcon;
                             String likeIcon = "like.png";
                             String unlikeIcon = "unlike.png";
                             String preIcon = "previous.png";
                             String pauseIcon = "pause.png";
                             String playIcon = "play.png";
                             String nextIcon = "next.png";
-//                            final String connectPremiumMsg = kpmMsg != null ? kpmMsg : SoftwareCoMusic.getPluginName();
+
                             final String musicToolTipVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
                             if(MusicControlManager.currentTrackName != null && MusicControlManager.currentTrackName.length() > 20) {
                                 MusicControlManager.currentTrackName = MusicControlManager.currentTrackName.substring(0, 19) + "...";
                             }
                             final String musicMsgVal = MusicControlManager.currentTrackName != null ? MusicControlManager.currentTrackName : "Current Track";
-                            if (headphoneIconVal != null) {
 
-                                if(MusicControlManager.currentTrackName != null) {
-                                    if(MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
-                                        SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
-                                                likeIcon, "unlike", likeiconId);
-                                        statusBar.addWidget(likeIconWidget, likeiconId);
-                                        statusBar.updateWidget(likeiconId);
-                                    } else {
-                                        SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
-                                                unlikeIcon, "like", unlikeiconId);
-                                        statusBar.addWidget(unlikeIconWidget, unlikeiconId);
-                                        statusBar.updateWidget(unlikeiconId);
-                                    }
+                            if (MusicControlManager.currentTrackName != null) {
 
-                                    if(!PlaylistManager.skipPrevious) {
-                                        SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
-                                                preIcon, "previous", preiconId);
-                                        statusBar.addWidget(preIconWidget, preiconId);
-                                        statusBar.updateWidget(preiconId);
-                                    }
-
-                                    if (!MusicControlManager.defaultbtn.equals("play")) {
-                                        SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
-                                                pauseIcon, "pause", pauseiconId);
-                                        statusBar.addWidget(pauseIconWidget, pauseiconId);
-                                        statusBar.updateWidget(pauseiconId);
-                                    } else {
-                                        SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
-                                                playIcon, "play", playiconId);
-                                        statusBar.addWidget(playIconWidget, playiconId);
-                                        statusBar.updateWidget(playiconId);
-                                    }
-
-                                    SoftwareCoStatusBarIconWidget nextIconWidget = buildStatusBarIconWidget(
-                                            nextIcon, "next", nexticonId);
-                                    statusBar.addWidget(nextIconWidget, nexticonId);
-                                    statusBar.updateWidget(nexticonId);
+                                if(!PlaylistManager.skipPrevious) {
+                                    SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
+                                            preIcon, "previous", preiconId);
+                                    statusBar.addWidget(preIconWidget, preiconId);
+                                    statusBar.updateWidget(preiconId);
                                 }
 
-                                if(!musicMsgVal.equals("Current Track")) {
-                                    SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                            musicMsgVal, musicToolTipVal, songtrackId);
-                                    statusBar.addWidget(kpmWidget, songtrackId);
-                                    statusBar.updateWidget(songtrackId);
+                                if (!MusicControlManager.defaultbtn.equals("play")) {
+                                    SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
+                                            pauseIcon, "pause", pauseiconId);
+                                    statusBar.addWidget(pauseIconWidget, pauseiconId);
+                                    statusBar.updateWidget(pauseiconId);
+                                } else {
+                                    SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
+                                            playIcon, "play", playiconId);
+                                    statusBar.addWidget(playIconWidget, playiconId);
+                                    statusBar.updateWidget(playiconId);
                                 }
 
+                                SoftwareCoStatusBarIconWidget nextIconWidget = buildStatusBarIconWidget(
+                                        nextIcon, "next", nexticonId);
+                                statusBar.addWidget(nextIconWidget, nexticonId);
+                                statusBar.updateWidget(nexticonId);
                             }
+
+                            if(!musicMsgVal.equals("Current Track")) {
+                                SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+                                        musicMsgVal, musicToolTipVal, songtrackId);
+                                statusBar.addWidget(kpmWidget, songtrackId);
+                                statusBar.updateWidget(songtrackId);
+                            }
+
+                            if(MusicControlManager.currentTrackId != null) {
+                                if (MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
+                                    SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
+                                            likeIcon, "unlike", likeiconId);
+                                    statusBar.addWidget(likeIconWidget, likeiconId);
+                                    statusBar.updateWidget(likeiconId);
+                                } else {
+                                    SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
+                                            unlikeIcon, "like", unlikeiconId);
+                                    statusBar.addWidget(unlikeIconWidget, unlikeiconId);
+                                    statusBar.updateWidget(unlikeiconId);
+                                }
+                            }
+
                         }
                     } catch(Exception e){
                         //

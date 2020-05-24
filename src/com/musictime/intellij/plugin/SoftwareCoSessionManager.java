@@ -16,6 +16,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.*;
 import org.apache.commons.lang.StringUtils;
@@ -693,8 +694,11 @@ public class SoftwareCoSessionManager {
         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
         String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
-        
-        if(id.equals(headphoneiconId) || id.equals(connectspotifyId)) {
+
+        if (id.equals(headphoneiconId)) {
+            // show the tree view
+            MusicToolWindowFactory.showWindow();
+        } else if(id.equals(connectspotifyId)) {
             MusicControlManager.connectSpotify();
         } else if(id.equals(playiconId)) {
             MusicControlManager.playerCounter = 0;

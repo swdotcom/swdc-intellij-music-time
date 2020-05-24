@@ -191,27 +191,26 @@ public class SoftwareCoMusic implements ApplicationComponent {
             boolean requiresReAuth = SoftwareCoSessionManager.requiresReAuthentication();
             String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
             SoftwareCoUtils.setStatusLineMessage(headPhoneIcon, connectLabel, connectLabel);
+        }
+        // check to see if we need to re-authenticate
+        if (hasExpiredAccessToken()) {
+            // disconnect
+            MusicControlManager.disConnectSpotify();
+
+            // show message
+            showReconnectPrompt();
         } else {
-            // check to see if we need to re-authenticate
-            if (hasExpiredAccessToken()) {
-                // disconnect
-                MusicControlManager.disConnectSpotify();
 
-                // show message
-                showReconnectPrompt();
-            } else {
+            Apis.getUserProfile();
 
-                Apis.getUserProfile();
+            PlaylistManager.getUserPlaylists(); // API call
+            PlayListCommands.updatePlaylists(0, null);
+            PlayListCommands.updatePlaylists(3, null);
+            PlayListCommands.getGenre(); // API call
+            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+            DeviceManager.getDevices(); // API call
 
-                PlaylistManager.getUserPlaylists(); // API call
-                PlayListCommands.updatePlaylists(0, null);
-                PlayListCommands.updatePlaylists(3, null);
-                PlayListCommands.getGenre(); // API call
-                PlayListCommands.updateRecommendation("category", "Familiar"); // API call
-                DeviceManager.getDevices(); // API call
-
-                SoftwareCoUtils.updatePlayerControls(false);
-            }
+            SoftwareCoUtils.updatePlayerControls(false);
         }
 
         if (initializedUser) {

@@ -8,12 +8,20 @@ import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
 public class MusicToolWindowFactory implements ToolWindowFactory {
+
+    private static ToolWindow musicTimeWindow;
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
+        musicTimeWindow = toolWindow;
         MusicToolWindow mtToolWindow = new MusicToolWindow(toolWindow);
         ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
         Content content = contentFactory.createContent(mtToolWindow.getContent(), "", false);
         toolWindow.getContentManager().addContent(content);
-        //toolWindow.show();
+    }
+
+    public static void showWindow() {
+        if (musicTimeWindow != null) {
+            musicTimeWindow.show();
+        }
     }
 }
