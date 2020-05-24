@@ -3,7 +3,6 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.fs.FileManager;
 import org.apache.http.HttpEntity;
@@ -91,7 +90,6 @@ public class Client {
             accesstoken = "Bearer " + accesstoken;
             spotifyTask = new SpotifyHttpManager(api, httpMethodName, payload, accesstoken, httpClient);
             response = EXECUTOR_SERVICE.submit(spotifyTask);
-            LOG.log(Level.INFO, "Spotify Request: " + api);
         }
 
         //

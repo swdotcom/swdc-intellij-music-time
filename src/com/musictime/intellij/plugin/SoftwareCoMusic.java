@@ -245,9 +245,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
     public static boolean hasExpiredAccessToken() {
         boolean checkedSpotifyAccess = FileManager.getBooleanItem("intellij_checkedSpotifyAccess");
         String accessToken = FileManager.getItem("spotify_access_token");
-        String name = FileManager.getItem("name");
-        if ((!checkedSpotifyAccess && !StringUtils.isNotBlank(accessToken)) ||
-                (StringUtils.isBlank(accessToken) && StringUtils.isNotBlank(name))){
+        if (!checkedSpotifyAccess && StringUtils.isNotBlank(accessToken)) {
             boolean expired = Apis.accessExpired();
             if (expired) {
                 FileManager.setBooleanItem("requiresSpotifyReAuth", true);
@@ -266,7 +264,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
             public void run() {
                 PlaylistManager.gatherMusicInfo();
             }
-        }, 5000, 20000);
+        }, 5000, SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS);
 
         // a timer to check if the song is close to ending and will call gather music info once the song should end
         // every 5 seconds

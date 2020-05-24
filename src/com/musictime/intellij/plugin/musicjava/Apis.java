@@ -387,13 +387,16 @@ public class Apis {
 
     public static boolean accessExpired() {
         SoftwareResponse resp = getUserProfile();
-        if (resp != null && resp.getCode() == 400) {
-            // Getting a 400 is worse than a 401, check if the access token is missing
-            String accessToken = FileManager.getItem("spotify_access_token");
-            if (StringUtils.isBlank(accessToken)) {
-                return true;
-            }
+        if (resp != null) {
+            System.out.println("ACCESS EXPIRED RESPONSE: " + resp.getCode());
         }
+//        if (resp != null && resp.getCode() == 400) {
+//            // Getting a 400 is worse than a 401, check if the access token is missing
+//            String accessToken = FileManager.getItem("spotify_access_token");
+//            if (StringUtils.isBlank(accessToken)) {
+//                return true;
+//            }
+//        }
         if (resp != null && resp.getCode() == 401) {
             resp = getUserProfile();
             if (resp != null && resp.getCode() == 401) {

@@ -107,7 +107,7 @@ public class PlayerControlManager {
         } catch (Exception e) {
             //
         } finally {
-            PlaylistManager.gatherTrackTimer();
+            PlaylistManager.gatherMusicInfoRequest();
         }
 
         return new SoftwareResponse();
@@ -150,7 +150,7 @@ public class PlayerControlManager {
         } catch (Exception e) {
             //
         } finally {
-            PlaylistManager.gatherTrackTimer();
+            PlaylistManager.gatherMusicInfoRequest();
         }
         return false;
     }
@@ -193,7 +193,7 @@ public class PlayerControlManager {
         } catch (Exception e) {
             //
         } finally {
-            PlaylistManager.gatherTrackTimer();
+            PlaylistManager.gatherMusicInfoRequest();
         }
         return false;
     }
@@ -243,7 +243,7 @@ public class PlayerControlManager {
         } catch (Exception e) {
             //
         } finally {
-            PlaylistManager.gatherTrackTimer();
+            PlaylistManager.gatherMusicInfoRequest();
         }
         return false;
     }
@@ -293,7 +293,7 @@ public class PlayerControlManager {
         } catch (Exception e) {
             //
         } finally {
-            PlaylistManager.gatherTrackTimer();
+            PlaylistManager.gatherMusicInfoRequest();
         }
         return false;
     }
@@ -324,7 +324,7 @@ public class PlayerControlManager {
         } catch (Exception e) {
             //
         } finally {
-            PlaylistManager.gatherTrackTimer();
+            PlaylistManager.gatherMusicInfoRequest();
         }
         return false;
     }

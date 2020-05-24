@@ -73,6 +73,7 @@ public class SoftwareCoUtils {
     // 16 = intellij music time
     public static int pluginId = 16;
     public static String VERSION = null;
+    public static final int SONG_FETCH_INTERVAL_MILLIS = 1000 * 30;
 
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 

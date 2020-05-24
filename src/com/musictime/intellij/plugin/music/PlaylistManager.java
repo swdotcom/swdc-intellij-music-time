@@ -31,6 +31,7 @@ public class PlaylistManager {
     private static boolean gatheringTrack = false;
     private static long endCheckThresholdMillis = 1000 * 19;
     private static Timer endCheckTimer = null;
+    private static long lastIntervalSongCheck = 0;
 
     public static JsonObject getUserPlaylists() {
 
@@ -132,11 +133,24 @@ public class PlaylistManager {
         endCheckTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println("GATHERING MUSIC INFO");
                 gatherMusicInfo();
                 endCheckTimer = null;
             }
         }, timeout);
+    }
+
+    public static void gatherMusicInfoRequest() {
+        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+        long diffSeconds = timesData.now - lastIntervalSongCheck;
+        long intervalSeconds = SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS / 1000;
+        long thresholdSeconds = intervalSeconds - 2;
+        // i.e. if the check seconds is 20, we'll subtract 2 and get 18 seconds
+        // which means it would be at least 2 more seconds until the gather music
+        // check will happen and is allowable to perform this intermediate check
+        if (diffSeconds < thresholdSeconds || diffSeconds > intervalSeconds) {
+            gatherMusicInfo();
+        }
+        // otherwise we'll just wait until the interval call is made
     }
 
     public static void gatherMusicInfo() {
@@ -156,6 +170,8 @@ public class PlaylistManager {
         try {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
             SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack();
+
+            boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
 
             if (resp != null && resp.isOk() && resp.getCode() == 200) {
 
@@ -183,7 +199,7 @@ public class PlaylistManager {
                     }
 
                     boolean hasCurrentTrack = (StringUtils.isNotBlank(MusicControlManager.currentTrackName)) ? true : false;
-                    boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
+
                     boolean initializePrevTrack = (hasCurrentTrack && !hasPrevTrack) ? true : false;
                     boolean longPaused = (timesData.now - PlaylistManager.pauseTriggerTime) > 60 ? true : false;
 
@@ -205,13 +221,13 @@ public class PlaylistManager {
                     if (sendPreviousTrack || initializePrevTrack) {
                         SoftwareCoSessionManager.start = timesData.now;
                         SoftwareCoSessionManager.local_start = timesData.local_now;
-                        PlaylistManager.previousTrackName = MusicControlManager.currentTrackName;
                         PlaylistManager.pauseTriggerTime = 0;
                     }
 
                     // always update the current track data, but after we've checked if
                     // the previous track should be sent, so here is good
                     PlaylistManager.currentTrackData = trackInfo;
+                    PlaylistManager.previousTrackName = MusicControlManager.currentTrackName;
 
                     if (hasCurrentTrack) {
                         if (isPlaying) {
@@ -247,8 +263,17 @@ public class PlaylistManager {
                 SoftwareCoUtils.updatePlayerControls(false);
 
             } else if (resp.getCode() == 204) {
+
+                if (hasPrevTrack && PlaylistManager.currentTrackData != null) {
+                    // process music payload
+                    SoftwareCoSessionManager.processMusicPayload(PlaylistManager.currentTrackData);
+                }
+
                 if (currentDevice != null) {
-                    DeviceManager.getDevices(true);
+                    if (hasPrevTrack) {
+                        DeviceManager.getDevices(true);
+                    }
+                    PlaylistManager.previousTrackName = "";
                     MusicControlManager.currentTrackName = null;
                     SoftwareCoSessionManager.playerState = 0;
                     MusicControlManager.defaultbtn = "play";
