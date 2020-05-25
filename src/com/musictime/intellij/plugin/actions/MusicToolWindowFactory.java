@@ -1,5 +1,6 @@
 package com.musictime.intellij.plugin.actions;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
@@ -21,7 +22,11 @@ public class MusicToolWindowFactory implements ToolWindowFactory {
 
     public static void showWindow() {
         if (musicTimeWindow != null) {
-            musicTimeWindow.show();
+            ApplicationManager.getApplication().invokeLater(new Runnable() {
+                public void run() {
+                    musicTimeWindow.show();
+                }
+            });
         }
     }
 }
