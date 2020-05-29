@@ -1,6 +1,8 @@
-# Music Time
+# Music Time for Spotify
 
-[Music Time](https://www.software.com/music-time) is an IntelliJ plugin that discovers the most productive music to listen to as you code.
+[Music Time for Spotify](https://www.software.com/music-time) is an IntelliJ plugin that discovers the most productive music to listen to as you code.
+
+*Music Time requires a Spotify account. We currently do not support Apple Music, Google Play, or any other players, but may in a future plugin.*
 
 ![Marketplace](https://img.shields.io/jetbrains/plugin/v/14143-music-time.svg)
 ![Installs](https://img.shields.io/jetbrains/plugin/d/14143-music-time)
@@ -23,7 +25,7 @@
 
 -   **Slack integration**: Connect Slack to share songs and playlists in channels in your workspace.
 
-Music Time currently supports Spotify. We will support iTunes and other players in a future release. You can also check out the [cody-music](https://www.npmjs.com/package/cody-music) npm package for more information about how this extension works.
+You can also check out the [cody-music](https://www.npmjs.com/package/cody-music) npm package for more information about how this extension works.
 
 ## Getting started
 
