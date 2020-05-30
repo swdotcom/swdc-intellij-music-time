@@ -6,6 +6,7 @@ import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 
@@ -140,6 +141,13 @@ public class MusicController {
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
             resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
+            if(!resp.getJsonObj().isJsonNull()) {
+                JsonObject data = resp.getJsonObj();
+                if (MusicControlManager.requiresSpotifyAccessTokenRefresh(data)) {
+                    Apis.refreshAccessToken();
+                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
+                }
+            }
         }
 
         if (resp == null) {

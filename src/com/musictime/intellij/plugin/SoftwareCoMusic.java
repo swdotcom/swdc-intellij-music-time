@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
+import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
@@ -223,6 +224,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
         initiateGatherMusicInfo();
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
+
+        MusicToolWindowFactory.showWindow();
     }
 
     public static void showReconnectPrompt() {

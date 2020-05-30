@@ -25,10 +25,8 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Logger;
 
 public class MusicToolWindow {
@@ -778,7 +776,7 @@ public class MusicToolWindow {
 
             //*********************************************************************************************************************
             // Add User Playlists
-            List<String> playlistIds = PlayListCommands.userPlaylistIds;
+            List<String> playlistIds = new ArrayList<>(PlayListCommands.userPlaylistIds);
             if (playlistIds.size() > 0) {
                 //*****************************************************************************************************************************
                 JSeparator userPlaylistSeparator = new JSeparator();

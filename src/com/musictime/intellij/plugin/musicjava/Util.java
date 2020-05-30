@@ -4,11 +4,14 @@ import com.google.gson.JsonObject;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
-import com.musictime.intellij.plugin.SoftwareResponse;
-import org.apache.http.client.methods.HttpGet;
+import com.musictime.intellij.plugin.SoftwareCoMusic;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -74,13 +77,14 @@ public class Util {
         if(isWindows()) {
             String spotify = getUserHomeDir() + "\\AppData\\Roaming\\Spotify\\Spotify.exe";
             File file = new File(spotify);
-            if(file.exists()) {
+            if (file.exists()) {
                 result = "true";
             }
-//            String[] args = {"powershell -command \"Get-ItemProperty HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Format-Table –AutoSize\""};
-//            result = runCmd(args, null);
         } else if(isMac()) {
             String[] args = {"osascript", "-e", "exists application \"Spotify\""};
+            result = runCommand(args, null);
+        } else if (isLinux()) {
+            String[] args = {"which", "spotify"};
             result = runCommand(args, null);
         }
         return (result != null) ? Boolean.valueOf(result) : false;
@@ -109,7 +113,16 @@ public class Util {
         } else if(isWindows()) {
             String home = getUserHomeDir();
             String[] args = {home + "\\AppData\\Roaming\\Spotify\\Spotify.exe"};
-            return runCmd(args, null);
+            return runCommand(args, null);
+        } else if (isLinux()) {
+            // String result = runCmd(new String[]{"nohup", "/snap/bin/spotify", "2>&1"});
+            ApplicationManager.getApplication().invokeLater(new Runnable() {
+                public void run() {
+                    String infoMsg = "Launching the Spotify desktop is currently not supported on linux.";
+                    // ask to download the PM
+                    Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
+                }
+            });
         }
         return null;
     }
@@ -231,20 +244,60 @@ public class Util {
         }
     }
 
-    public static String runCmd(String[] command, String dir) {
+    public static String RunLinuxCommand(String cmd) {
+
+        String linuxCommandResult = "";
+        try {
+            Process p = Runtime.getRuntime().exec(cmd);
+
+            BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+            while ((linuxCommandResult = stdInput.readLine()) != null) {
+                return linuxCommandResult;
+            }
+            while ((linuxCommandResult = stdError.readLine()) != null) {
+                return null;
+            }
+        } catch (Exception e) {
+            System.out.println("Error running command '" + cmd + "': " + e.getMessage());
+            return null;
+        }
+
+        return linuxCommandResult;
+    }
+
+    public static String runCmd(String[] args) {
+        Runtime run = Runtime.getRuntime();
+        Process p = null;
+        String command = String.join(" ", args);
         try
         {
             // Running the above command
-            Runtime run  = Runtime.getRuntime();
-            Process process = run.exec(command);
+            p = run.exec(args);
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            StringBuilder output = new StringBuilder();
 
-            return baos.toString().trim();
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(p.getInputStream()));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line + "\n");
+            }
+            if (StringUtils.isBlank(line)) {
+                line = "ok";
+            }
+            return line;
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error running command '" + command + "': " + e.getMessage());
             return null;
+        } finally {
+            if (p != null) {
+                p.destroy();
+            }
         }
     }
 
