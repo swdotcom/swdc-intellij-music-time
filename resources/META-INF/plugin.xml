@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><idea-plugin>
   <id>com.musictime.intellij.plugin</id>
 
-  <name>Music Time</name>
+  <name>Music Time for Spotify</name>
   <version>1.9.6</version>
 
-  <vendor email="cody@software.com" url="https://software.com">Software</vendor>
+  <vendor email="cody@software.com" url="https://www.software.com">Software</vendor>
 
     <description><![CDATA[
 <html><body>
-<h1 id="music-time">Music Time</h1>
+<h1 id="music-time">Music Time for Spotify</h1>
 <p><a href="https://www.software.com/music-time">Music Time</a> is an IntelliJ plugin that discovers the most productive music to listen to as you code.</p>
+<p><i>Music Time requires a Spotify account. We currently do not support Apple Music, Google Play, or any other players, but may in a future plugin.</i></p>
 <p><img src="https://img.shields.io/jetbrains/plugin/v/14143-music-time.svg" alt="Marketplace">
 <img src="https://img.shields.io/jetbrains/plugin/d/14143-music-time" alt="Installs"></p>
 <h2 id="features">Features</h2>
