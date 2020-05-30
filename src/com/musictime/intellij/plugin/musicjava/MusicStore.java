@@ -1,5 +1,7 @@
 package com.musictime.intellij.plugin.musicjava;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,6 +59,14 @@ public class MusicStore {
 
     public static void setSpotifyAccountType(String spotifyAccountType) {
         MusicStore.spotifyAccountType = spotifyAccountType;
+    }
+
+    public static boolean isSpotifyPremiumUser() {
+        return StringUtils.isNotBlank(spotifyAccountType) && spotifyAccountType.toLowerCase().equals("premium") ? true : false;
+    }
+
+    public static boolean isSpotifyNonPremiumUser() {
+        return StringUtils.isNotBlank(spotifyAccountType) && !spotifyAccountType.toLowerCase().equals("premium") ? true : false;
     }
 
     public static String getSpotifyUserId() {

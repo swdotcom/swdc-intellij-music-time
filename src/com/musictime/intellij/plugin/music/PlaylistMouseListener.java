@@ -67,7 +67,7 @@ public class PlaylistMouseListener extends MouseAdapter {
                         if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                             JsonObject error = response.getJsonObj().getAsJsonObject("error");
                             if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
-                                SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString() + "<br>only desktop app allowed, close web player", new Color(120, 23, 50, 100));
+                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track.<br>" + error.get("message").getAsString(), new Color(120, 23, 50, 100));
                             else if(error.get("reason").getAsString().equals("UNKNOWN"))
                                 SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
                         }
@@ -93,7 +93,7 @@ public class PlaylistMouseListener extends MouseAdapter {
                             if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
                                 JsonObject error = response.getJsonObj().getAsJsonObject("error");
                                 if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
-                                    SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString() + "<br>only desktop app allowed, close web player", new Color(120, 23, 50, 100));
+                                    SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track.<br>" + error.get("message").getAsString(), new Color(120, 23, 50, 100));
                                 else if(error.get("reason").getAsString().equals("UNKNOWN"))
                                     SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
                             }

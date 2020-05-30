@@ -259,13 +259,6 @@ public class MusicControlManager {
                             playerType = playerDescription;
                             return true;
                         }
-                    } else if(userStatus != null && !userStatus.equals("premium")) {
-                        if (deviceName.contains("Web Player")) {
-                            SoftwareCoUtils.showMsgPrompt("Unable to switch on " + deviceName + "<br> only desktop app allowed for non-premium.", new Color(120, 23, 50, 100));
-                        } else {
-                            SoftwareCoUtils.showMsgPrompt("Please close your web player before switching<br> to the desktop player", new Color(120, 23, 50, 100));
-                        }
-                        return false;
                     }
 
                 } else {
@@ -273,7 +266,7 @@ public class MusicControlManager {
                 }
             } else {
                 if (deviceInfos.size() == 0) {
-                    if(userStatus != null && userStatus.equals("premium")) {
+                    if(userStatus != null) {
                         String infoMsg = "Music Time requires a running Spotify player. \n" +
                                 "Choose a player to launch.";
                         String[] options = new String[] {"Web player", "Desktop player"};

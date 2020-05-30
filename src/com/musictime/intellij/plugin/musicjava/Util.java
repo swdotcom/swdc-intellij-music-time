@@ -107,22 +107,24 @@ public class Util {
     }
 
     public static String startPlayer(String playerName) {
-        if(isMac()) {
+        if (isMac()) {
             String[] args = {"open", "-a", playerName + ".app"};
             return runCommand(args, null);
-        } else if(isWindows()) {
+        } else if (isWindows()) {
             String home = getUserHomeDir();
             String[] args = {home + "\\AppData\\Roaming\\Spotify\\Spotify.exe"};
             return runCommand(args, null);
         } else if (isLinux()) {
-            // String result = runCmd(new String[]{"nohup", "/snap/bin/spotify", "2>&1"});
-            ApplicationManager.getApplication().invokeLater(new Runnable() {
-                public void run() {
-                    String infoMsg = "Launching the Spotify desktop is currently not supported on linux.";
-                    // ask to download the PM
-                    Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
-                }
-            });
+            String result = runCmd("nohup /snap/bin/spotify 2>&1");
+            if (result == null) {
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                    public void run() {
+                        String infoMsg = "Unable to launch the Spotify desktop.";
+                        //String infoMsg = "Launching the Spotify desktop is currently not supported on linux.";
+                        Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
+                    }
+                });
+            }
         }
         return null;
     }
@@ -244,9 +246,8 @@ public class Util {
         }
     }
 
-    public static String RunLinuxCommand(String cmd) {
-
-        String linuxCommandResult = "";
+    public static String runCmd(String cmd) {
+        String result = "";
         try {
             Process p = Runtime.getRuntime().exec(cmd);
 
@@ -254,10 +255,10 @@ public class Util {
 
             BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 
-            while ((linuxCommandResult = stdInput.readLine()) != null) {
-                return linuxCommandResult;
+            while ((result = stdInput.readLine()) != null) {
+                return result;
             }
-            while ((linuxCommandResult = stdError.readLine()) != null) {
+            while ((result = stdError.readLine()) != null) {
                 return null;
             }
         } catch (Exception e) {
@@ -265,40 +266,7 @@ public class Util {
             return null;
         }
 
-        return linuxCommandResult;
-    }
-
-    public static String runCmd(String[] args) {
-        Runtime run = Runtime.getRuntime();
-        Process p = null;
-        String command = String.join(" ", args);
-        try
-        {
-            // Running the above command
-            p = run.exec(args);
-
-            StringBuilder output = new StringBuilder();
-
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(p.getInputStream()));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line + "\n");
-            }
-            if (StringUtils.isBlank(line)) {
-                line = "ok";
-            }
-            return line;
-
-        } catch (IOException e) {
-            System.out.println("Error running command '" + command + "': " + e.getMessage());
-            return null;
-        } finally {
-            if (p != null) {
-                p.destroy();
-            }
-        }
+        return result;
     }
 
     private static long copyLarge(InputStream input, OutputStream output, byte[] buffer) throws IOException {

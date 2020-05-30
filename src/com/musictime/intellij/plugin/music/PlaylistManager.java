@@ -32,6 +32,7 @@ public class PlaylistManager {
     private static long endCheckThresholdMillis = 1000 * 19;
     private static Timer endCheckTimer = null;
     private static long lastIntervalSongCheck = 0;
+    private static int deviceNullCounter = 0;
 
     public static JsonObject getUserPlaylists() {
 
@@ -163,7 +164,15 @@ public class PlaylistManager {
         // device and no previously playing track
         DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         if (currentDevice == null && MusicControlManager.currentTrackName == null) {
-            return;
+            if (deviceNullCounter % 2 == 0) {
+                // check devices
+                DeviceManager.refreshDevices();
+                deviceNullCounter = 0;
+            }
+            deviceNullCounter++;
+            if (currentDevice == null && MusicControlManager.currentTrackName == null) {
+                return;
+            }
         }
 
         gatheringTrack = true;
@@ -271,7 +280,7 @@ public class PlaylistManager {
 
                 if (currentDevice != null) {
                     if (hasPrevTrack) {
-                        DeviceManager.getDevices(true);
+                        DeviceManager.refreshDevices();
                     }
                     PlaylistManager.previousTrackName = "";
                     MusicControlManager.currentTrackName = null;
@@ -291,6 +300,7 @@ public class PlaylistManager {
             //
         } finally {
             gatheringTrack = false;
+            SoftwareCoUtils.setStatusLineMessage();
         }
     }
 

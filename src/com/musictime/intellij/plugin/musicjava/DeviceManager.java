@@ -18,7 +18,7 @@ public class DeviceManager {
         devices = new ArrayList<>();
     }
 
-    public static List<DeviceInfo> getDevices(boolean forceRefresh) {
+    public static List<DeviceInfo> refreshDevices() {
         populateDevices();
         return devices;
     }

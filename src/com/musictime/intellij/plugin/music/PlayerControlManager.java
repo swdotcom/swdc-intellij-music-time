@@ -31,7 +31,7 @@ public class PlayerControlManager {
                 Apis.getUserProfile();
             }
 
-            boolean hasPremiumUserStatus = MusicStore.getSpotifyAccountType() != null && MusicStore.getSpotifyAccountType().equals("premium") ? true : false;
+            boolean hasPremiumUserStatus = MusicStore.isSpotifyPremiumUser();
             boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
             boolean isNonNamedPlaylist = (playlistId.equals(PlayListCommands.recommendedPlaylistId) || playlistId.equals(PlayListCommands.likedPlaylistId)) ? true : false;
 
@@ -127,7 +127,7 @@ public class PlayerControlManager {
                         SoftwareCoUtils.updatePlayerControls(false);
                         return true;
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        DeviceManager.getDevices(true);
+                        DeviceManager.refreshDevices();
                         if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             playSpotifyDevices();
@@ -169,7 +169,7 @@ public class PlayerControlManager {
                         SoftwareCoUtils.updatePlayerControls(false);
                         return true;
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        DeviceManager.getDevices(true);
+                        DeviceManager.refreshDevices();
                         if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             pauseSpotifyDevices();
@@ -222,7 +222,7 @@ public class PlayerControlManager {
                         playSpotifyPlaylist(null, null, null);
                         previousSpotifyTrack();
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        DeviceManager.getDevices(true);
+                        DeviceManager.refreshDevices();
                         if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             previousSpotifyTrack();
@@ -272,7 +272,7 @@ public class PlayerControlManager {
                         playSpotifyPlaylist(null, null, null);
                         nextSpotifyTrack();
                     } else if (MusicControlManager.playerCounter < 1 && resp.getCode() == 404) {
-                        DeviceManager.getDevices(true);
+                        DeviceManager.refreshDevices();
                         if (DeviceManager.getDevices().size() > 0) {
                             MusicControlManager.playerCounter++;
                             nextSpotifyTrack();
