@@ -5,16 +5,16 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
+import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
+import com.musictime.intellij.plugin.music.PlaylistManager;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class Util {
@@ -142,16 +142,23 @@ public class Util {
                 }
             }
         } else if (isLinux()) {
-            result = runCmd("nohup /snap/bin/spotify 2>&1");
-            if (!isCommandResultOk(result)) {
-                ApplicationManager.getApplication().invokeLater(new Runnable() {
-                    public void run() {
-                        String infoMsg = "Unable to launch the Spotify desktop.";
-                        //String infoMsg = "Launching the Spotify desktop is currently not supported on linux.";
-                        Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
+            new Thread(() -> {
+                try {
+                    String cmdResult = runCmdWithArgs(new String[]{"/bin/sh", "-c", "nohup /snap/bin/spotify > /tmp/spotify.out 2>&1 &"});
+                    if (!isCommandResultOk(cmdResult)) {
+                        // try it with spotify
+                        cmdResult = runCmdWithArgs(new String[]{"/bin/sh", "-c", "nohup spotify > /tmp/spotify.out 2>&1 &"});
+                        if (!isCommandResultOk(cmdResult)) {
+                            cmdResult = runCmdWithArgs(new String[]{"/bin/sh", "-c", "nohup /usr/bin/spotify > /tmp/spotify.out 2>&1 &"});
+                            if (!isCommandResultOk(cmdResult)) {
+                                cmdResult = runCmdWithArgs(new String[]{"/bin/sh", "-c", "flatpak run com.spotify.Client > /tmp/spotify.out 2>&1 &"});
+                            }
+                        }
                     }
-                });
-            }
+                } catch (Exception e) {
+                    System.err.println(e);
+                }
+            }).start();
         }
         return (!isCommandResultOk(result)) ? false : true;
     }
@@ -286,6 +293,28 @@ public class Util {
         String result = "";
         try {
             Process p = Runtime.getRuntime().exec(cmd);
+
+            BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
+            while ((result = stdInput.readLine()) != null) {
+                return result;
+            }
+            while ((result = stdError.readLine()) != null) {
+                return "ERROR: " + result;
+            }
+        } catch (Exception e) {
+            return "ERROR: " + e.getMessage();
+        }
+
+        return result;
+    }
+
+    public static String runCmdWithArgs(String[] args) {
+        String result = "";
+        try {
+            Process p = Runtime.getRuntime().exec(args);
 
             BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 

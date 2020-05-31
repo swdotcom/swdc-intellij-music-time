@@ -18,10 +18,9 @@ import org.apache.velocity.texen.util.FileUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import java.util.Timer;
 import java.util.logging.Logger;
 
 public class MusicControlManager {
@@ -277,7 +276,17 @@ public class MusicControlManager {
     public static void launchDesktopPlayer() {
         Util.startPlayer();
 
-        lazilyCheckAvailablePlayer(3);
+        if (SoftwareCoUtils.isLinux()) {
+            // try in 5 seconds
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    lazilyCheckAvailablePlayer(6);
+                }
+            }, 5000);
+        } else {
+            lazilyCheckAvailablePlayer(3);
+        }
     }
 
     // Lazily update devices
@@ -300,8 +309,6 @@ public class MusicControlManager {
                     System.err.println(e);
                 }
             }).start();
-        } else if (!DeviceManager.hasDesktopOrWebDevice()) {
-            SoftwareCoUtils.showMsgPrompt("Unable to launch Spotify player", new Color(120, 23, 50, 100));
         }
     }
 
