@@ -8,8 +8,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
@@ -28,8 +26,6 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -39,7 +35,6 @@ public class SoftwareCoSessionManager {
     public static final Logger log = Logger.getLogger("SoftwareCoSessionManager");
 
     private static JsonArray keystrokeData = new JsonArray();
-    public static int playerState = 0; // 0 = inactive & 1 = active
 
     public static long start = 0L;
     public static long local_start = 0L;
@@ -132,25 +127,6 @@ public class SoftwareCoSessionManager {
             } catch (Exception e) {
                 log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
             }
-        }
-
-        // Storing kmp data in musicData.json
-        if(playerState == 1) {
-            String dataStoreFile = FileManager.getMusicDataFile(true);
-            File f = new File(dataStoreFile);
-            try {
-                log.info("Music Time: Storing kpm metrics in musicData.json: " + payload);
-                Writer output;
-                output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
-                output.append(payload);
-                output.close();
-            } catch (Exception e) {
-                log.warning("Music Time: Error appending to the Software data store file, error: " + e.getMessage());
-            }
-        } else if(playerState == 0) {
-            String dataStoreFile = FileManager.getMusicDataFile(false);
-            deleteFile(dataStoreFile);
-            keystrokeData = new JsonArray();
         }
     }
 
@@ -632,50 +608,6 @@ public class SoftwareCoSessionManager {
         }
     }
 
-    public static String getFileContent(String file) {
-        String content = null;
-
-        File f = new File(file);
-        if (f.exists()) {
-            try {
-                byte[] encoded = Files.readAllBytes(Paths.get(f.getPath()));
-                content = new String(encoded, Charset.forName("UTF-8"));
-            } catch (Exception e) {
-                log.warning("Music Time: Error trying to read and parse: " + e.getMessage());
-            }
-        }
-        return content;
-    }
-
-    public static void saveFileContent(String file, String content) {
-        File f = new File(file);
-
-        Writer writer = null;
-        try {
-            writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(f), Charset.forName("UTF-8")));
-            writer.write(content);
-        } catch (IOException ex) {
-            // Report
-        } finally {
-            try {writer.close();} catch (Exception ex) {/*ignore*/}
-        }
-    }
-
-    private Project getCurrentProject() {
-        Project project = null;
-        Editor[] editors = EditorFactory.getInstance().getAllEditors();
-        if (editors != null && editors.length > 0) {
-            project = editors[0].getProject();
-        }
-        return project;
-    }
-
-    public static String generateToken() {
-        String uuid = UUID.randomUUID().toString();
-        return uuid.replace("-", "");
-    }
-
     public void statusBarClickHandler(MouseEvent mouseEvent, String id) {
         String headphoneiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_headphoneicon";
         String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
@@ -693,19 +625,15 @@ public class SoftwareCoSessionManager {
         } else if(id.equals(connectspotifyId)) {
             MusicControlManager.connectSpotify();
         } else if(id.equals(playiconId)) {
-            MusicControlManager.playerCounter = 0;
-            PlayerControlManager.playSpotifyDevices();
+            PlayerControlManager.playIt();
         } else if(id.equals(pauseiconId)) {
-            MusicControlManager.playerCounter = 0;
-            PlayerControlManager.pauseSpotifyDevices();
+            PlayerControlManager.pauseIt();
         } else if(id.equals(preiconId)) {
-            MusicControlManager.playerCounter = 0;
-            PlayerControlManager.previousSpotifyTrack();
+            PlayerControlManager.previousIt();
         } else if(id.equals(nexticonId)) {
-            MusicControlManager.playerCounter = 0;
-            PlayerControlManager.nextSpotifyTrack();
+            PlayerControlManager.nextIt();
         } else if(id.equals(songtrackId)) {
-            MusicControlManager.launchPlayer(true, false);
+            MusicControlManager.launchPlayer();
         } else if(id.equals(unlikeiconId)) {
             PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
             PlayListCommands.updatePlaylists(3, null);

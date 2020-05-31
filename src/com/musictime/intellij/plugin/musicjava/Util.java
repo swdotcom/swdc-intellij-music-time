@@ -5,6 +5,8 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
+import com.musictime.intellij.plugin.music.MusicControlManager;
+import com.musictime.intellij.plugin.music.PlayListCommands;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -106,17 +108,42 @@ public class Util {
         return runCommand(args, null);
     }
 
-    public static String startPlayer(String playerName) {
+    private static boolean isCommandResultOk(String result) {
+        if (result != null && result.indexOf("ERROR:") == 0) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean startPlayer() {
+        String result = null;
         if (isMac()) {
-            String[] args = {"open", "-a", playerName + ".app"};
-            return runCommand(args, null);
+            result = runCmd("open -a Spotify.app");
+            if (!isCommandResultOk(result)) {
+                result = runCmd("open -a Spotify");
+            }
         } else if (isWindows()) {
             String home = getUserHomeDir();
-            String[] args = {home + "\\AppData\\Roaming\\Spotify\\Spotify.exe"};
-            return runCommand(args, null);
+            result = runCmd(home + "\\AppData\\Roaming\\Spotify\\Spotify.exe");
+            if (!isCommandResultOk(result)) {
+                // try with a different command
+                result = runCmd("cmd /c spotify.exe");
+                if (!isCommandResultOk(result)) {
+                    result = runCmd("START SPOTIFY");
+                    if (!isCommandResultOk(result)) {
+                        result = runCmd("spotify");
+                        if (!isCommandResultOk(result)) {
+                            result = runCmd("spotify.exe");
+                            if (!isCommandResultOk(result)) {
+                                result = runCmd("%APPDATA%\\Spotify\\Spotify.exe");
+                            }
+                        }
+                    }
+                }
+            }
         } else if (isLinux()) {
-            String result = runCmd("nohup /snap/bin/spotify 2>&1");
-            if (result == null) {
+            result = runCmd("nohup /snap/bin/spotify 2>&1");
+            if (!isCommandResultOk(result)) {
                 ApplicationManager.getApplication().invokeLater(new Runnable() {
                     public void run() {
                         String infoMsg = "Unable to launch the Spotify desktop.";
@@ -126,7 +153,7 @@ public class Util {
                 });
             }
         }
-        return null;
+        return (!isCommandResultOk(result)) ? false : true;
     }
 
     public static String playPlayer(String playerName) {
@@ -164,14 +191,23 @@ public class Util {
     }
 
     public static String playSongInPlaylist(String playerName, String playlist, String track) {
+
+        if (playlist == null ||
+                (playlist.equals(PlayListCommands.likedPlaylistId) ||
+                playlist.equals(PlayListCommands.recommendedPlaylistId))) {
+            return playTrack(playerName, track);
+        }
+
         if(!playlist.contains("playlist")) {
             playlist = "spotify:playlist:" + playlist;
         }
         if(!track.contains("track")) {
             track = "spotify:track:" + track;
         }
+        // 'tell application "{0}" to play track "{1}" {2} "{3}"'
         String[] args = { "osascript", "-e", "tell application \""+ playerName + "\" to play track \""+ track +"\" in context \""+ playlist +"\"" };
-        return runCommand(args, null);
+        String result = runCommand(args, null);
+        return result;
     }
 
     public static String playTrack(String playerName, String track) {
@@ -242,7 +278,7 @@ public class Util {
 
         } catch (Exception e) {
             Thread.currentThread().interrupt();
-            return null;
+            return "ERROR: " + e.getMessage();
         }
     }
 
@@ -259,11 +295,10 @@ public class Util {
                 return result;
             }
             while ((result = stdError.readLine()) != null) {
-                return null;
+                return "ERROR: " + result;
             }
         } catch (Exception e) {
-            System.out.println("Error running command '" + cmd + "': " + e.getMessage());
-            return null;
+            return "ERROR: " + e.getMessage();
         }
 
         return result;

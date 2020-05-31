@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?><idea-plugin>
   <id>com.musictime.intellij.plugin</id>
 
-  <name>Music Time for Spotify</name>
+  <name>Music Time</name>
   <version>1.9.6</version>
 
   <vendor email="cody@software.com" url="https://www.software.com">Software</vendor>

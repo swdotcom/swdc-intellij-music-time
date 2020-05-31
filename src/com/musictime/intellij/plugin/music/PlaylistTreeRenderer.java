@@ -33,47 +33,16 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
                 expanded, leaf, row,
                 true);
 
-        PlaylistTreeNode node =
-                (PlaylistTreeNode)value;
+        PlaylistTreeNode node = (PlaylistTreeNode)value;
         String id = node.getId();
         setToolTipText(node.getToolTip() + " (Right click for more options)");
-
-        if (leaf) {
-            if(isCurrentTrack(value)) {
-                if (!MusicControlManager.defaultbtn.equals("play")) {
-                    setIcon(pauseIcon);
-                } else {
-                    setIcon(playIcon);
-                }
-            } else if(row >= 1) {
-                if(sel) {
-                    if(id == null)
-                        setIcon(emptyIcon);
-                    else
-                        setIcon(playIcon);
-                } else {
-                    if(id == null)
-                        setIcon(emptyIcon);
-                    else
-                        setIcon(musicIcon);
-                }
-            } else {
-                setIcon(playlistIcon);
-            }
-        } else {
-            if(isCurrentPlaylist(value)) {
-                if (!MusicControlManager.defaultbtn.equals("play")) {
-                    setIcon(pauseIcon);
-                } else {
-                    setIcon(playIcon);
-                }
-            } else {
-                if(sel) {
-                    setIcon(playIcon);
-                } else {
-                    setIcon(playlistIcon);
-                }
-            }
+        
+        if (node.isLeaf() && node.getParent() != null) {
+            // it's a child node
+            setIcon(musicIcon);
+        } else if (!node.isLeaf() && node.getId() != null && node.getChildCount() > 0) {
+            // it's a root node
+            setIcon(playlistIcon);
         }
 
         return this;

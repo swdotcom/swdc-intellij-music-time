@@ -5,7 +5,9 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.models.DeviceInfo;
+import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
+import com.musictime.intellij.plugin.musicjava.MusicController;
 
 import javax.swing.*;
 import java.awt.*;
@@ -29,79 +31,50 @@ public class PlaylistMouseListener extends MouseAdapter {
         /* if nothing is selected */
         if (node == null || node.getId() == null) return;
 
-        if(e.getButton() == 3) {
-            if(node.getId().length() > 5) {
+        boolean parentExpanded = true;
+        if (node.isLeaf() && node.getParent() != null) {
+            // it's a child node
+            PlaylistTreeNode parent = (PlaylistTreeNode) node.getParent();
+            MusicControlManager.currentPlaylistId = parent.getId();
+            MusicControlManager.currentTrackId = node.getId();
+            MusicControlManager.currentTrackName = node.getName();
+        } else if (!node.isLeaf() && node.getId() != null && node.getChildCount() > 0) {
+            // it's a root node
+            MusicControlManager.currentPlaylistId = node.getId();
+            MusicControlManager.currentTrackId = ((PlaylistTreeNode)node.getChildAt(0)).getId();
+            if (MusicControlManager.currentTrackId == null) {
+                // still hasn't expanded
+                parentExpanded = false;
+            }
+        }
+
+        if (!parentExpanded) {
+            // don't start playing the playlist unless they've expanded it
+            return;
+        }
+
+        if (e.getButton() == 3) { // right-click button
+            if(MusicControlManager.currentPlaylistId != null) {
                 JPopupMenu popupMenu;
                 if (node.isLeaf()) {
-                    PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-                    popupMenu = PopupMenuBuilder.buildSongPopupMenu(node.getId(), root.getId());
+                    popupMenu = PopupMenuBuilder.buildSongPopupMenu(MusicControlManager.currentTrackId, MusicControlManager.currentPlaylistId);
                 } else {
-                    popupMenu = PopupMenuBuilder.buildPlaylistPopupMenu(node.getId());
+                    popupMenu = PopupMenuBuilder.buildPlaylistPopupMenu(MusicControlManager.currentPlaylistId);
                 }
 
                 popupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
-        } else if(e.getButton() == 1) {
-
+        } else if(e.getButton() == 1) { // track play click
             DeviceManager.getDevices();
             DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
 
-
-            /* retrieve the node that was selected */
-            if (node.isLeaf()) {
-                PlaylistTreeNode root = (PlaylistTreeNode) node.getRoot();
-                if (root.getId().equals(MusicControlManager.currentPlaylistId)
-                        && node.getId().equals(MusicControlManager.currentTrackId) && MusicControlManager.currentTrackName != null) {
-                    if (MusicControlManager.defaultbtn.equals("pause"))
-                        PlayerControlManager.pauseSpotifyDevices();
-                    else if (MusicControlManager.defaultbtn.equals("play"))
-                        PlayerControlManager.playSpotifyDevices();
-                } else {
-                    if (MusicControlManager.currentTrackName == null && currentDevice == null) {
-                        boolean launchState = MusicControlManager.launchPlayer(false, true);
-                        if (launchState) {
-                            MusicToolWindow.lazilyCheckPlayer(5, root.getId(), node.getId(), node.getName());
-                        }
-                    } else {
-                        SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(root.getId(), node.getId(), node.getName());
-                        if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
-                            JsonObject error = response.getJsonObj().getAsJsonObject("error");
-                            if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
-                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track.<br>" + error.get("message").getAsString(), new Color(120, 23, 50, 100));
-                            else if(error.get("reason").getAsString().equals("UNKNOWN"))
-                                SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
-                        }
-                    }
-                }
+            if (currentDevice == null) {
+                // first we need to launch a device in order to play anything
+                MusicControlManager.launchPlayer();
+                MusicToolWindow.lazilyCheckDeviceLaunch(5, true);
             } else {
-                if (node.getId().equals(MusicControlManager.currentPlaylistId) && MusicControlManager.currentTrackName != null) {
-                    if (MusicControlManager.defaultbtn.equals("pause"))
-                        PlayerControlManager.pauseSpotifyDevices();
-                    else if (MusicControlManager.defaultbtn.equals("play"))
-                        PlayerControlManager.playSpotifyDevices();
-                } else {
-                    PlaylistTreeNode child = (PlaylistTreeNode) node.getFirstChild();
-
-                    if (child.getId() != null) {
-                        if (MusicControlManager.currentTrackName == null && currentDevice == null) {
-                            boolean launchState = MusicControlManager.launchPlayer(false, true);
-                            if (launchState) {
-                                MusicToolWindow.lazilyCheckPlayer(5, node.getId(), child.getId(), child.getName());
-                            }
-                        } else {
-                            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(node.getId(), child.getId(), child.getName());
-                            if(response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
-                                JsonObject error = response.getJsonObj().getAsJsonObject("error");
-                                if(error.get("reason").getAsString().equals("PREMIUM_REQUIRED"))
-                                    SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track.<br>" + error.get("message").getAsString(), new Color(120, 23, 50, 100));
-                                else if(error.get("reason").getAsString().equals("UNKNOWN"))
-                                    SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
-                            }
-                        }
-                    } else {
-                        //SoftwareCoUtils.showMsgPrompt("Expand Playlist to load tracks");
-                    }
-                }
+                // play it
+                PlayerControlManager.playSpotifyPlaylist();
             }
         }
     }

@@ -433,33 +433,34 @@ public class SoftwareCoUtils {
                         }
 
                         boolean isPremiumUser = MusicStore.isSpotifyPremiumUser();
+                        boolean isMacUser = SoftwareCoUtils.isMac();
 
                         if (deviceInfo != null && connectLabel == null) {
 
-                            if(!PlaylistManager.skipPrevious && isPremiumUser) {
+                            if(isPremiumUser || isMacUser) {
+
                                 SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
                                         preIcon, "previous", preiconId);
                                 statusBar.addWidget(preIconWidget, preiconId);
                                 statusBar.updateWidget(preiconId);
-                            }
 
-                            if (!MusicControlManager.defaultbtn.equals("play") && isPremiumUser) {
-                                SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
-                                        pauseIcon, "pause", pauseiconId);
-                                statusBar.addWidget(pauseIconWidget, pauseiconId);
-                                statusBar.updateWidget(pauseiconId);
-                            } else if (isPremiumUser) {
-                                SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
-                                        playIcon, "play", playiconId);
-                                statusBar.addWidget(playIconWidget, playiconId);
-                                statusBar.updateWidget(playiconId);
-                            }
+                                if (MusicControlManager.currentTrackPlaying) {
+                                    SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
+                                            pauseIcon, "pause", pauseiconId);
+                                    statusBar.addWidget(pauseIconWidget, pauseiconId);
+                                    statusBar.updateWidget(pauseiconId);
+                                } else {
+                                    SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
+                                            playIcon, "play", playiconId);
+                                    statusBar.addWidget(playIconWidget, playiconId);
+                                    statusBar.updateWidget(playiconId);
+                                }
 
-                            if (isPremiumUser) {
                                 SoftwareCoStatusBarIconWidget nextIconWidget = buildStatusBarIconWidget(
                                         nextIcon, "next", nexticonId);
                                 statusBar.addWidget(nextIconWidget, nexticonId);
                                 statusBar.updateWidget(nexticonId);
+
                             }
                         }
 

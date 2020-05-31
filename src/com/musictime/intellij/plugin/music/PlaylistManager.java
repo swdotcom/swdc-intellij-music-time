@@ -24,15 +24,14 @@ public class PlaylistManager {
     public static final Logger LOG = Logger.getLogger("PlaylistManager");
     public static String previousTrackName = "";
     public static JsonObject currentTrackData = null;
-    public static boolean skipPrevious = false;
 
-    public static boolean pauseTrigger = false;
     public static long pauseTriggerTime = 0;
     private static boolean gatheringTrack = false;
     private static long endCheckThresholdMillis = 1000 * 19;
     private static Timer endCheckTimer = null;
     private static long lastIntervalSongCheck = 0;
     private static int deviceNullCounter = 0;
+    private static long lastSongCheck = 0;
 
     public static JsonObject getUserPlaylists() {
 
@@ -101,15 +100,6 @@ public class PlaylistManager {
         return new JsonObject();
     }
 
-    public static void gatherTrackTimer() {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                gatherMusicInfo();
-            }
-        }, 1000);
-    }
-
     public static void trackEndCheck() {
         // PlaylistManager.currentTrackData
         // get progress_ms from the top level track data and duration_ms from the track data "item"
@@ -134,7 +124,7 @@ public class PlaylistManager {
         endCheckTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                gatherMusicInfo();
+                gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
                 endCheckTimer = null;
             }
         }, timeout);
@@ -149,12 +139,18 @@ public class PlaylistManager {
         // which means it would be at least 2 more seconds until the gather music
         // check will happen and is allowable to perform this intermediate check
         if (diffSeconds < thresholdSeconds || diffSeconds > intervalSeconds) {
-            gatherMusicInfo();
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    gatherMusicInfo(false /*updateIntervalSongCheckTime*/);
+                    endCheckTimer = null;
+                }
+            }, 500);
         }
         // otherwise we'll just wait until the interval call is made
     }
 
-    public static void gatherMusicInfo() {
+    public static void gatherMusicInfo(boolean updateIntervalSongCheckTime) {
 
         if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
             return;
@@ -178,7 +174,21 @@ public class PlaylistManager {
         gatheringTrack = true;
         try {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+
+            long diff = timesData.now - lastSongCheck;
+            if (diff > 0 && diff < 1) {
+                // it's getting called too quickly, bail out
+                return;
+            }
+
             SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack();
+
+            // set the last time we checked
+            if (updateIntervalSongCheckTime) {
+                lastIntervalSongCheck = timesData.now;
+            }
+            // this one is always set
+            lastSongCheck = timesData.now;
 
             boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
 
@@ -187,11 +197,11 @@ public class PlaylistManager {
                 JsonObject trackInfo = resp.getJsonObj();
                 if (trackInfo != null && trackInfo.has("item") && !trackInfo.get("item").isJsonNull()) {
                     JsonObject track = trackInfo.get("item").getAsJsonObject();
-                    boolean isPlaying = trackInfo.get("is_playing").getAsBoolean();
+                    MusicControlManager.currentTrackPlaying = trackInfo.get("is_playing").getAsBoolean();
                     MusicControlManager.currentTrackId = track.get("id").getAsString();
                     MusicControlManager.currentTrackName = track.get("name").getAsString();
 
-                    if (isPlaying) {
+                    if (MusicControlManager.currentTrackPlaying) {
                         // reset to zero every time we know it's playing
                         PlaylistManager.pauseTriggerTime = 0;
                     }
@@ -238,57 +248,35 @@ public class PlaylistManager {
                     PlaylistManager.currentTrackData = trackInfo;
                     PlaylistManager.previousTrackName = MusicControlManager.currentTrackName;
 
-                    if (hasCurrentTrack) {
-                        if (isPlaying) {
-                            MusicControlManager.defaultbtn = "pause";
-                            PlayListCommands.updatePlaylists(5, null);
-                            SoftwareCoSessionManager.playerState = 1;
-                        } else {
-                            MusicControlManager.defaultbtn = "play";
-                            PlayListCommands.updatePlaylists(5, null);
-                            SoftwareCoSessionManager.playerState = 0;
-                            if (PlaylistManager.pauseTriggerTime == 0) {
-                                // reset to now, now that it's paused and pauseTriggerTime equals zero
-                                PlaylistManager.pauseTriggerTime = timesData.now;
-                            }
-                        }
-                    } else {
-                        MusicControlManager.defaultbtn = "play";
-                        MusicControlManager.currentTrackName = null;
-                        SoftwareCoSessionManager.playerState = 0;
-                    }
-
-                    if (trackInfo.has("actions")) {
-                        JsonObject obj = trackInfo.getAsJsonObject("actions");
-                        JsonObject actions = obj.getAsJsonObject("disallows");
-                        if (actions.has("skipping_prev")) {
-                            skipPrevious = actions.get("skipping_prev").getAsBoolean();
-                        } else {
-                            skipPrevious = false;
-                        }
+                    if (hasCurrentTrack &&
+                            !MusicControlManager.currentTrackPlaying &&
+                            PlaylistManager.pauseTriggerTime == 0) {
+                        // reset to now, now that it's paused and pauseTriggerTime equals zero
+                        PlaylistManager.pauseTriggerTime = timesData.now;
                     }
                 }
 
-                SoftwareCoUtils.updatePlayerControls(false);
-
             } else if (resp.getCode() == 204) {
-
+                // no data available, send the previous one
                 if (hasPrevTrack && PlaylistManager.currentTrackData != null) {
                     // process music payload
                     SoftwareCoSessionManager.processMusicPayload(PlaylistManager.currentTrackData);
                 }
 
+                MusicControlManager.currentTrackPlaying = false;
+                PlaylistManager.currentTrackData = null;
+                PlaylistManager.previousTrackName = "";
+                MusicControlManager.currentTrackName = null;
+
                 if (currentDevice != null) {
                     if (hasPrevTrack) {
                         DeviceManager.refreshDevices();
                     }
-                    PlaylistManager.previousTrackName = "";
-                    MusicControlManager.currentTrackName = null;
-                    SoftwareCoSessionManager.playerState = 0;
-                    MusicControlManager.defaultbtn = "play";
+
                     MusicToolWindow.refresh();
                 }
             } else if (!resp.getJsonObj().isJsonNull()) {
+                MusicControlManager.currentTrackPlaying = false;
                 JsonObject tracks = resp.getJsonObj();
                 if (tracks != null && tracks.has("error")) {
                     if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {

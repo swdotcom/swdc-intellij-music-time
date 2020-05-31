@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 public class PopupMenuBuilder {
-    public static final Logger LOG = Logger.getLogger("PlaylistManager");
+    public static final Logger LOG = Logger.getLogger("PopupMenuBuilder");
 
     public static JPopupMenu popupMenu;
     public static JComboBox genres;

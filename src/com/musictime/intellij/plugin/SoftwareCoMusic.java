@@ -258,7 +258,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                PlaylistManager.gatherMusicInfo();
+                PlaylistManager.gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
             }
         }, 5000, SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS);
 

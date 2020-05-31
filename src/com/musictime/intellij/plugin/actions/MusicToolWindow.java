@@ -14,6 +14,8 @@ import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.music.*;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
+import com.musictime.intellij.plugin.musicjava.MusicStore;
+import com.musictime.intellij.plugin.musicjava.Util;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -424,8 +426,10 @@ public class MusicToolWindow {
                         SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
                     } else if (label.getText().equals("Learn more")) {
                         SoftwareCoSessionManager.getInstance().openReadmeFile();
-                    } else if (label.getText().contains("Listening on") || label.getText().contains("Connect to") || label.getText().contains("Available")) {
-                        MusicControlManager.launchPlayer(false, false);
+                    } else if (label.getText().contains("Listening on") ||
+                            label.getText().contains("Connect to") ||
+                            label.getText().contains("Available")) {
+                        MusicControlManager.displayDeviceSelection();
                     }
                 }
 
@@ -1078,31 +1082,25 @@ public class MusicToolWindow {
         return playlistWindowContent;
     }
 
-    public static void lazilyCheckPlayer(int retryCount, String playlist, String track, String trackName) {
-        if (MusicControlManager.currentTrackName == null) {
-            if (!DeviceManager.hasActiveWebOrDesktopDevice() && retryCount > 0) {
-                final int newRetryCount = retryCount - 1;
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(4000);
-                        lazilyCheckPlayer(newRetryCount, playlist, track, trackName);
-                    } catch (Exception ex) {
-                        System.err.println(ex);
-                    }
-                }).start();
-            } else if (DeviceManager.hasActiveWebOrDesktopDevice()) {
-                SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track, trackName);
-                if (response.getCode() == 403 && !response.getJsonObj().isJsonNull() && response.getJsonObj().has("error")) {
-                    JsonObject error = response.getJsonObj().getAsJsonObject("error");
-                    if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED")) {
-                        SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
-                    } else if (error.get("reason").getAsString().equals("UNKNOWN")) {
-                        SoftwareCoUtils.showMsgPrompt("We were unable to play the selected track<br> because it is unavailable in your market.", new Color(120, 23, 50, 100));
-                    }
+    public static void lazilyCheckDeviceLaunch(int retryCount, boolean playSelectedTrackOnCompletion) {
+        DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
+        if (currentDevice == null && retryCount > 0) {
+            final int newRetryCount = retryCount - 1;
+            new Thread(() -> {
+                try {
+                    Thread.sleep(4000);
+                    lazilyCheckDeviceLaunch(newRetryCount, playSelectedTrackOnCompletion);
+                } catch (Exception ex) {
+                    System.err.println(ex);
                 }
+            }).start();
+        } else if (currentDevice != null) {
+            // done
+            if (playSelectedTrackOnCompletion) {
+                PlayerControlManager.playSpotifyPlaylist();
             }
         } else {
-            SoftwareResponse response = PlayerControlManager.playSpotifyPlaylist(playlist, track, trackName);
+            SoftwareCoUtils.showMsgPrompt("We were unable to launch the device and play the selected song. Please check that you are logged in.", new Color(120, 23, 50, 100));
         }
     }
 }

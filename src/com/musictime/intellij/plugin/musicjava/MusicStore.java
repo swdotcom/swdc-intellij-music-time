@@ -12,13 +12,8 @@ public class MusicStore {
     public static String spotifyUserId = null;
 
     public static List<String> playlistIds = new ArrayList<>();
-    public static String currentPlaylistId = null;
     public static List<String> tracksByPlaylistId = new ArrayList<>();
-    public static String currentTrackId = null;
-    public static String currentTrackName = null;
     public static List<String> spotifyDeviceIds = new ArrayList<>();
-    public static String currentDeviceId = null;
-    public static String currentDeviceName = null;
 
     public static String topSpotifyPlaylistId = "1";
     public static String myAIPlaylistId = null;
@@ -28,13 +23,8 @@ public class MusicStore {
         spotifyAccountType = null; // Premium or Non-Premium
         spotifyUserId = null;
         playlistIds = new ArrayList<>();
-        currentPlaylistId = null;
-        currentTrackId = null;
-        currentTrackName = null;
         tracksByPlaylistId = new ArrayList<>();
         spotifyDeviceIds = new ArrayList<>();
-        currentDeviceName = null;
-        currentDeviceId = null;
     }
 
     public static String getSpotifyClientId() {
@@ -85,13 +75,6 @@ public class MusicStore {
         MusicStore.playlistIds = playlistIds;
     }
 
-    public static String getCurrentPlaylistId() {
-        return currentPlaylistId;
-    }
-
-    public static void setCurrentPlaylistId(String currentPlaylistId) {
-        MusicStore.currentPlaylistId = currentPlaylistId;
-    }
 
     public static List<String> getTracksByPlaylistId() {
         return tracksByPlaylistId;
@@ -101,21 +84,6 @@ public class MusicStore {
         MusicStore.tracksByPlaylistId = tracksByPlaylistId;
     }
 
-    public static String getCurrentTrackId() {
-        return currentTrackId;
-    }
-
-    public static void setCurrentTrackId(String currentTrackId) {
-        MusicStore.currentTrackId = currentTrackId;
-    }
-
-    public static String getCurrentTrackName() {
-        return currentTrackName;
-    }
-
-    public static void setCurrentTrackName(String currentTrackName) {
-        MusicStore.currentTrackName = currentTrackName;
-    }
 
     public static List<String> getSpotifyDeviceIds() {
         return spotifyDeviceIds;
@@ -123,22 +91,6 @@ public class MusicStore {
 
     public static void setSpotifyDeviceIds(List<String> spotifyDeviceIds) {
         MusicStore.spotifyDeviceIds = spotifyDeviceIds;
-    }
-
-    public static String getCurrentDeviceId() {
-        return currentDeviceId;
-    }
-
-    public static void setCurrentDeviceId(String currentDeviceId) {
-        MusicStore.currentDeviceId = currentDeviceId;
-    }
-
-    public static String getCurrentDeviceName() {
-        return currentDeviceName;
-    }
-
-    public static void setCurrentDeviceName(String currentDeviceName) {
-        MusicStore.currentDeviceName = currentDeviceName;
     }
 
     public static String getTopSpotifyPlaylistId() {

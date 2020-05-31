@@ -39,6 +39,10 @@ public class DeviceManager {
         return getBestDeviceOption();
     }
 
+    public static boolean hasDesktopOrWebDevice() {
+        return (hasDesktopDevice() || hasWebDevice()) ? true : false;
+    }
+
     public static DeviceInfo getBestDeviceOption() {
         if (devices == null || devices.size() == 0) {
             return null;

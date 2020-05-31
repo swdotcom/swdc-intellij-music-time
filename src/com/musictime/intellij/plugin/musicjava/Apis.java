@@ -107,14 +107,9 @@ public class Apis {
 
         String api = "/v1/me/player";
         SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
-        if (resp.getCode() == 204) {
-            getSpotifyDevices();
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    PlaylistManager.gatherMusicInfo();
-                }
-            }, 1000);
+        if (resp.getCode() < 300) {
+            DeviceManager.refreshDevices();
+            PlaylistManager.gatherMusicInfoRequest();
             return true;
         }
         return false;
@@ -353,17 +348,14 @@ public class Apis {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
                 JsonObject track = tracks.get("item").getAsJsonObject();
-                MusicStore.setCurrentTrackId(track.get("id").getAsString());
-                MusicStore.setCurrentTrackName(track.get("name").getAsString());
-                if(!tracks.get("context").isJsonNull()) {
+                MusicControlManager.currentTrackId = track.get("id").getAsString();
+                MusicControlManager.currentTrackName = track.get("name").getAsString();
+                if (!tracks.get("context").isJsonNull()) {
                     JsonObject context = tracks.get("context").getAsJsonObject();
                     String[] uri = context.get("uri").getAsString().split(":");
-                    MusicStore.setCurrentPlaylistId(uri[uri.length - 1]);
+                    MusicControlManager.currentPlaylistId = uri[uri.length - 1];
                 }
             }
-        } else if(resp.getCode() == 204) {
-            MusicStore.currentDeviceName = null;
-            MusicStore.currentTrackName = null;
         } else if(!resp.getJsonObj().isJsonNull()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("error")) {
@@ -378,10 +370,6 @@ public class Apis {
 
     public static boolean isSpotifyInstalled() {
         return Util.isSpotifyInstalled();
-    }
-
-    public static void startDesktopPlayer(String playerName) {
-        Util.startPlayer(playerName);
     }
 
     public static boolean accessExpired() {

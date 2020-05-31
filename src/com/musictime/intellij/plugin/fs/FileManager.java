@@ -16,7 +16,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -28,7 +27,6 @@ public class FileManager {
     public static final Logger log = Logger.getLogger("FileManager");
 
     private static Semaphore semaphore = new Semaphore(1);
-    private static HashMap<String, Object> sessionMap = new HashMap<>();
 
     private static Timer _timer = null;
 
@@ -394,29 +392,18 @@ public class FileManager {
     }
 
     public static synchronized void setNumericItem(String key, Long val) {
-        if (val == null) {
-            sessionMap.remove(key);
-        } else {
-            sessionMap.put(key, val);
-        }
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
         writeItem(sessionJson);
     }
 
     public static synchronized void setBooleanItem(String key, boolean val) {
-        sessionMap.put(key, val);
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
         writeItem(sessionJson);
     }
 
     public static synchronized void setItem(String key, String val) {
-        if (val == null || val.equals("")) {
-            sessionMap.remove(key);
-        } else {
-            sessionMap.put(key, val);
-        }
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (val != null) {
             sessionJson.addProperty(key, val);
@@ -427,7 +414,6 @@ public class FileManager {
     }
 
     private static synchronized void writeItem(JsonObject sessionJson) {
-
         String content = sessionJson.toString();
         String sessionFile = getSoftwareSessionFile(true);
 
@@ -435,11 +421,6 @@ public class FileManager {
     }
 
     public static synchronized boolean getBooleanItem(String key) {
-        Boolean val = (Boolean) sessionMap.get(key);
-        if (val != null) {
-            return val;
-        }
-
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
             return sessionJson.get(key).getAsBoolean();
@@ -448,11 +429,7 @@ public class FileManager {
     }
 
     public static synchronized Long getNumericItem(String key) {
-        Long val = (Long) sessionMap.get(key);
-        if (val != null) {
-            return val;
-        }
-
+        Long val = null;
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
             val = sessionJson.get(key).getAsLong();
@@ -461,10 +438,7 @@ public class FileManager {
     }
 
     public static synchronized String getItem(String key) {
-        String val = (String) sessionMap.get(key);
-        if (val != null) {
-            return val;
-        }
+        String val = null;
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
             val = sessionJson.get(key).getAsString();
