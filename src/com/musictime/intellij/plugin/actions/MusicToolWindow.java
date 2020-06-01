@@ -1100,7 +1100,7 @@ public class MusicToolWindow {
                 PlayerControlManager.playSpotifyPlaylist();
             }
         } else {
-            SoftwareCoUtils.showMsgPrompt("We were unable to launch the device and play the selected song. Please check that you are logged in.", new Color(120, 23, 50, 100));
+            SoftwareCoUtils.showMsgPrompt("Unable to establish a device connection. Please check that you are logged into your Spotify account.", new Color(120, 23, 50, 100));
         }
     }
 }

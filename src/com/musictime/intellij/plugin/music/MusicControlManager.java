@@ -294,7 +294,7 @@ public class MusicControlManager {
                 }
             }, 5000);
         } else {
-            lazilyCheckAvailablePlayer(3);
+            lazilyCheckAvailablePlayer(4);
         }
     }
 
@@ -314,7 +314,7 @@ public class MusicControlManager {
                     Thread.sleep(3000);
                     lazilyCheckAvailablePlayer(newRetryCount);
                 }
-                catch (Exception e){
+                catch (Exception e) {
                     System.err.println(e);
                 }
             }).start();
