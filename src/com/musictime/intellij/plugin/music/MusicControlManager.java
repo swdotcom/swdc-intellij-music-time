@@ -178,8 +178,14 @@ public class MusicControlManager {
 
             // fetch the liked songs (type 3 = liked songs)
             PlayListCommands.updatePlaylists(3, null);
-            // send the liked songs to the app to seed
-            MusicControlManager.seedLikedSongSessions();
+
+            // send the liked songs to the app to seed (async)
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    MusicControlManager.seedLikedSongSessions();
+                }
+            }, 5000);
 
             // get genres to show in the options
             PlayListCommands.getGenre(); // API call
@@ -187,6 +193,9 @@ public class MusicControlManager {
             DeviceManager.getDevices();
 
             PlaylistManager.gatherMusicInfoRequest();
+
+            // refresh the status bar
+            SoftwareCoUtils.setStatusLineMessage();
         }
     }
 

@@ -392,11 +392,16 @@ public class SoftwareCoUtils {
 
                         boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
                         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+                        boolean requiresAccess = requiresReAuth || !hasSpotifyAccess ? true : false;
+
+                        System.out.println("----- requires access: " + requiresAccess);
                         String connectLabel = null;
-                        if (requiresReAuth) {
-                            connectLabel = "Reconnect Spotify";
-                        } else if (!hasSpotifyAccess) {
-                            connectLabel = "Connect Spotify";
+                        if (requiresAccess) {
+                            if (requiresReAuth) {
+                                connectLabel = "Reconnect Spotify";
+                            } else if (!hasSpotifyAccess) {
+                                connectLabel = "Connect Spotify";
+                            }
                         }
 
                         String email = FileManager.getItem("name");
