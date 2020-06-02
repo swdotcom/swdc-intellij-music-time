@@ -1,9 +1,9 @@
 package com.musictime.intellij.plugin;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParser;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManager;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.editor.EditorFactory;
@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
+import com.intellij.util.xml.impl.DomApplicationComponent;
 import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
@@ -27,13 +28,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SoftwareCoMusic implements ApplicationComponent {
-    public static JsonParser jsonParser = new JsonParser();
     public static final Logger log = Logger.getLogger("SoftwareCoMusic");
     public static Gson gson;
 
     public static MessageBusConnection connection;
 
-    private SoftwareCoMusicManager musicMgr = SoftwareCoMusicManager.getInstance();
     private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
     private AsyncManager asyncManager = AsyncManager.getInstance();
     private KeystrokeManager keystrokeMgr = KeystrokeManager.getInstance();
@@ -294,9 +293,23 @@ public class SoftwareCoMusic implements ApplicationComponent {
     // add the document change event listener
     private void setupEventListeners() {
         ApplicationManager.getApplication().invokeLater(() -> {
+            Disposable disposable = new Disposable() {
+                @Override
+                public void dispose() {
+                    try {
+                        if (connection != null) {
+                            connection.disconnect();
+                        }
+                    } catch(Exception e) {
+                        log.info("Error disconnecting the software.com plugin, reason: " + e.toString());
+                    }
+
+                    asyncManager.destroyServices();
+                }
+            };
             // edit document
             EditorFactory.getInstance().getEventMulticaster().addDocumentListener(
-                    new SoftwareCoDocumentListener(), this::disposeComponent);
+                    new SoftwareCoDocumentListener(), disposable);
         });
     }
 
@@ -309,15 +322,4 @@ public class SoftwareCoMusic implements ApplicationComponent {
         });
     }
 
-    public void disposeComponent() {
-        try {
-            if (connection != null) {
-                connection.disconnect();
-            }
-        } catch(Exception e) {
-            log.info("Error disconnecting the software.com plugin, reason: " + e.toString());
-        }
-
-        asyncManager.destroyServices();
-    }
 }

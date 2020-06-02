@@ -7,6 +7,7 @@ package com.musictime.intellij.plugin;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
@@ -158,7 +159,7 @@ public class SoftwareCoSessionManager {
                     payloads = payloads.substring(0, payloads.lastIndexOf(","));
                     payloads = "[" + payloads + "]";
 
-                    JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
+                    JsonArray jsonArray = (JsonArray) JsonParser.parseString(payloads);
 
                     // delete the file
                     deleteFile(dataStoreFile);
@@ -478,7 +479,7 @@ public class SoftwareCoSessionManager {
                     payloads = payloads.substring(0, payloads.lastIndexOf(","));
                     payloads = "[" + payloads + "]";
 
-                    JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
+                    JsonArray jsonArray = (JsonArray) JsonParser.parseString(payloads);
 
                     // delete the file
                     deleteFile(dataStoreFile);

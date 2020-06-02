@@ -9,6 +9,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.intellij.ide.BrowserUtil;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
@@ -24,7 +25,6 @@ import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
-import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
@@ -68,8 +68,6 @@ public class SoftwareCoUtils {
 
     public static HttpClient httpClient;
     public static HttpClient pingClient;
-
-    public static JsonParser jsonParser = new JsonParser();
 
     // 16 = intellij music time
     public static int pluginId = 16;
@@ -224,7 +222,7 @@ public class SoftwareCoUtils {
                             if (jsonStr != null && mimeType.indexOf("text/plain") == -1) {
                                 Object jsonEl = null;
                                 try {
-                                    jsonEl = jsonParser.parse(jsonStr);
+                                    jsonEl = JsonParser.parseString(jsonStr);
                                 } catch (Exception e) {
                                     //
                                 }
@@ -362,33 +360,38 @@ public class SoftwareCoUtils {
                         String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
                         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
 
-                        if (statusBar.getWidget(headphoneiconId) != null) {
-                            statusBar.removeWidget(headphoneiconId);
-                        }
-                        if (statusBar.getWidget(likeiconId) != null) {
-                            statusBar.removeWidget(likeiconId);
-                        }
-                        if (statusBar.getWidget(unlikeiconId) != null) {
-                            statusBar.removeWidget(unlikeiconId);
-                        }
-                        if (statusBar.getWidget(preiconId) != null) {
-                            statusBar.removeWidget(preiconId);
-                        }
-                        if (statusBar.getWidget(pauseiconId) != null) {
-                            statusBar.removeWidget(pauseiconId);
-                        }
-                        if (statusBar.getWidget(playiconId) != null) {
-                            statusBar.removeWidget(playiconId);
-                        }
-                        if (statusBar.getWidget(nexticonId) != null) {
-                            statusBar.removeWidget(nexticonId);
-                        }
-                        if (statusBar.getWidget(songtrackId) != null) {
-                            statusBar.removeWidget(songtrackId);
-                        }
-                        if (statusBar.getWidget(connectspotifyId) != null) {
-                            statusBar.removeWidget(connectspotifyId);
-                        }
+                        Disposable disposable = new Disposable() {
+                            @Override
+                            public void dispose() {
+                                if (statusBar.getWidget(headphoneiconId) != null) {
+                                    statusBar.removeWidget(headphoneiconId);
+                                }
+                                if (statusBar.getWidget(likeiconId) != null) {
+                                    statusBar.removeWidget(likeiconId);
+                                }
+                                if (statusBar.getWidget(unlikeiconId) != null) {
+                                    statusBar.removeWidget(unlikeiconId);
+                                }
+                                if (statusBar.getWidget(preiconId) != null) {
+                                    statusBar.removeWidget(preiconId);
+                                }
+                                if (statusBar.getWidget(pauseiconId) != null) {
+                                    statusBar.removeWidget(pauseiconId);
+                                }
+                                if (statusBar.getWidget(playiconId) != null) {
+                                    statusBar.removeWidget(playiconId);
+                                }
+                                if (statusBar.getWidget(nexticonId) != null) {
+                                    statusBar.removeWidget(nexticonId);
+                                }
+                                if (statusBar.getWidget(songtrackId) != null) {
+                                    statusBar.removeWidget(songtrackId);
+                                }
+                                if (statusBar.getWidget(connectspotifyId) != null) {
+                                    statusBar.removeWidget(connectspotifyId);
+                                }
+                            }
+                        };
 
                         boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
                         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
@@ -414,13 +417,13 @@ public class SoftwareCoUtils {
                         DeviceInfo deviceInfo = DeviceManager.getBestDeviceOption();
                         SoftwareCoStatusBarIconWidget headphoneIconWidget = buildStatusBarIconWidget(
                                 headphoneIconVal, headphoneTooltip, headphoneiconId);
-                        statusBar.addWidget(headphoneIconWidget, headphoneiconId);
+                        statusBar.addWidget(headphoneIconWidget, headphoneiconId, disposable);
                         statusBar.updateWidget(headphoneiconId);
 
                         if (StringUtils.isNotBlank(connectLabel)) {
                             SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
                                     connectLabel, connectLabel, connectspotifyId);
-                            statusBar.addWidget(kpmWidget, connectspotifyId);
+                            statusBar.addWidget(kpmWidget, connectspotifyId, disposable);
                             statusBar.updateWidget(connectspotifyId);
                         }
 
@@ -446,24 +449,24 @@ public class SoftwareCoUtils {
 
                                 SoftwareCoStatusBarIconWidget preIconWidget = buildStatusBarIconWidget(
                                         preIcon, "previous", preiconId);
-                                statusBar.addWidget(preIconWidget, preiconId);
+                                statusBar.addWidget(preIconWidget, preiconId, disposable);
                                 statusBar.updateWidget(preiconId);
 
                                 if (MusicControlManager.currentTrackPlaying) {
                                     SoftwareCoStatusBarIconWidget pauseIconWidget = buildStatusBarIconWidget(
                                             pauseIcon, "pause", pauseiconId);
-                                    statusBar.addWidget(pauseIconWidget, pauseiconId);
+                                    statusBar.addWidget(pauseIconWidget, pauseiconId, disposable);
                                     statusBar.updateWidget(pauseiconId);
                                 } else {
                                     SoftwareCoStatusBarIconWidget playIconWidget = buildStatusBarIconWidget(
                                             playIcon, "play", playiconId);
-                                    statusBar.addWidget(playIconWidget, playiconId);
+                                    statusBar.addWidget(playIconWidget, playiconId, disposable);
                                     statusBar.updateWidget(playiconId);
                                 }
 
                                 SoftwareCoStatusBarIconWidget nextIconWidget = buildStatusBarIconWidget(
                                         nextIcon, "next", nexticonId);
-                                statusBar.addWidget(nextIconWidget, nexticonId);
+                                statusBar.addWidget(nextIconWidget, nexticonId, disposable);
                                 statusBar.updateWidget(nexticonId);
 
                             }
@@ -471,19 +474,19 @@ public class SoftwareCoUtils {
 
                         SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
                                 trackName, musicToolTipVal, songtrackId);
-                        statusBar.addWidget(kpmWidget, songtrackId);
+                        statusBar.addWidget(kpmWidget, songtrackId, disposable);
                         statusBar.updateWidget(songtrackId);
 
                         if(MusicControlManager.currentTrackId != null) {
                             if (MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
                                 SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
                                         likeIcon, "unlike", likeiconId);
-                                statusBar.addWidget(likeIconWidget, likeiconId);
+                                statusBar.addWidget(likeIconWidget, likeiconId, disposable);
                                 statusBar.updateWidget(likeiconId);
                             } else {
                                 SoftwareCoStatusBarIconWidget unlikeIconWidget = buildStatusBarIconWidget(
                                         unlikeIcon, "like", unlikeiconId);
-                                statusBar.addWidget(unlikeIconWidget, unlikeiconId);
+                                statusBar.addWidget(unlikeIconWidget, unlikeiconId, disposable);
                                 statusBar.updateWidget(unlikeiconId);
                             }
                         }
@@ -1014,8 +1017,14 @@ public class SoftwareCoUtils {
         });
     }
 
-    public static int showMsgInputPrompt(String message, String title, Icon icon, String[] options) {
-        return Messages.showChooseDialog(message, title, options, options[0], icon);
+    public static String showMsgInputPrompt(String message, String title, Icon icon, String[] options) {
+        int idx = Messages.showChooseDialog(message, title, options, options[0], icon);
+        if (idx >= 0) {
+            return options[idx];
+        }
+        return null;
+
+        // return Messages.showEditableChooseDialog(message, title, icon, options, options[0], null);
     }
 
     public static String showInputPrompt(String message, String title, Icon icon) {

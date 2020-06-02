@@ -1,6 +1,7 @@
 package com.musictime.intellij.plugin.fs;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
@@ -292,7 +293,7 @@ public class FileManager {
                     payloads = payloads.substring(0, payloads.lastIndexOf(","));
                     payloads = "[" + payloads + "]";
 
-                    JsonArray jsonArray = (JsonArray) SoftwareCoMusic.jsonParser.parse(payloads);
+                    JsonArray jsonArray = (JsonArray) JsonParser.parseString(payloads);
                     // convert to a list of KeystrokeCount
                     Type type = new TypeToken<List<KeystrokeCount>>() {}.getType();
                     keystrokeCounts = SoftwareCoMusic.gson.fromJson(jsonArray, type);
@@ -378,9 +379,9 @@ public class FileManager {
                 String content = new String(encoded, Charset.forName("UTF-8"));
                 if (content != null) {
                     // json parse it
-                    sessionJson = SoftwareCoUtils.jsonParser.parse(cleanJsonString(content)).getAsJsonObject();
+                    JsonElement jsonEl = JsonParser.parseString(cleanJsonString(content));
+                    sessionJson = (JsonObject) jsonEl;
                 }
-
             } catch (Exception e) {
                 //
             }

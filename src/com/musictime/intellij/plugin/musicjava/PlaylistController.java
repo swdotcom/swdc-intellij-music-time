@@ -3,6 +3,7 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareResponse;
@@ -146,7 +147,7 @@ public class PlaylistController {
         SoftwareResponse resp = Client.makeApiCall(api, HttpGet.METHOD_NAME, null);
         if(resp.isOk()) {
             recommendedTracks.clear();
-            JsonArray array = (JsonArray) SoftwareCoMusic.jsonParser.parse(resp.getJsonStr());
+            JsonArray array = (JsonArray) JsonParser.parseString(resp.getJsonStr());
             for(int i=0; i < array.size(); i++) {
                 JsonObject obj = array.get(i).getAsJsonObject();
                 recommendedTracks.add(obj.get("id").getAsString());

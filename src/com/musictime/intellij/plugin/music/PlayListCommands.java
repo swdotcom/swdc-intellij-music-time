@@ -35,6 +35,16 @@ public class PlayListCommands {
     public static String sortType = "Latest";
     public static int counter = 0;
 
+    public static String getPlaylistIdByPlaylistName(String playlistName) {
+        for (String key : userPlaylists.keySet()) {
+            String playlist_name = userPlaylists.get(key);
+            if (playlist_name != null && playlist_name.equals(playlistName)) {
+                return key;
+            }
+        }
+        return null;
+    }
+
     /*
     * type = 0 to get all playlists and sort them
     * type = 1 to update software top 40 playlist

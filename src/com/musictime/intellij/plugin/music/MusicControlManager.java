@@ -13,6 +13,7 @@ import com.musictime.intellij.plugin.actions.MusicToolWindow;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.velocity.texen.util.FileUtil;
 
@@ -234,9 +235,8 @@ public class MusicControlManager {
             deviceList[i] = devices.get(i);
         }
         Icon spotifyIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
-        int index = SoftwareCoUtils.showMsgInputPrompt("Connect to a Spotify device", "Spotify", spotifyIcon, deviceList);
-        if (index >= 0) {
-            String deviceName = deviceList[index];
+        String deviceName = SoftwareCoUtils.showMsgInputPrompt("Connect to a Spotify device", "Spotify", spotifyIcon, deviceList);
+        if (StringUtils.isNotBlank(deviceName)) {
             if (deviceName.equals(webPlayer)) {
                 launchWebPlayer();
             } else if (deviceName.equals(desktopPlayer)) {

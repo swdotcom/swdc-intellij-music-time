@@ -5,6 +5,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.util.IconLoader;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.slack.SlackControlManager;
+import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -71,26 +72,27 @@ public class PopupMenuBuilder {
         addPlaylist.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String createPlaylistVal = "Create a new playlist";
                 String[] playlists;
                 if(PlayListCommands.userPlaylistIds.size() > 0) {
                     playlists = new String[PlayListCommands.userPlaylistIds.size() + 1];
                     int counter = 0;
-                    playlists[counter] = "Create a new playlist";
+                    playlists[counter] = createPlaylistVal;
                     counter++;
                     for (String id : PlayListCommands.userPlaylistIds) {
                         playlists[counter] = PlayListCommands.userPlaylists.get(id);
                         counter++;
                     }
                 } else {
-                    playlists = new String[] {"Create a new playlist"};
+                    playlists = new String[] {createPlaylistVal};
                 }
-                int index = SoftwareCoUtils.showMsgInputPrompt("Select playlist", "Spotify", spotifyIcon, playlists);
-                if(index >= 0) {
+                String value = SoftwareCoUtils.showMsgInputPrompt("Select playlist", "Spotify", spotifyIcon, playlists);
+                if(StringUtils.isNotBlank(value)) {
                     String playlistName = null;
                     String error = null;
                     Set<String> tracks = new HashSet<>();
                     tracks.add(trackId);
-                    if(index == 0) {
+                    if(value.equals(createPlaylistVal)) {
                         playlistName = SoftwareCoUtils.showInputPrompt("Enter playlist name", "Spotify", spotifyIcon);
                         if (playlistName != null) {
                             JsonObject status = PlayListCommands.createPlaylist(playlistName);
@@ -112,14 +114,15 @@ public class PopupMenuBuilder {
                             error = "Try again";
                         }
                     } else {
-                        JsonObject resp = PlayListCommands.addTracksInPlaylist(PlayListCommands.userPlaylistIds.get(index - 1), tracks);
+                        String playlist_id = PlayListCommands.getPlaylistIdByPlaylistName(value);
+                        JsonObject resp = PlayListCommands.addTracksInPlaylist(playlist_id, tracks);
                         if (resp != null) {
                             if (resp.has("error")) {
                                 JsonObject err = resp.get("error").getAsJsonObject();
                                 error = err.get("message").getAsString();
                             } else {
-                                PlayListCommands.updatePlaylists(4, PlayListCommands.userPlaylistIds.get(index - 1));
-                                playlistName = playlists[index];
+                                PlayListCommands.updatePlaylists(4, playlist_id);
+                                playlistName = value;
                             }
                         }
                     }
@@ -245,12 +248,9 @@ public class PopupMenuBuilder {
             slack.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    int index = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
-                    String channel = null;
-                    if(index >= 0)
-                        channel = finalChannels[index];
+                    String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
 
-                    if(channel != null) {
+                    if(StringUtils.isNotBlank(channel)) {
                         String slackId = SlackControlManager.slackChannels.get(channel);
                         JsonObject obj = new JsonObject();
                         obj.addProperty("channel", slackId);
@@ -390,10 +390,7 @@ public class PopupMenuBuilder {
             slack.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    int index = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
-                    String channel = null;
-                    if(index >= 0)
-                        channel = finalChannels[index];
+                    String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
 
                     if(channel != null) {
                         String slackId = SlackControlManager.slackChannels.get(channel);

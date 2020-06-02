@@ -40,8 +40,6 @@ public class Client {
     public static HttpClient httpClient;
     public static HttpClient pingClient;
 
-    public static JsonParser jsonParser = new JsonParser();
-
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
     static {
@@ -121,7 +119,7 @@ public class Client {
                             if (jsonStr != null && mimeType.indexOf("text/plain") == -1) {
                                 Object jsonEl = null;
                                 try {
-                                    jsonEl = jsonParser.parse(jsonStr);
+                                    jsonEl = JsonParser.parseString(jsonStr);
                                 } catch (Exception e) {
                                     //
                                 }

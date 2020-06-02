@@ -2,6 +2,7 @@ package com.musictime.intellij.plugin.slack;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.intellij.ide.BrowserUtil;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
@@ -70,7 +71,7 @@ public class SlackControlManager {
                             if (jsonStr != null && mimeType.indexOf("text/plain") == -1) {
                                 Object jsonEl = null;
                                 try {
-                                    jsonEl = SoftwareCoUtils.jsonParser.parse(jsonStr);
+                                    jsonEl = JsonParser.parseString(jsonStr);
                                 } catch (Exception e) {
                                     //
                                 }

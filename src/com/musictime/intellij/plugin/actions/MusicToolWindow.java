@@ -158,10 +158,10 @@ public class MusicToolWindow {
                     updateGenres();
                 }
                 if (rec_genres.length > 0) {
-                    int index = SoftwareCoUtils.showMsgInputPrompt("Select genre", "Spotify", filterIcon, rec_genres);
-                    if (index >= 0) {
+                    String value = SoftwareCoUtils.showMsgInputPrompt("Select genre", "Spotify", filterIcon, rec_genres);
+                    if (StringUtils.isNotBlank(value)) {
                         PopupMenuBuilder.selectedType = "genre";
-                        PopupMenuBuilder.selectedValue = rec_genres[index];
+                        PopupMenuBuilder.selectedValue = value;
                         PlayListCommands.updateRecommendation(PopupMenuBuilder.selectedType, PopupMenuBuilder.selectedValue);
                     }
                 }
