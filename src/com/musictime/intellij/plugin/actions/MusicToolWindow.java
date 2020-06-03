@@ -9,14 +9,10 @@ import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.music.*;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
-import com.musictime.intellij.plugin.musicjava.MusicStore;
-import com.musictime.intellij.plugin.musicjava.Util;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
@@ -378,7 +374,7 @@ public class MusicToolWindow {
             deviceState.setIcon(spotifyIcon);
             DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
             List<DeviceInfo> deviceInfoList = DeviceManager.getDevices();
-            if (CollectionUtils.isNotEmpty(deviceInfoList)) {
+            if (deviceInfoList != null && deviceInfoList.size() > 0) {
                 if (currentDevice != null) {
                     if (currentDevice.is_active) {
                         deviceState.setText("Listening on " + currentDevice.name);

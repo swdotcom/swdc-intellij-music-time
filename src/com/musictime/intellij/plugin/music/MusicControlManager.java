@@ -14,11 +14,13 @@ import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.velocity.texen.util.FileUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.List;
 import java.util.Timer;
@@ -100,40 +102,20 @@ public class MusicControlManager {
     }
 
     public static void seedLikedSongSessions() {
-        // get the liked songs
-        JsonArray likedTracksList = PlayListCommands.likedTracksList;
-        int batch_limit = 30;
-        JsonArray batch = new JsonArray();
-        if (likedTracksList != null && likedTracksList.size() > 0) {
-            for (int i = 0; i < likedTracksList.size(); i++) {
-                JsonObject track = likedTracksList.get(i).getAsJsonObject();
-                track.addProperty("liked", true);
-                track.addProperty("playlistId", "Liked Songs");
-                track.addProperty("listened", 0);
-                JsonObject songSession = new JsonObject();
-                songSession.add("track", track);
-                if (batch.size() >= batch_limit) {
-                    // send it
-                    sendBatchedLikedSongSessions(batch);
-                    batch = new JsonArray();
-                }
-                batch.add(songSession);
-            }
-        }
+        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
 
-        if (batch.size() > 0) {
-            // send the rest
-            sendBatchedLikedSongSessions(batch);
-        }
-    }
-
-    private static void sendBatchedLikedSongSessions(JsonArray batch) {
-        String api = "/music/session/seed";
         JsonObject payload = new JsonObject();
-        payload.add("tracks", batch);
+        int offset_minutes = ZonedDateTime.now().getOffset().getTotalSeconds() / 60;
+        payload.addProperty("offset_minutes", offset_minutes);
+        payload.addProperty("timezone", timesData.timezone);
+        payload.addProperty("pluginId", SoftwareCoUtils.pluginId);
+        payload.addProperty("os", SoftwareCoUtils.getOs());
+        payload.addProperty("version", SoftwareCoMusic.getVersion());
         String jsonPayload = payload.toString();
 
-        SoftwareResponse resp = Client.makeApiCall(api, HttpPut.METHOD_NAME, jsonPayload, false);
+        String api = "/music/onboard";
+
+        SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, jsonPayload, false);
         if (!resp.isOk()) {
             LOG.info("Error posting seed songs: " + resp.getErrorMessage());
         }
@@ -186,7 +168,7 @@ public class MusicControlManager {
                 public void run() {
                     MusicControlManager.seedLikedSongSessions();
                 }
-            }, 5000);
+            }, 1000);
 
             // get genres to show in the options
             PlayListCommands.getGenre(); // API call

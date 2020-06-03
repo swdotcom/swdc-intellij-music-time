@@ -393,6 +393,8 @@ public class SoftwareCoUtils {
                             }
                         };
 
+                        disposable.dispose();
+
                         boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
                         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
                         boolean requiresAccess = requiresReAuth || !hasSpotifyAccess ? true : false;

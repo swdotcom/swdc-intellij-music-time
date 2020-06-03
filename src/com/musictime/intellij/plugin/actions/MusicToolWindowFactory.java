@@ -24,9 +24,11 @@ public class MusicToolWindowFactory implements ToolWindowFactory {
         if (musicTimeWindow != null) {
             ApplicationManager.getApplication().invokeLater(new Runnable() {
                 public void run() {
-                    musicTimeWindow.show();
+                    musicTimeWindow.show(null);
                 }
             });
         }
     }
+
+
 }
