@@ -32,7 +32,7 @@
 <li><p><strong>Slack integration</strong>: Connect Slack to share songs and playlists in channels in your workspace.</p>
 </li>
 </ul>
-<p>Music Time currently supports Spotify. We will support iTunes and other players in a future release. You can also check out the <a href="https://www.npmjs.com/package/cody-music">cody-music</a> npm package for more information about how this extension works.</p>
+<p>Music Time is built on the Code Time plugin and performs machine learning against a range of music metrics plus productivity data from over 70,000 developers to determine song recommendations. You can also check out the cody-music npm package for more information about how this extension works.</p>
 <h2 id="getting-started">Getting started</h2>
 <h3 id="-1-connect-your-spotify-account-"><strong>1. Connect your Spotify account</strong></h3>
 <p>Click the <strong>Connect Spotify</strong> button in the status bar or in the playlist tree, which will prompt you to log in to your Spotify account.</p>
