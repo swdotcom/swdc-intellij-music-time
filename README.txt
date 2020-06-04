@@ -4,6 +4,8 @@ MUSIC TIME
 
 Music Time is an IntelliJ plugin that discovers the most productive music to listen to as you code.
 
+Music Time requires a Spotify account. We currently do not support Apple Music, Google Play, or any other players, but may in a future plugin.
+
 
 FEATURES
 --------
@@ -12,7 +14,7 @@ FEATURES
 
 -  Embedded playlists: Browse and play your Spotify playlists and songs from your editor.
 
--  AI playlists: Get a personalized AI playlist generated using deep learning to help you focus.
+-  AI playlists: Get a personalized AI playlist generated using machine learning to help you focus.
 
 -  Metrics profile: Learn how the underlying metrics of music (including tempo, loudness, speechiness, energy, and valence) impact how you code.
 
@@ -24,7 +26,7 @@ FEATURES
 
 -  Slack integration: Connect Slack to share songs and playlists in channels in your workspace.
 
-Music Time currently supports Spotify. We will support iTunes and other players in a future release.
+Music Time is built on the Code Time plugin and performs machine learning against a range of music metrics plus productivity data from over 70,000 developers to determine song recommendations. You can also check out the cody-music npm package for more information about how this extension works.
 
 
 GETTING STARTED
@@ -42,7 +44,7 @@ GETTING STARTED
 
 3. Generate your personal playlist
 
-    Click the Generate AI Playlist button to get a personalized AI playlist generated using deep learning. Your AI Top 40 playlist is initially based on your liked songs and global developer data, but will improve as you listen to more music while you code. 
+    Click the Generate AI Playlist button to get a personalized AI playlist generated using machine learning. Your AI Top 40 playlist is initially based on your liked songs and global developer data, but will improve as you listen to more music while you code. 
 
 4. Try a song recommendation
 
