@@ -223,7 +223,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
 
-        MusicToolWindowFactory.showWindow();
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                MusicToolWindowFactory.showWindow();
+            }
+        }, 1000);
     }
 
     public static void showReconnectPrompt() {

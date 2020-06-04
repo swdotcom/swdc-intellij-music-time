@@ -54,8 +54,7 @@ public class PlayListCommands {
     * type = 5 to refresh playlist window
     */
     public static synchronized void updatePlaylists(int type, String playlistId) {
-        if(type == 0) {
-            System.out.println("------------- REFRESHING PLAYLIST -----------------");
+        if (type == 0) {
             PlaylistManager.getUserPlaylists(); // API call
             // Sort Playlists ****************************************************
             if (userPlaylists.size() > 0 && sortType.equals("Sort A-Z")) {

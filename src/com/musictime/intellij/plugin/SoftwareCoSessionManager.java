@@ -622,7 +622,7 @@ public class SoftwareCoSessionManager {
 
         if (id.equals(headphoneiconId)) {
             // show the tree view
-            MusicToolWindowFactory.showWindow();
+            MusicToolWindowFactory.toggleWindow();
         } else if(id.equals(connectspotifyId)) {
             MusicControlManager.connectSpotify();
         } else if(id.equals(playiconId)) {

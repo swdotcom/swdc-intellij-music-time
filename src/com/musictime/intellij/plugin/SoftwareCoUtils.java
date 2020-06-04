@@ -399,7 +399,6 @@ public class SoftwareCoUtils {
                         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
                         boolean requiresAccess = requiresReAuth || !hasSpotifyAccess ? true : false;
 
-                        System.out.println("----- requires access: " + requiresAccess);
                         String connectLabel = null;
                         if (requiresAccess) {
                             if (requiresReAuth) {
