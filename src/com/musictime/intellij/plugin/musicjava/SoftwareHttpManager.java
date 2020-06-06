@@ -1,5 +1,7 @@
 package com.musictime.intellij.plugin.musicjava;
 
+import com.musictime.intellij.plugin.SoftwareCoMusic;
+import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.fs.FileManager;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -59,6 +61,14 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
 
             req.addHeader("Authorization", FileManager.getItem("jwt"));
             req.addHeader("Content-Type", "application/json");
+
+            SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+            req.addHeader("X-SWDC-Plugin-Id", String.valueOf(SoftwareCoUtils.pluginId));
+            req.addHeader("X-SWDC-Plugin-Name", SoftwareCoMusic.getPluginName());
+            req.addHeader("X-SWDC-Plugin-Version", SoftwareCoMusic.getVersion());
+            req.addHeader("X-SWDC-Plugin-OS", SoftwareCoUtils.getOs());
+            req.addHeader("X-SWDC-Plugin-TZ", timesData.timezone);
+            req.addHeader("X-SWDC-Plugin-Offset", String.valueOf(timesData.offset));
 
             if (payload != null) {
                 LOG.log(Level.INFO, Client.pluginName + ": Sending API request: {0}, payload: {1}", new Object[]{api, payload});
