@@ -64,7 +64,7 @@
 <p>Discover how the underlying <a href="https://app.software.com/music/metrics">metrics of music</a> (including tempo, loudness, speechiness, energy, and valence) impact how you code.</p>
 <p><img src="https://swdc-vscode.s3-us-west-1.amazonaws.com/music-metrics.png" alt="Music Time music metrics"></p>
 <h3 id="-4-visualize-your-code-time-metrics-"><strong>4. Visualize your Code Time metrics</strong></h3>
-<p>Music Time is built on our <a href="https://github.com/swdotcom/swdc-intellij">Code Time plugin</a>. You will be able to see data—such as your keystrokes, time by file and project, and lines of code—which is used calculate to your productivity scores. <a href="https://app.software.com">Visit your feed</a> to see simple visualizations of your Code Time data, such as a rolling heatmap of your top programming times by hour of the day.</p>
+<p>Music Time is built on our <a href="https://www.software.com/code-time">Code Time plugin</a>. In the web app, under settings, you can enable "Code Time" to see your Code Time data—such as your keystrokes, time by file and project, and lines of code—which is used calculate to your productivity scores. [Visit your feed](https://app.software.com) to see simple visualizations of your Code Time data, such as a rolling heatmap of your top programming times by hour of the day.</p>
 <p><img src="https://swdc-vscode.s3-us-west-1.amazonaws.com/average-heatmap.png" alt="90-day rolling average heatmap"></p>
 <h2 id="share-your-top-songs">Share your top songs</h2>
 <p>Share your top songs on Facebook, Twitter, WhatsApp, and Tumblr by right clicking on a song in the playlist tree then &quot;Share&quot;. You can also Connect Slack to share songs with your team.</p>
