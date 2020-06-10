@@ -304,7 +304,7 @@ public class MusicToolWindow {
 
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
-                    if (label.getText().equals(connectLabel)) {
+                    if (label != null && label.getText() != null && label.getText().equals(connectLabel)) {
                         MusicControlManager.connectSpotify();
                     }
                 }
@@ -414,18 +414,20 @@ public class MusicToolWindow {
 
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
-                    if (label.getText().equals("See web analytics")) {
-                        //Code to call web analytics
-                        SoftwareCoUtils.launchMusicWebDashboard();
-                    } else if (label.getText().equals("Open dashboard")) {
-                        //Code to open web dashboard
-                        SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
-                    } else if (label.getText().equals("Learn more")) {
-                        SoftwareCoSessionManager.getInstance().openReadmeFile();
-                    } else if (label.getText().contains("Listening on") ||
-                            label.getText().contains("Connect to") ||
-                            label.getText().contains("Available")) {
-                        MusicControlManager.displayDeviceSelection();
+                    if (label != null && label.getText() != null) {
+                        if (label.getText().equals("See web analytics")) {
+                            //Code to call web analytics
+                            SoftwareCoUtils.launchMusicWebDashboard();
+                        } else if (label.getText().equals("Open dashboard")) {
+                            //Code to open web dashboard
+                            SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
+                        } else if (label.getText().equals("Learn more")) {
+                            SoftwareCoSessionManager.getInstance().openReadmeFile();
+                        } else if (label.getText().contains("Listening on") ||
+                                label.getText().contains("Connect to") ||
+                                label.getText().contains("Available")) {
+                            MusicControlManager.displayDeviceSelection();
+                        }
                     }
                 }
 
@@ -489,7 +491,7 @@ public class MusicToolWindow {
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
 
-                    if (label.getText().equals("Create Playlist")) {
+                    if (label != null && label.getText() != null && label.getText().equals("Create Playlist")) {
                         if (createPlaylistButtonState == 0) {
                             createPlaylistButtonState = 1;
                             String playlistName = SoftwareCoUtils.showInputPrompt("Enter playlist name", "Spotify", spotifyIcon);
@@ -513,21 +515,23 @@ public class MusicToolWindow {
                     } else if (refreshAIButtonState == 0) {
                         refreshAIButtonState = 1;
 
-                        if (label.getText().equals("Refresh my AI playlist")) {
-                            PlayListCommands.refreshAIPlaylist();
-                            SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was refreshed successfully", new Color(55, 108, 137, 100));
-                        } else if (label.getText().equals("Generate my AI playlist")) {
-                            PlayListCommands.generateAIPlaylist();
-                            SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was generated successfully", new Color(55, 108, 137, 100));
-                        }
-                        new Thread(() -> {
-                            try {
-                                Thread.sleep(1000);
-                                refreshAIButtonState = 0;
-                            } catch (Exception ex) {
-                                System.err.println(ex);
+                        if (label != null && label.getText() != null) {
+                            if (label.getText().equals("Refresh my AI playlist")) {
+                                PlayListCommands.refreshAIPlaylist();
+                                SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was refreshed successfully", new Color(55, 108, 137, 100));
+                            } else if (label.getText().equals("Generate my AI playlist")) {
+                                PlayListCommands.generateAIPlaylist();
+                                SoftwareCoUtils.showMsgPrompt("Your AI Top 40 playlist was generated successfully", new Color(55, 108, 137, 100));
                             }
-                        }).start();
+                            new Thread(() -> {
+                                try {
+                                    Thread.sleep(1000);
+                                    refreshAIButtonState = 0;
+                                } catch (Exception ex) {
+                                    System.err.println(ex);
+                                }
+                            }).start();
+                        }
                     }
                 }
 
@@ -921,7 +925,7 @@ public class MusicToolWindow {
 
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
-                    if (label.getText().equals(connectLabel)) {
+                    if (label != null && label.getText() != null && label.getText().equals(connectLabel)) {
                         MusicControlManager.connectSpotify();
                     }
                 }
