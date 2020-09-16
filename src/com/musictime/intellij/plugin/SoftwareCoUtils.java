@@ -19,10 +19,13 @@ import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.SystemInfo;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
+import com.musictime.intellij.plugin.models.FileDetails;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.musicjava.Client;
@@ -46,6 +49,9 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -61,6 +67,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Stream;
 
 public class SoftwareCoUtils {
 
@@ -73,6 +80,8 @@ public class SoftwareCoUtils {
     public static int pluginId = 16;
     public static String VERSION = null;
     public static final int SONG_FETCH_INTERVAL_MILLIS = 1000 * 30;
+
+    public static KeystrokeCount latestPayload = null;
 
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
@@ -88,6 +97,7 @@ public class SoftwareCoUtils {
 
     private static long DAYS_IN_SECONDS = 60 * 60 * 24;
 
+    private static String workspace_name = null;
     private static boolean initiatedCodeTimeInstallCheck = false;
     public static boolean codeTimeInstalled = false;
 
@@ -109,6 +119,26 @@ public class SoftwareCoUtils {
             getUser();
         }
         return codeTimeInstalled;
+    }
+
+    public static KeystrokeCount getLatestPayload() {
+        return latestPayload;
+    }
+
+    public static void setLatestPayload(KeystrokeCount payload) {
+        latestPayload = payload;
+    }
+
+    public static String getWorkspaceName() {
+        if (workspace_name == null) {
+            workspace_name = generateToken();
+        }
+        return workspace_name;
+    }
+
+    public static String generateToken() {
+        String uuid = UUID.randomUUID().toString();
+        return uuid.replace("-", "");
     }
 
     public static String getHostname() {
@@ -273,6 +303,78 @@ public class SoftwareCoUtils {
             return editors[0].getProject();
         }
         return null;
+    }
+
+    public static Project getProjectForPath(String path) {
+        Editor[] editors = EditorFactory.getInstance().getAllEditors();
+        if (editors != null && editors.length > 0) {
+            for (Editor editor : editors) {
+                if (editor != null && editor.getProject() != null) {
+                    String basePath = editor.getProject().getBasePath();
+                    if (path.indexOf(basePath) != -1) {
+                        return editor.getProject();
+                    }
+                }
+            }
+        } else {
+            Project[] projects = ProjectManager.getInstance().getOpenProjects();
+            if (projects != null && projects.length > 0) {
+                return projects[0];
+            }
+        }
+        return null;
+    }
+
+    public static FileDetails getFileDetails(String fullFileName) {
+        FileDetails fileDetails = new FileDetails();
+        if (StringUtils.isNotBlank(fullFileName)) {
+            fileDetails.full_file_name = fullFileName;
+            Project p = getProjectForPath(fullFileName);
+            if (p != null) {
+                fileDetails.project_directory = p.getBasePath();
+                fileDetails.project_name = p.getName();
+            }
+
+            File f = new File(fullFileName);
+
+            if (f.exists()) {
+                fileDetails.character_count = f.length();
+                fileDetails.file_name = f.getName();
+                if (StringUtils.isNotBlank(fileDetails.project_directory)) {
+                    // strip out the project_file_name
+                    fileDetails.project_file_name = fullFileName.split(fileDetails.project_directory)[1];
+                } else {
+                    fileDetails.project_file_name = fullFileName;
+                }
+                fileDetails.line_count = SoftwareCoUtils.getLineCount(fullFileName);
+
+                VirtualFile vFile = LocalFileSystem.getInstance().findFileByIoFile(f);
+                if (vFile != null) {
+                    fileDetails.syntax = vFile.getFileType().getName();
+                }
+            }
+        }
+
+        return fileDetails;
+    }
+
+    public static int getLineCount(String fileName) {
+        Stream<String> stream = null;
+        try {
+            Path path = Paths.get(fileName);
+            stream = Files.lines(path);
+            return (int) stream.count();
+        } catch (Exception e) {
+            return 0;
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    //
+                }
+            }
+        }
     }
 
     public static String getStringRepresentation(HttpEntity res) throws IOException {
@@ -1189,6 +1291,12 @@ public class SoftwareCoUtils {
     public static void launchMusicWebDashboard() {
         String url = Client.launch_url + "/music";
         BrowserUtil.browse(url);
+    }
+
+    public static boolean isNewDay() {
+        String currentDay = FileManager.getItem("currentDay", "");
+        String day = SoftwareCoUtils.getTodayInStandardFormat();
+        return !day.equals(currentDay);
     }
 
 }

@@ -91,15 +91,6 @@ public class PlaylistManager {
         return new JsonObject();
     }
 
-    public static JsonObject getTrackById(String trackId) {
-
-        SoftwareResponse resp = (SoftwareResponse) Apis.getTrackById(trackId);
-        if (resp != null && resp.isOk()) {
-            return resp.getJsonObj();
-        }
-        return new JsonObject();
-    }
-
     public static void trackEndCheck() {
         // PlaylistManager.currentTrackData
         // get progress_ms from the top level track data and duration_ms from the track data "item"
@@ -150,25 +141,28 @@ public class PlaylistManager {
         // otherwise we'll just wait until the interval call is made
     }
 
-    public static void gatherMusicInfo(boolean updateIntervalSongCheckTime) {
-
-        if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
-            return;
-        }
-
+    private static DeviceInfo deviceCheck() {
         // skip checking for a currently playing device if there's no
         // device and no previously playing track
         DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
         if (currentDevice == null && MusicControlManager.currentTrackName == null) {
-            if (deviceNullCounter % 2 == 0) {
+            if (deviceNullCounter % 3 == 0) {
                 // check devices
                 DeviceManager.refreshDevices();
                 deviceNullCounter = 0;
             }
             deviceNullCounter++;
             if (currentDevice == null && MusicControlManager.currentTrackName == null) {
-                return;
+                return null;
             }
+        }
+        return currentDevice;
+    }
+
+    public static void gatherMusicInfo(boolean updateIntervalSongCheckTime) {
+
+        if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
+            return;
         }
 
         gatheringTrack = true;
@@ -176,8 +170,15 @@ public class PlaylistManager {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
 
             long diff = timesData.now - lastSongCheck;
-            if (diff > 0 && diff < 1) {
+            if (diff > 0 && diff < 3) {
                 // it's getting called too quickly, bail out
+                return;
+            }
+
+            // in case we don't have a device
+            DeviceInfo currentDevice = deviceCheck();
+            if (currentDevice == null) {
+                // no reason to fetch a track if we don't have a device to use
                 return;
             }
 
@@ -222,22 +223,17 @@ public class PlaylistManager {
                     boolean initializePrevTrack = (hasCurrentTrack && !hasPrevTrack) ? true : false;
                     boolean longPaused = (timesData.now - PlaylistManager.pauseTriggerTime) > 60 ? true : false;
 
-                    boolean sendPreviousTrack = false;
+                    boolean prevTrackDone = false;
                     // long paused and has prev track
                     // no current track and has prev track
                     // has current track, has prev track, track names don't match
                     if ((longPaused && hasPrevTrack) || (!hasCurrentTrack && hasPrevTrack) ||
                             (hasCurrentTrack && hasPrevTrack
                                     && !MusicControlManager.currentTrackName.equals(PlaylistManager.previousTrackName))) {
-                        sendPreviousTrack = true;
+                        prevTrackDone = true;
                     }
 
-                    if (sendPreviousTrack && PlaylistManager.currentTrackData != null) {
-                        // process music payload
-                        SoftwareCoSessionManager.processMusicPayload(PlaylistManager.currentTrackData);
-                    }
-
-                    if (sendPreviousTrack || initializePrevTrack) {
+                    if (prevTrackDone || initializePrevTrack) {
                         SoftwareCoSessionManager.start = timesData.now;
                         SoftwareCoSessionManager.local_start = timesData.local_now;
                         PlaylistManager.pauseTriggerTime = 0;
@@ -257,11 +253,6 @@ public class PlaylistManager {
                 }
 
             } else if (resp.getCode() == 204) {
-                // no data available, send the previous one
-                if (hasPrevTrack && PlaylistManager.currentTrackData != null) {
-                    // process music payload
-                    SoftwareCoSessionManager.processMusicPayload(PlaylistManager.currentTrackData);
-                }
 
                 MusicControlManager.currentTrackPlaying = false;
                 PlaylistManager.currentTrackData = null;

@@ -4,22 +4,23 @@
  */
 package com.musictime.intellij.plugin;
 
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
-import com.musictime.intellij.plugin.fs.FileManager;
-import com.musictime.intellij.plugin.music.MusicControlManager;
-import com.musictime.intellij.plugin.music.TrackInfo;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.project.Project;
+import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.managers.EventTrackerManager;
+import com.musictime.intellij.plugin.managers.FileAggregateDataManager;
+import com.musictime.intellij.plugin.managers.SessionDataManager;
+import com.musictime.intellij.plugin.managers.TimeDataManager;
+import com.musictime.intellij.plugin.models.ElapsedTime;
+import com.musictime.intellij.plugin.models.FileChangeInfo;
+import com.musictime.intellij.plugin.models.KeystrokeAggregate;
+import com.musictime.intellij.plugin.models.TimeData;
+
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class KeystrokeCount {
 
@@ -27,163 +28,25 @@ public class KeystrokeCount {
     private String type = "Events";
 
     // non-hardcoded attributes
-    // Coding data
-    public int add = 0;
-    public int paste = 0;
-    public int delete = 0;
-    public int netkeys = 0;
-    public int linesAdded = 0;
-    public int linesRemoved = 0;
-    public int open = 0;
-    public int close = 0;
+    private Map<String, FileInfo> source = new HashMap<>();
     private String version;
     private int pluginId;
-    private int keystrokes = 0; // keystroke count
+    public int keystrokes = 0;
     // start and end are in seconds
-    private long start;
+    public long start;
     private long local_start;
-    private long end;
-    private long local_end;
     private String os;
     private String timezone;
     private KeystrokeProject project;
-    private Map<String, FileInfo> source = new HashMap<>();
 
-    public int getAdd() {
-        return add;
-    }
+    public long cumulative_editor_seconds = 0;
+    public long cumulative_session_seconds = 0;
+    public long elapsed_seconds = 0;
+    public String workspace_name = "";
+    public String hostname = "";
+    public String project_null_error = "";
 
-    public void setAdd(int add) {
-        this.add = add;
-    }
-
-    public int getPaste() {
-        return paste;
-    }
-
-    public void setPaste(int paste) {
-        this.paste = paste;
-    }
-
-    public int getDelete() {
-        return delete;
-    }
-
-    public void setDelete(int delete) {
-        this.delete = delete;
-    }
-
-    public int getNetkeys() {
-        return netkeys;
-    }
-
-    public void setNetkeys(int netkeys) {
-        this.netkeys = netkeys;
-    }
-
-    public int getLinesAdded() {
-        return linesAdded;
-    }
-
-    public void setLinesAdded(int linesAdded) {
-        this.linesAdded = linesAdded;
-    }
-
-    public int getLinesRemoved() {
-        return linesRemoved;
-    }
-
-    public void setLinesRemoved(int linesRemoved) {
-        this.linesRemoved = linesRemoved;
-    }
-
-    public int getOpen() {
-        return open;
-    }
-
-    public void setOpen(int open) {
-        this.open = open;
-    }
-
-    public int getClose() {
-        return close;
-    }
-
-    public void setClose(int close) {
-        this.close = close;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public int getPluginId() {
-        return pluginId;
-    }
-
-    public void setPluginId(int pluginId) {
-        this.pluginId = pluginId;
-    }
-
-    public long getStart() {
-        return start;
-    }
-
-    public void setStart(long start) {
-        this.start = start;
-    }
-
-    public long getLocal_start() {
-        return local_start;
-    }
-
-    public void setLocal_start(long local_start) {
-        this.local_start = local_start;
-    }
-
-    public long getEnd() {
-        return end;
-    }
-
-    public void setEnd(long end) {
-        this.end = end;
-    }
-
-    public long getLocal_end() {
-        return local_end;
-    }
-
-    public void setLocal_end(long local_end) {
-        this.local_end = local_end;
-    }
-
-    public String getOs() {
-        return os;
-    }
-
-    public void setOs(String os) {
-        this.os = os;
-    }
-
-    public String getTimezone() {
-        return timezone;
-    }
-
-    public void setTimezone(String timezone) {
-        this.timezone = timezone;
-    }
-
-    public void setSource(Map<String, FileInfo> source) {
-        this.source = source;
-    }
-
-    public Map<String, FileInfo> getSourceMap() {
-        return source;
-    }
+    public boolean triggered = false;
 
     public KeystrokeCount() {
         String appVersion = SoftwareCoMusic.getVersion();
@@ -196,59 +59,56 @@ public class KeystrokeCount {
         this.os = SoftwareCoUtils.getOs();
     }
 
+    public KeystrokeCount(String version) {
+        this.version = version;
+        this.pluginId = SoftwareCoUtils.pluginId;
+        this.os = SoftwareCoUtils.getOs();
+    }
+
     public KeystrokeCount clone() {
         KeystrokeCount kc = new KeystrokeCount();
         kc.keystrokes = this.keystrokes;
         kc.start = this.start;
         kc.local_start = this.local_start;
-        kc.end = this.end;
-        kc.local_end = this.local_end;
         kc.version = this.version;
         kc.pluginId = this.pluginId;
         kc.project = this.project;
         kc.type = this.type;
         kc.source = this.source;
         kc.timezone = this.timezone;
-        kc.os = this.os;
+
+        kc.cumulative_editor_seconds = this.cumulative_editor_seconds;
+        kc.cumulative_session_seconds = this.cumulative_session_seconds;
+        kc.elapsed_seconds = this.elapsed_seconds;
+        kc.workspace_name = this.workspace_name;
+        kc.hostname = this.hostname;
+        kc.project_null_error = this.project_null_error;
 
         return kc;
     }
 
     public void resetData() {
-        this.add = 0;
-        this.paste = 0;
-        this.delete = 0;
-        this.netkeys = 0;
-        this.linesAdded = 0;
-        this.linesRemoved = 0;
-        this.open = 0;
-        this.close = 0;
         this.keystrokes = 0;
         this.source = new HashMap<>();
-
         if (this.project != null) {
-            this.project = null;
+            this.project = new KeystrokeProject("Unnamed", "Untitled");
         }
-
         this.start = 0L;
         this.local_start = 0L;
         this.timezone = "";
+        this.triggered = false;
+        this.cumulative_editor_seconds = 0;
+        this.cumulative_session_seconds = 0;
+        this.elapsed_seconds = 0;
+        this.workspace_name = "";
+        this.project_null_error = "";
+        SoftwareCoUtils.setLatestPayload(null);
     }
 
-    public void updateLatestPayloadLazily() {
-        String payload = SoftwareCoMusic.gson.toJson(this);
-        FileManager.storeLatestPayloadLazily(payload);
-    }
-
-    private boolean hasOpenOrCloseMetrics() {
+    private boolean hasOpenAndCloseMetrics() {
         Map<String, FileInfo> fileInfoDataSet = this.source;
         for ( FileInfo fileInfoData : fileInfoDataSet.values() ) {
-            int openVal = fileInfoData.getOpen();
-            if (openVal > 0) {
-                return true;
-            }
-            int closeVal = fileInfoData.getClose();
-            if (closeVal > 0) {
+            if (fileInfoData.open > 0 && fileInfoData.close > 0) {
                 return true;
             }
         }
@@ -266,346 +126,271 @@ public class KeystrokeCount {
         public Integer lines = 0;
         public Integer linesAdded = 0;
         public Integer linesRemoved = 0;
+        public Integer keystrokes = 0;
         public String syntax = "";
         public long start = 0;
         public long end = 0;
         public long local_start = 0;
         public long local_end = 0;
-        public Integer repoFileContributorCount = 0;
-        public long fileAgeDays = 0;
+        public long duration_seconds = 0;
+        public String fsPath = "";
+        public String name = "";
+        // new attributes for snowplow
+        public int characters_added = 0; // chars added
+        public int characters_deleted = 0; // chars deleted
+        public int single_deletes = 0; // single char or single line delete
+        public int multi_deletes = 0; // multi char or multi line delete
+        public int single_adds = 0; // single char or single line add
+        public int multi_adds = 0; // multi char or multi line add
+        public int auto_indents = 0;
+        public int replacements = 0;
+        public boolean is_net_change = false;
 
-        public FileInfo() { }
-
-        public void reduceOtherFileInfo(TrackInfo trackInfo, JsonObject jsonObj) {
-            try {
-                Type type = new TypeToken<FileInfo>() { }.getType();
-                FileInfo otherFileInfo = SoftwareCoMusic.gson.fromJson(jsonObj, type);
-                if (otherFileInfo != null) {
-                    this.add += otherFileInfo.add;
-                    trackInfo.setAdd(trackInfo.getAdd() + otherFileInfo.add);
-                    this.paste += otherFileInfo.paste;
-                    trackInfo.setPaste(trackInfo.getPaste() + otherFileInfo.paste);
-                    this.open += otherFileInfo.open;
-                    trackInfo.setOpen(trackInfo.getOpen() + otherFileInfo.open);
-                    this.close += otherFileInfo.close;
-                    trackInfo.setClose(trackInfo.getClose() + otherFileInfo.close);
-                    this.delete += otherFileInfo.delete;
-                    trackInfo.setDelete(trackInfo.getDelete() + otherFileInfo.delete);
-                    this.netkeys += otherFileInfo.netkeys;
-                    trackInfo.setNetkeys(trackInfo.getNetkeys() + otherFileInfo.netkeys);
-                    this.linesAdded += otherFileInfo.linesAdded;
-                    trackInfo.setLinesAdded(trackInfo.getLinesAdded() + otherFileInfo.linesAdded);
-                    this.linesRemoved += otherFileInfo.linesRemoved;
-                    trackInfo.setLinesRemoved(trackInfo.getLinesRemoved() + otherFileInfo.linesRemoved);
-                    if (this.end < otherFileInfo.end) {
-                        this.end = otherFileInfo.end;
-                    }
-                    if (this.start > otherFileInfo.start) {
-                        this.start = otherFileInfo.start;
-                    }
-                    if (this.local_end < otherFileInfo.local_end) {
-                        this.local_end = otherFileInfo.local_end;
-                    }
-                    if (this.local_start > otherFileInfo.local_start) {
-                        this.local_start = otherFileInfo.local_start;
-                    }
-                }
-            } catch (Exception e) {
-                //
-            }
-        }
-
-        public JsonObject getAsJson() {
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.addProperty("add", this.add);
-            jsonObject.addProperty("start", this.start);
-            jsonObject.addProperty("local_start", this.local_start);
-            jsonObject.addProperty("end", this.end);
-            jsonObject.addProperty("local_end", this.local_end);
-            jsonObject.addProperty("paste", this.paste);
-            jsonObject.addProperty("open", this.open);
-            jsonObject.addProperty("close", this.close);
-            jsonObject.addProperty("delete", this.delete);
-            jsonObject.addProperty("length", this.length);
-            jsonObject.addProperty("netkeys", this.netkeys);
-            jsonObject.addProperty("lines", this.lines);
-            jsonObject.addProperty("linesAdded", this.linesAdded);
-            jsonObject.addProperty("linesRemoved", this.linesRemoved);
-            jsonObject.addProperty("syntax", this.syntax);
-            jsonObject.addProperty("keystrokes", this.add + this.paste + this.delete + this.linesAdded + this.linesRemoved);
-            return jsonObject;
-        }
-
-        public Integer getAdd() {
-            return add;
-        }
-
-        public void setAdd(Integer add) {
-            this.add = add;
-        }
-
-        public Integer getPaste() {
-            return paste;
-        }
-
-        public void setPaste(Integer paste) {
-            this.paste = paste;
-        }
-
-        public Integer getOpen() {
-            return open;
-        }
-
-        public void setOpen(Integer open) {
-            this.open = open;
-        }
-
-        public Integer getClose() {
-            return close;
-        }
-
-        public void setClose(Integer close) {
-            this.close = close;
-        }
-
-        public Integer getDelete() {
-            return delete;
-        }
-
-        public void setDelete(Integer delete) {
-            this.delete = delete;
-        }
-
-        public Integer getLength() {
-            return length;
-        }
-
-        public void setLength(Integer length) {
-            this.length = length;
-        }
-
-        public Integer getNetkeys() {
-            return netkeys;
-        }
-
-        public void setNetkeys(Integer netkeys) {
-            this.netkeys = netkeys;
-        }
-
-        public Integer getLines() {
-            return lines;
-        }
-
-        public void setLines(Integer lines) {
-            this.lines = lines;
-        }
-
-        public Integer getLinesAdded() {
-            return linesAdded;
-        }
-
-        public void setLinesAdded(Integer linesAdded) {
-            this.linesAdded = linesAdded;
-        }
-
-        public Integer getLinesRemoved() {
-            return linesRemoved;
-        }
-
-        public void setLinesRemoved(Integer linesRemoved) {
-            this.linesRemoved = linesRemoved;
-        }
-
-        public String getSyntax() {
-            return syntax;
-        }
-
-        public void setSyntax(String syntax) {
-            this.syntax = syntax;
-        }
-
-        public long getStart() {
-            return start;
-        }
-
-        public void setStart(long start) {
-            this.start = start;
-        }
-
-        public long getEnd() {
-            return end;
-        }
-
-        public void setEnd(long end) {
-            this.end = end;
-        }
-
-        public long getLocal_start() {
-            return local_start;
-        }
-
-        public void setLocal_start(long local_start) {
-            this.local_start = local_start;
-        }
-
-        public long getLocal_end() {
-            return local_end;
-        }
-
-        public void setLocal_end(long local_end) {
-            this.local_end = local_end;
-        }
-
-        public Integer getRepoFileContributorCount() {
-            return repoFileContributorCount;
-        }
-
-        public void setRepoFileContributorCount(Integer repoFileContributorCount) {
-            this.repoFileContributorCount = repoFileContributorCount;
-        }
-
-        public long getFileAgeDays() {
-            return fileAgeDays;
-        }
-
-        public void setFileAgeDays(long fileAgeDays) {
-            this.fileAgeDays = fileAgeDays;
+        @Override
+        public String toString() {
+            return "FileInfo [add=" + add + ", paste=" + paste + ", open=" + open
+                    + "\n, close=" + close + ", delete=" + delete + ", length=" + length + ", lines=" + lines
+                    + "\n, linesAdded=" + linesAdded + ", linesRemoved=" + linesRemoved + ", keystrokes=" + keystrokes
+                    + "\n, syntax=" + syntax + ", characters_added=" + characters_added + ", characters_deleted="
+                    + characters_deleted + "\n, single_deletes=" + single_deletes + ", multi_deletes=" + multi_deletes
+                    + "\n, single_adds=" + single_adds + ", multi_adds=" + multi_adds + ", auto_indents=" + auto_indents
+                    + "\n, replacements=" + replacements + ", is_net_change=" + is_net_change + "]";
         }
     }
 
     public FileInfo getSourceByFileName(String fileName) {
-        if (source.get(fileName) != null) {
+        // Initiate Process Keystrokes Timer
+        if (!this.triggered) {
+            this.triggered = true;
+
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    // check if its still in a triggered (true) state before processing
+                    // it, as the unfocus event can also process the keystrokes
+                    if (triggered) {
+                        processKeystrokes();
+                    }
+                    triggered = false;
+                }
+            }, 1000 * 60);
+        }
+
+        // Fetch the FileInfo
+        if (source != null && source.get(fileName) != null) {
             return source.get(fileName);
+        }
+
+        if (source == null) {
+            source = new HashMap<>();
         }
 
         SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
 
+        // Keystrokes metadata needs to be initialized
         if (this.start == 0) {
             this.start = timesData.now;
             this.local_start = timesData.local_now;
             this.timezone = timesData.timezone;
-
-            // start the keystroke processor 1 minute timer
-            new Thread(() -> {
-                try {
-                    Thread.sleep(1000 * 60);
-                    this.processKeystrokes();
-                } catch (Exception e) {
-                    System.err.println(e);
-                }
-            }).start();
         }
 
         // create one and return the one just created
         FileInfo fileInfoData = new FileInfo();
-        fileInfoData.setStart(timesData.now);
-        fileInfoData.setLocal_start(timesData.local_now);
+        fileInfoData.start = timesData.now;
+        fileInfoData.local_start = timesData.local_now;
         source.put(fileName, fileInfoData);
+        fileInfoData.fsPath = fileName;
 
         return fileInfoData;
     }
 
-    public String getSource() {
-        return SoftwareCoMusic.gson.toJson(source);
-    }
-
-    public void endPreviousModifiedFiles(String currentFileName) {
+    public void endPreviousModifiedFiles(String fileName) {
         SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-        Map<String, FileInfo> fileInfoDataSet = this.source;
-
-        for (FileInfo fileInfoData : fileInfoDataSet.values()) {
-            if (fileInfoData.getEnd() == 0) {
-                fileInfoData.setEnd(timesData.now);
-                fileInfoData.setLocal_end(timesData.local_now);
-            }
-        }
-        if(fileInfoDataSet.get(currentFileName) != null) {
-            FileInfo fileInfoData = fileInfoDataSet.get(currentFileName);
-            fileInfoData.setEnd(0);
-            fileInfoData.setLocal_end(0);
-        }
-    }
-
-    public void endUnendedFiles() {
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-        Map<String, FileInfo> fileInfoDataSet = this.source;
-        for ( FileInfo fileInfoData : fileInfoDataSet.values() ) {
-            // end the ones that don't have an end time
-            if (fileInfoData.getEnd() == 0) {
-                // set the end time for this file
-                fileInfoData.setEnd(timesData.now);
-                fileInfoData.setLocal_end(timesData.local_now);
+        if (this.source != null) {
+            for (String key : this.source.keySet()) {
+                FileInfo fileInfo = this.source.get(key);
+                if (key.equals(fileName)) {
+                    fileInfo.end = 0;
+                    fileInfo.local_end = 0;
+                } else {
+                    fileInfo.end = timesData.now;
+                    fileInfo.local_end = timesData.local_now;
+                }
             }
         }
     }
 
+    public Map<String, FileInfo> getFileInfos() {
+        return this.source;
+    }
+
+    // update each source with it's true amount of keystrokes
     public boolean hasData() {
-        if (this.getKeystrokes() > 0 || this.hasOpenOrCloseMetrics()) {
-            return true;
-        }
-
-        return false;
+        return this.keystrokes > 0 ? true : false;
     }
 
     public void processKeystrokes() {
+        try {
+            if (this.hasData()) {
 
-        boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
-        if (this.hasData() && hasSpotifyAccess) {
-
-            SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
-
-            // end the file end times
-            this.endUnendedFiles();
-
-            for(String key : this.source.keySet()) {
-                FileInfo fileInfo = this.source.get(key);
-                this.add += fileInfo.getAdd();
-                this.paste += fileInfo.getPaste();
-                this.delete += fileInfo.getDelete();
-                this.netkeys += fileInfo.getNetkeys();
-                this.linesAdded += fileInfo.getLinesAdded();
-                this.linesRemoved += fileInfo.getLinesRemoved();
-                this.open += fileInfo.getOpen();
-                this.close += fileInfo.getClose();
-
-                int fileContributorCount = SoftwareCoRepoManager.getInstance().getFileContributorCount(SoftwareCoMusic.getRootPath(), key);
-                fileInfo.setRepoFileContributorCount(fileContributorCount);
-
-                long fileAgeDays = 0;
-                BasicFileAttributes attributes = null;
-                try {
-                    attributes = Files.readAttributes(Paths.get(key), BasicFileAttributes.class);
-                } catch (IOException ex) {}
-                if(attributes != null) {
-                    Instant fileInstant = attributes.creationTime().toInstant();
-                    Instant now = Clock.systemUTC().instant();
-                    Duration difference = Duration.between(fileInstant, now);
-                    fileAgeDays = difference.toDays();
+                // check to see if we need to find the main project if we don't have it
+                if (this.project == null || this.project.getDirectory() == null ||
+                        this.project.getDirectory().equals("") ||
+                        this.project.getDirectory().equals("Untitled")) {
+                    Editor[] editors = EditorFactory.getInstance().getAllEditors();
+                    if (editors != null && editors.length > 0) {
+                        for (Editor editor : editors) {
+                            Project p = editor.getProject();
+                            if (p != null && p.getName() != null && !p.getName().equals("")) {
+                                String projDir = p.getProjectFilePath();
+                                String projName = p.getName();
+                                if (this.project == null) {
+                                    // create the project
+                                    this.project = new KeystrokeProject(projName, projDir);
+                                } else {
+                                    this.project.setDirectory(projDir);
+                                    this.project.setName(projName);
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                fileInfo.setFileAgeDays(fileAgeDays);
+                ElapsedTime eTime = SessionDataManager.getTimeBetweenLastPayload();
+
+                // end the file end times.
+                this.preProcessKeystrokeData(eTime.sessionSeconds, eTime.elapsedSeconds);
+
+                // update the file aggregate info
+                this.updateAggregates(eTime.sessionSeconds);
+
+                // send the event to the event tracker
+                EventTrackerManager.getInstance().trackCodeTimeEvent(this);
+
+                final String payload = SoftwareCoMusic.gson.toJson(this);
+
+                // store to send later
+                FileManager.storePayload(payload);
+
+                // set the latest payload
+                SoftwareCoUtils.setLatestPayload(this);
+
+                SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+                // set the latest payload timestamp utc so help with session time calculations
+                FileManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
             }
-
-            SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-            this.end = timesData.now;
-            this.local_end = timesData.local_now;
-
-            final String payload = SoftwareCoMusic.gson.toJson(this);
-
-            // store to send later
-            sessionMgr.storePayload(payload);
-
+        } catch (Exception e) {
         }
 
         this.resetData();
     }
 
-    public int getKeystrokes() {
-        return keystrokes;
+    public void updateLatestPayloadLazily() {
+        String payload = SoftwareCoMusic.gson.toJson(this);
+        FileManager.storeLatestPayloadLazily(payload);
     }
 
-    public void setKeystrokes(int keystrokes) {
-        this.keystrokes = keystrokes;
+    private void validateAndUpdateCumulativeData(long sessionSeconds) {
+
+        TimeData td = TimeDataManager.incrementSessionAndFileSeconds(this.project, sessionSeconds);
+
+        // get the current payloads so we can compare our last cumulative seconds
+        KeystrokeCount lastPayload = FileManager.getLastSavedKeystrokeStats();
+        if (SoftwareCoUtils.isNewDay()) {
+            // don't use the last kpm since the day is different
+            lastPayload = null;
+
+            // clear out data from the previous day
+            newDayChecker();
+
+            if (td != null) {
+                td = null;
+                this.project_null_error = "TimeData should be null as its a new day";
+            }
+        }
+
+        // add the cumulative data
+        this.workspace_name = SoftwareCoUtils.getWorkspaceName();
+        this.hostname = SoftwareCoUtils.getHostname();
+        this.cumulative_session_seconds = 60;
+        this.cumulative_editor_seconds = 60;
+
+        if (td != null) {
+            this.cumulative_editor_seconds = td.getEditor_seconds();
+            this.cumulative_session_seconds = td.getSession_seconds();
+        } else if (lastPayload != null) {
+            // no time data found, project null error
+            this.project_null_error = "TimeData not found using " + this.project.getDirectory() + " for editor and session seconds";
+            this.cumulative_editor_seconds = lastPayload.cumulative_editor_seconds + 60;
+            this.cumulative_session_seconds = lastPayload.cumulative_session_seconds + 60;
+        }
+
+        if (this.cumulative_editor_seconds < this.cumulative_session_seconds) {
+            this.cumulative_editor_seconds = this.cumulative_session_seconds;
+        }
+    }
+
+    // end unended file payloads and add the cumulative editor seconds
+    public void preProcessKeystrokeData(long sessionSeconds, long elapsedSeconds) {
+
+        this.validateAndUpdateCumulativeData(sessionSeconds);
+
+        // set the elapsed seconds (last end time to this end time)
+        this.elapsed_seconds = elapsedSeconds;
+
+        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+        Map<String, FileInfo> fileInfoDataSet = this.source;
+        for ( FileInfo fileInfoData : fileInfoDataSet.values() ) {
+            // end the ones that don't have an end time
+            if (fileInfoData.end == 0) {
+                // set the end time for this file
+                fileInfoData.end = timesData.now;
+                fileInfoData.local_end = timesData.local_now;
+            }
+        }
+    }
+
+    private void updateAggregates(long sessionSeconds) {
+        Map<String, FileChangeInfo> fileChangeInfoMap = FileAggregateDataManager.getFileChangeInfo();
+        KeystrokeAggregate aggregate = new KeystrokeAggregate();
+        if (this.project != null) {
+            aggregate.directory = this.project.getDirectory();
+        } else {
+            aggregate.directory = "Untitled";
+        }
+        for (String key : this.source.keySet()) {
+            FileInfo fileInfo = this.source.get(key);
+            fileInfo.duration_seconds = fileInfo.end - fileInfo.start;
+            fileInfo.fsPath = key;
+            try {
+                Path path = Paths.get(key);
+                if (path != null) {
+                    Path fileName = path.getFileName();
+                    if (fileName != null) {
+                        fileInfo.name = fileName.toString();
+                    }
+                }
+
+                aggregate.aggregate(fileInfo);
+
+                FileChangeInfo existingFileInfo = fileChangeInfoMap.get(key);
+                if (existingFileInfo == null) {
+                    existingFileInfo = new FileChangeInfo();
+                    fileChangeInfoMap.put(key, existingFileInfo);
+                }
+                existingFileInfo.aggregate(fileInfo);
+                existingFileInfo.kpm = existingFileInfo.keystrokes / existingFileInfo.update_count;
+            } catch (Exception e) {
+                // error getting the path
+            }
+        }
+
+        // update the aggregate info
+        SessionDataManager.incrementSessionSummary(aggregate, sessionSeconds);
+
+        // update the file info map
+        FileAggregateDataManager.updateFileChangeInfo(fileChangeInfoMap);
     }
 
     public KeystrokeProject getProject() {
@@ -614,6 +399,17 @@ public class KeystrokeCount {
 
     public void setProject(KeystrokeProject project) {
         this.project = project;
+    }
+
+    /**
+     * Comparator to return the latest start time
+     */
+    public static class SortByLatestStart implements Comparator<KeystrokeCount>
+    {
+        public int compare(KeystrokeCount a, KeystrokeCount b)
+        {
+            return a.start < b.start ? -1 : a.start > a.start ? 1 : 0;
+        }
     }
 
     @Override
@@ -628,5 +424,31 @@ public class KeystrokeCount {
                 ", timezone='" + timezone + '\'' +
                 ", project=" + project +
                 '}';
+    }
+
+    private void newDayChecker() {
+        if (SoftwareCoUtils.isNewDay()) {
+            // send the payloads
+            FileManager.sendOfflineData();
+
+            // clear the last payload we have in memory
+            FileManager.clearLastSavedKeystrokeStats();
+
+            // send the time data
+            TimeDataManager.sendOfflineTimeData();
+
+            // clear the wc time and the session summary and the file change info summary
+            SessionDataManager.clearSessionSummaryData();
+            TimeDataManager.clearTimeDataSummary();
+            FileAggregateDataManager.clearFileChangeInfoSummaryData();
+
+            // update the current day
+            String day = SoftwareCoUtils.getTodayInStandardFormat();
+            FileManager.setItem("currentDay", day);
+
+            // update the last payload timestamp
+            FileManager.setNumericItem("latestPayloadTimestampEndUtc", 0L);
+
+        }
     }
 }

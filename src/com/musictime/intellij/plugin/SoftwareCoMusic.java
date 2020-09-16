@@ -14,6 +14,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
 import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.managers.EventTrackerManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
@@ -85,12 +86,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
         boolean musicFileExist = SoftwareCoSessionManager.musicDataFileExists();
         if(musicFileExist) {
             String musicFile = FileManager.getMusicDataFile(false);
-            SoftwareCoSessionManager.deleteFile(musicFile);
+            FileManager.deleteFile(musicFile);
         }
         boolean readmeExist = SoftwareCoSessionManager.readmeFileExists();
         if(readmeExist) {
             String readmeFile = FileManager.getReadmeFile(false);
-            SoftwareCoSessionManager.deleteFile(readmeFile);
+            FileManager.deleteFile(readmeFile);
         }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         String jwt = FileManager.getItem("jwt");
@@ -285,9 +286,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     private void sendOfflineDataRunner() {
         new Thread(() -> {
-
             try {
-                SoftwareCoSessionManager.getInstance().sendOfflineData();
+                FileManager.sendOfflineData();
             } catch (Exception e) {
                 System.err.println(e);
             }
@@ -296,34 +296,44 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     // add the document change event listener
     private void setupEventListeners() {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            Disposable disposable = new Disposable() {
-                @Override
-                public void dispose() {
-                    try {
-                        if (connection != null) {
-                            connection.disconnect();
-                        }
-                    } catch(Exception e) {
-                        log.info("Error disconnecting the software.com plugin, reason: " + e.toString());
-                    }
+        // listen to editor events if codetime is not installed
+        if (!SoftwareCoUtils.isCodeTimeInstalled()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                Disposable disposable = new Disposable() {
+                    @Override
+                    public void dispose() {
 
-                    asyncManager.destroyServices();
-                }
-            };
-            // edit document
-            EditorFactory.getInstance().getEventMulticaster().addDocumentListener(
-                    new SoftwareCoDocumentListener(), disposable);
-        });
+                        // send the activate event
+                        EventTrackerManager.getInstance().trackEditorAction("editor", "deactivate");
+
+                        try {
+                            if (connection != null) {
+                                connection.disconnect();
+                            }
+                        } catch (Exception e) {
+                            log.info("Error disconnecting the software.com plugin, reason: " + e.toString());
+                        }
+
+                        asyncManager.destroyServices();
+                    }
+                };
+                // edit document
+                EditorFactory.getInstance().getEventMulticaster().addDocumentListener(
+                        new SoftwareCoDocumentListener(), disposable);
+            });
+        }
     }
 
     // add the file selection change event listener
     private void setupFileEditorEventListeners(Project p) {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            // file open,close,selection listener
-            p.getMessageBus().connect().subscribe(
-                    FileEditorManagerListener.FILE_EDITOR_MANAGER, new SoftwareCoFileEditorListener());
-        });
+        // listen to editor events if codetime is not installed
+        if (!SoftwareCoUtils.isCodeTimeInstalled()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                // file open,close,selection listener
+                p.getMessageBus().connect().subscribe(
+                        FileEditorManagerListener.FILE_EDITOR_MANAGER, new SoftwareCoFileEditorListener());
+            });
+        }
     }
 
 }
