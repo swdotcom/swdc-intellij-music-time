@@ -42,12 +42,6 @@ public class SoftwareCoEventManager {
     private SoftwareCoEventManager() {
         keystrokeMgr = KeystrokeManager.getInstance();
 
-        // initialize the snowplow tracker
-        tracker = EventTrackerManager.getInstance();
-
-        // send the activate event
-        tracker.trackEditorAction("editor", "activate");
-
         final Runnable checkFocusStateTimer = () -> checkFocusState();
         AsyncManager.getInstance().scheduleService(
                 checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);

@@ -38,11 +38,9 @@ public class EventTrackerManager {
         return instance;
     }
 
-    private EventTrackerManager() {
-        this.init();
-    }
+    private EventTrackerManager() {}
 
-    private void init() {
+    public void init() {
         trackerMgr = new TrackerManager(
                 Client.api_endpoint, "MusicTime", "swdc-intellij");
         ready = true;

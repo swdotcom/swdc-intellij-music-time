@@ -179,6 +179,11 @@ public class SoftwareCoMusic implements ApplicationComponent {
         // get the user status (jwt, email, spotify, slack)
         SoftwareCoUtils.getMusicTimeUserStatus();
 
+        // initialize the tracker
+        EventTrackerManager.getInstance().init();
+        // send the 1st event: activate
+        EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
+
         // create the 15 minute interval timer to send code time payloads if code time is NOT installed
         if (!SoftwareCoUtils.isCodeTimeInstalled()) {
             // every 15 minutes

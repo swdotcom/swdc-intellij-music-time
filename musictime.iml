@@ -29,6 +29,6 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="gson-2.8.6" level="project" />
-    <orderEntry type="library" name="swdc-java-tracker-1.0.1" level="project" />
+    <orderEntry type="library" name="swdc-java-tracker-1.1.0" level="project" />
   </component>
 </module>
