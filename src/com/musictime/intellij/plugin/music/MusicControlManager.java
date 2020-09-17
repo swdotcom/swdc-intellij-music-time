@@ -162,14 +162,6 @@ public class MusicControlManager {
             // fetch the liked songs (type 3 = liked songs)
             PlayListCommands.updatePlaylists(3, null);
 
-            // send the liked songs to the app to seed (async)
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    MusicControlManager.seedLikedSongSessions();
-                }
-            }, 1000);
-
             // get genres to show in the options
             PlayListCommands.getGenre(); // API call
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
@@ -305,7 +297,7 @@ public class MusicControlManager {
 
     public static boolean hasSpotifyAccess() {
         String accessToken = FileManager.getItem("spotify_access_token");
-        return accessToken != null ? true : false;
+        return !StringUtils.isBlank(accessToken);
     }
 
     public static boolean requiresReAuthentication() {

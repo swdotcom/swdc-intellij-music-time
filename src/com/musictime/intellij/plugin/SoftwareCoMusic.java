@@ -158,13 +158,13 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private void initializeUserInfoWhenProjectsReady(boolean initializedUser) {
         Project p = SoftwareCoUtils.getOpenProject();
         if (p == null) {
-            // try again in 4 seconds
+            // try again in 5 seconds
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
                     initializeUserInfoWhenProjectsReady(initializedUser);
                 }
-            }, 4000);
+            }, 5000);
         } else {
             keystrokeMgr.addKeystrokeWrapperIfNoneExists(p);
             initializeUserInfo(initializedUser);
@@ -184,35 +184,38 @@ public class SoftwareCoMusic implements ApplicationComponent {
         // send the 1st event: activate
         EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
 
-        // create the 15 minute interval timer to send code time payloads if code time is NOT installed
+        // create the 5 minute interval timer to send code time payloads if code time is NOT installed
         if (!SoftwareCoUtils.isCodeTimeInstalled()) {
-            // every 15 minutes
+            // every 5 minutes
             final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
-            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 15);
+            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 5);
         }
 
-        if (!MusicControlManager.hasSpotifyAccess()) {
+        boolean hasAccess = MusicControlManager.hasSpotifyAccess();
+
+        if (!hasAccess) {
             SoftwareCoUtils.setStatusLineMessage();
-        }
-        // check to see if we need to re-authenticate
-        if (hasExpiredAccessToken()) {
-            // disconnect
-            MusicControlManager.disConnectSpotify();
-
-            // show message
-            showReconnectPrompt();
         } else {
+            // check to see if we need to re-authenticate
+            if (hasExpiredAccessToken()) {
+                // disconnect
+                MusicControlManager.disConnectSpotify();
 
-            Apis.getUserProfile();
+                // show message
+                showReconnectPrompt();
+            } else {
 
-            PlaylistManager.getUserPlaylists(); // API call
-            PlayListCommands.updatePlaylists(0, null);
-            PlayListCommands.updatePlaylists(3, null);
-            PlayListCommands.getGenre(); // API call
-            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
-            DeviceManager.getDevices(); // API call
+                Apis.getUserProfile();
 
-            SoftwareCoUtils.updatePlayerControls(false);
+                PlaylistManager.getUserPlaylists(); // API call
+                PlayListCommands.updatePlaylists(0, null);
+                PlayListCommands.updatePlaylists(3, null);
+                PlayListCommands.getGenre(); // API call
+                PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+                DeviceManager.getDevices(); // API call
+
+                SoftwareCoUtils.updatePlayerControls(false);
+            }
         }
 
         if (initializedUser) {
@@ -267,7 +270,9 @@ public class SoftwareCoMusic implements ApplicationComponent {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                PlaylistManager.gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
+                if (MusicControlManager.hasSpotifyAccess()) {
+                    PlaylistManager.gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
+                }
             }
         }, 5000, SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS);
 
@@ -276,7 +281,9 @@ public class SoftwareCoMusic implements ApplicationComponent {
         new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                PlaylistManager.trackEndCheck();
+                if (MusicControlManager.hasSpotifyAccess()) {
+                    PlaylistManager.trackEndCheck();
+                }
             }
         }, 10000, 5000);
     }
