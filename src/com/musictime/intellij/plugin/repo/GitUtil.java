@@ -11,7 +11,7 @@ import java.util.*;
 public class GitUtil {
 
     // get the git resource config information
-    public static ResourceInfo getResourceInfo(String projectDir) {
+    public static ResourceInfo getResourceInfo(String projectDir, boolean buildMembers) {
         ResourceInfo resourceInfo = new ResourceInfo();
 
         // is the project dir avail?
@@ -34,36 +34,52 @@ public class GitUtil {
                     resourceInfo.setTag(tag);
                     resourceInfo.setEmail(email);
                     resourceInfo.setIdentifier(identifier);
-                }
 
-                // get the users
-                List<TeamMember> members = new ArrayList<>();
-                String[] listUsers = { "git", "log", "--pretty=%an,%ae" };
-                List<String> results = SoftwareCoUtils.getResultsForCommandArgs(listUsers, projectDir);
-                Set<String> emailSet = new HashSet<>();
-                if (results != null && results.size() > 0) {
-                    // add them
-                    for (int i = 0; i < results.size(); i++) {
-                        String[] info = results.get(i).split(",");
-                        if (info != null && info.length == 2) {
-                            String name = info[0];
-                            String teamEmail = info[1];
-                            if (!emailSet.contains(teamEmail)) {
-                                TeamMember member = new TeamMember();
-                                member.setEmail(teamEmail);
-                                member.setName(name);
-                                member.setIdentifier(identifier);
-                                members.add(member);
-                                emailSet.add(teamEmail);
-                            }
+                    // get the ownerId and repoName out of the identifier
+                    String[] parts = identifier.split("/");
+                    if (parts.length > 2) {
+                        // get the last part
+                        String repoNamePart = parts[parts.length - 1];
+                        int typeIdx = repoNamePart.indexOf(".git");
+                        if (typeIdx != -1) {
+                            // it's a git identifier AND it has enough parts
+                            // to get the repo name and owner id
+                            resourceInfo.setRepoName(repoNamePart.substring(0, typeIdx));
+                            resourceInfo.setOwnerId(parts[parts.length - 2]);
                         }
                     }
                 }
 
-                // sort the members in alphabetical order
-                members = sortByEmail(members);
+                if (buildMembers) {
+                    // get the users
+                    List<TeamMember> members = new ArrayList<>();
+                    String[] listUsers = {"git", "log", "--pretty=%an,%ae"};
+                    List<String> results = SoftwareCoUtils.getResultsForCommandArgs(listUsers, projectDir);
+                    Set<String> emailSet = new HashSet<>();
+                    if (results != null && results.size() > 0) {
+                        // add them
+                        for (int i = 0; i < results.size(); i++) {
+                            String[] info = results.get(i).split(",");
+                            if (info != null && info.length == 2) {
+                                String name = info[0];
+                                String teamEmail = info[1];
+                                if (!emailSet.contains(teamEmail)) {
+                                    TeamMember member = new TeamMember();
+                                    member.setEmail(teamEmail);
+                                    member.setName(name);
+                                    member.setIdentifier(identifier);
+                                    members.add(member);
+                                    emailSet.add(teamEmail);
+                                }
+                            }
+                        }
+                    }
 
-                resourceInfo.setMembers(members);
+                    // sort the members in alphabetical order
+                    members = sortByEmail(members);
+
+                    resourceInfo.setMembers(members);
+                }
             } catch (Exception e) {
                 //
             }

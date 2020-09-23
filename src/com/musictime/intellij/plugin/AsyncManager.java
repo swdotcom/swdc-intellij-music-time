@@ -1,13 +1,10 @@
 package com.musictime.intellij.plugin;
 
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class AsyncManager {
 
@@ -32,6 +29,10 @@ public class AsyncManager {
                     service, delayBeforeExecute, interval, TimeUnit.SECONDS);
             futures.add(future);
         }
+    }
+
+    public ScheduledFuture executeOnceInSeconds(Runnable service, long delayInSeconds) {
+        return scheduler.schedule(service, delayInSeconds, TimeUnit.SECONDS);
     }
 
     public void destroyServices() {

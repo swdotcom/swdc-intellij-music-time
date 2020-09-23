@@ -19,10 +19,13 @@ import com.intellij.openapi.ui.InputValidator;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.SystemInfo;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.WindowManager;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
+import com.musictime.intellij.plugin.models.FileDetails;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.musicjava.Client;
@@ -46,6 +49,9 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -53,14 +59,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Stream;
 
 public class SoftwareCoUtils {
 
@@ -73,6 +77,8 @@ public class SoftwareCoUtils {
     public static int pluginId = 16;
     public static String VERSION = null;
     public static final int SONG_FETCH_INTERVAL_MILLIS = 1000 * 30;
+
+    public static KeystrokeCount latestPayload = null;
 
     public final static ExecutorService EXECUTOR_SERVICE = Executors.newCachedThreadPool();
 
@@ -88,6 +94,9 @@ public class SoftwareCoUtils {
 
     private static long DAYS_IN_SECONDS = 60 * 60 * 24;
 
+    private static ScheduledFuture toggleSongNameFuture = null;
+
+    private static String workspace_name = null;
     private static boolean initiatedCodeTimeInstallCheck = false;
     public static boolean codeTimeInstalled = false;
 
@@ -109,6 +118,26 @@ public class SoftwareCoUtils {
             getUser();
         }
         return codeTimeInstalled;
+    }
+
+    public static KeystrokeCount getLatestPayload() {
+        return latestPayload;
+    }
+
+    public static void setLatestPayload(KeystrokeCount payload) {
+        latestPayload = payload;
+    }
+
+    public static String getWorkspaceName() {
+        if (workspace_name == null) {
+            workspace_name = generateToken();
+        }
+        return workspace_name;
+    }
+
+    public static String generateToken() {
+        String uuid = UUID.randomUUID().toString();
+        return uuid.replace("-", "");
     }
 
     public static String getHostname() {
@@ -275,6 +304,78 @@ public class SoftwareCoUtils {
         return null;
     }
 
+    public static Project getProjectForPath(String path) {
+        Editor[] editors = EditorFactory.getInstance().getAllEditors();
+        if (editors != null && editors.length > 0) {
+            for (Editor editor : editors) {
+                if (editor != null && editor.getProject() != null) {
+                    String basePath = editor.getProject().getBasePath();
+                    if (path.indexOf(basePath) != -1) {
+                        return editor.getProject();
+                    }
+                }
+            }
+        } else {
+            Project[] projects = ProjectManager.getInstance().getOpenProjects();
+            if (projects != null && projects.length > 0) {
+                return projects[0];
+            }
+        }
+        return null;
+    }
+
+    public static FileDetails getFileDetails(String fullFileName) {
+        FileDetails fileDetails = new FileDetails();
+        if (StringUtils.isNotBlank(fullFileName)) {
+            fileDetails.full_file_name = fullFileName;
+            Project p = getProjectForPath(fullFileName);
+            if (p != null) {
+                fileDetails.project_directory = p.getBasePath();
+                fileDetails.project_name = p.getName();
+            }
+
+            File f = new File(fullFileName);
+
+            if (f.exists()) {
+                fileDetails.character_count = f.length();
+                fileDetails.file_name = f.getName();
+                if (StringUtils.isNotBlank(fileDetails.project_directory)) {
+                    // strip out the project_file_name
+                    fileDetails.project_file_name = fullFileName.split(fileDetails.project_directory)[1];
+                } else {
+                    fileDetails.project_file_name = fullFileName;
+                }
+                fileDetails.line_count = SoftwareCoUtils.getLineCount(fullFileName);
+
+                VirtualFile vFile = LocalFileSystem.getInstance().findFileByIoFile(f);
+                if (vFile != null) {
+                    fileDetails.syntax = vFile.getFileType().getName();
+                }
+            }
+        }
+
+        return fileDetails;
+    }
+
+    public static int getLineCount(String fileName) {
+        Stream<String> stream = null;
+        try {
+            Path path = Paths.get(fileName);
+            stream = Files.lines(path);
+            return (int) stream.count();
+        } catch (Exception e) {
+            return 0;
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (Exception e) {
+                    //
+                }
+            }
+        }
+    }
+
     public static String getStringRepresentation(HttpEntity res) throws IOException {
         if (res == null) {
             return null;
@@ -332,14 +433,14 @@ public class SoftwareCoUtils {
             final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
 
             if (statusBar != null) {
-                updateStatusBar();
+                updateStatusBar(false);
             }
         } catch (Exception e) {
             //
         }
     }
 
-    private static void updateStatusBar() {
+    private static void updateStatusBar(boolean hideTrack) {
 
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
@@ -348,7 +449,7 @@ public class SoftwareCoUtils {
 
                     try {
                         Project p = pm.getOpenProjects()[0];
-                        final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
+                        StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
 
                         String headphoneiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_headphoneicon";
                         String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
@@ -357,6 +458,7 @@ public class SoftwareCoUtils {
                         String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
                         String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
                         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
+                        String pulseiconId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_pulseicon";
                         String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
                         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
 
@@ -383,6 +485,9 @@ public class SoftwareCoUtils {
                                 }
                                 if (statusBar.getWidget(nexticonId) != null) {
                                     statusBar.removeWidget(nexticonId);
+                                }
+                                if (statusBar.getWidget(pulseiconId) != null) {
+                                    statusBar.removeWidget(pulseiconId);
                                 }
                                 if (statusBar.getWidget(songtrackId) != null) {
                                     statusBar.removeWidget(songtrackId);
@@ -434,6 +539,7 @@ public class SoftwareCoUtils {
                         String pauseIcon = "pause.png";
                         String playIcon = "play.png";
                         String nextIcon = "next.png";
+                        String pulseIcon = "pulse.png";
 
                         String trackName = MusicControlManager.currentTrackName;
                         final String musicToolTipVal = trackName != null ? trackName : "";
@@ -473,11 +579,6 @@ public class SoftwareCoUtils {
                             }
                         }
 
-                        SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                trackName, musicToolTipVal, songtrackId);
-                        statusBar.addWidget(kpmWidget, songtrackId, disposable);
-                        statusBar.updateWidget(songtrackId);
-
                         if(MusicControlManager.currentTrackId != null) {
                             if (MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
                                 SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
@@ -492,12 +593,44 @@ public class SoftwareCoUtils {
                             }
                         }
 
+                        if (StringUtils.isBlank(trackName) || hideTrack) {
+                            SoftwareCoStatusBarIconWidget pulseIconWidget = buildStatusBarIconWidget(
+                                    pulseIcon, "Display song info", pulseiconId);
+                            statusBar.addWidget(pulseIconWidget, pulseiconId, disposable);
+                            statusBar.updateWidget(pulseiconId);
+                        }
+
+                        if (!hideTrack) {
+                            SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+                                    trackName, musicToolTipVal, songtrackId);
+                            statusBar.addWidget(kpmWidget, songtrackId, disposable);
+                            statusBar.updateWidget(songtrackId);
+                        }
+
+                        // hide the song
+                        if (!hideTrack) {
+                            AsyncManager.getInstance().executeOnceInSeconds(() -> toggleSongName(), 1);
+                        }
+
                     } catch(Exception e){
                         //
                     }
                 }
             }
         });
+    }
+
+    private static void toggleSongName() {
+        if (toggleSongNameFuture != null) {
+            toggleSongNameFuture.cancel(false);
+            toggleSongNameFuture = null;
+        }
+        toggleSongNameFuture = AsyncManager.getInstance().executeOnceInSeconds(() -> hideSongName(), 5);
+    }
+
+    private static void hideSongName() {
+        updateStatusBar(true);
+        toggleSongNameFuture = null;
     }
 
     public static SoftwareCoStatusBarTextWidget buildStatusBarTextWidget(String msg, String tooltip, String id) {
@@ -1189,6 +1322,12 @@ public class SoftwareCoUtils {
     public static void launchMusicWebDashboard() {
         String url = Client.launch_url + "/music";
         BrowserUtil.browse(url);
+    }
+
+    public static boolean isNewDay() {
+        String currentDay = FileManager.getItem("currentDay", "");
+        String day = SoftwareCoUtils.getTodayInStandardFormat();
+        return !day.equals(currentDay);
     }
 
 }

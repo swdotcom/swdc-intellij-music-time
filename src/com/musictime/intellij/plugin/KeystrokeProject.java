@@ -17,7 +17,7 @@ public class KeystrokeProject {
     public KeystrokeProject(String name, String directory) {
         this.name = name;
         this.directory = directory;
-        ResourceInfo resourceInfo = GitUtil.getResourceInfo(directory);
+        ResourceInfo resourceInfo = GitUtil.getResourceInfo(directory, false);
         if (resourceInfo != null) {
             this.resource.setIdentifier(resourceInfo.getIdentifier());
             this.resource.setTag(resourceInfo.getTag());

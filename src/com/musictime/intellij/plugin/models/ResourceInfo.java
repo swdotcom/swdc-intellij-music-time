@@ -11,6 +11,8 @@ public class ResourceInfo {
     private String branch = "";
     private String tag = "";
     private String email = "";
+    private String repoName = "";
+    private String ownerId = "";
     private List<TeamMember> members = new ArrayList<>();
 
     public ResourceInfo clone() {
@@ -61,6 +63,22 @@ public class ResourceInfo {
 
     public void setMembers(List<TeamMember> members) {
         this.members = members;
+    }
+
+    public String getRepoName() {
+        return repoName;
+    }
+
+    public void setRepoName(String repoName) {
+        this.repoName = repoName;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public JsonArray getJsonMembers() {

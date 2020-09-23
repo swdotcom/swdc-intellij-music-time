@@ -8,13 +8,12 @@ import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.musictime.intellij.plugin.managers.EventTrackerManager;
+import org.apache.commons.lang.StringUtils;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class SoftwareCoEventManager {
@@ -23,10 +22,15 @@ public class SoftwareCoEventManager {
 
     private static SoftwareCoEventManager instance = null;
 
-    private KeystrokeManager keystrokeMgr = KeystrokeManager.getInstance();
-    private SoftwareCoSessionManager sessionMgr = SoftwareCoSessionManager.getInstance();
-    private boolean appIsReady = false;
-    AtomicBoolean flag = new AtomicBoolean(true);
+    private static final int FOCUS_STATE_INTERVAL_SECONDS = 5;
+    private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
+    private static final Pattern NEW_LINE_TAB_PATTERN = Pattern.compile("\n\t");
+    private static final Pattern TAB_PATTERN = Pattern.compile("\t");
+
+    private static boolean isCurrentlyActive = true;
+
+    private EventTrackerManager tracker;
+    private KeystrokeManager keystrokeMgr;
 
     public static SoftwareCoEventManager getInstance() {
         if (instance == null) {
@@ -35,63 +39,189 @@ public class SoftwareCoEventManager {
         return instance;
     }
 
-    public void setAppIsReady(boolean appIsReady) {
-        this.appIsReady = appIsReady;
+    private SoftwareCoEventManager() {
+        keystrokeMgr = KeystrokeManager.getInstance();
+
+        final Runnable checkFocusStateTimer = () -> checkFocusState();
+        AsyncManager.getInstance().scheduleService(
+                checkFocusStateTimer, "checkFocusStateTimer", 0, FOCUS_STATE_INTERVAL_SECONDS);
     }
 
-    private KeystrokeCount getCurrentKeystrokeCount(String projectName, String fileName, String projectDir) {
+    private void checkFocusState() {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            boolean isActive = ApplicationManager.getApplication().isActive();
+            if (isActive != isCurrentlyActive) {
+                if (!isActive) {
+                    KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
+                    if (keystrokeCount != null) {
+                        // set the flag the "unfocusStateChangeHandler" will look for in order to process payloads early
+                        keystrokeCount.triggered = false;
+                        keystrokeCount.processKeystrokes();
+                    }
+                    EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
+                } else {
+                    // just set the process keystrokes payload to false since we're focused again
+                    EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
+                }
+
+                // update the currently active flag
+                isCurrentlyActive = isActive;
+            }
+        });
+    }
+
+    private int getNewlineCount(String text) {
+        if (text == null) {
+            return 0;
+        }
+        Matcher matcher = NEW_LINE_PATTERN.matcher(text);
+        int count = 0;
+        while(matcher.find()) {
+            count++;
+        }
+        return count;
+    }
+
+    private KeystrokeCount getCurrentKeystrokeCount(String projectName, String projectDir) {
         KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
         if (keystrokeCount == null) {
-            initializeKeystrokeCount(projectName, fileName, projectDir);
+            // create one
+            projectName = projectName != null && !projectName.equals("") ? projectName : "Unnamed";
+            projectDir = projectDir != null && !projectDir.equals("") ? projectDir : "Untitled";
+            // create the keysrtroke count wrapper
+            createKeystrokeCountWrapper(projectName, projectDir);
+
+            // now retrieve it from the mgr
             keystrokeCount = keystrokeMgr.getKeystrokeCount();
         }
         return keystrokeCount;
     }
 
-    protected int getLineCount(String fileName) {
-        try {
-            Path path = Paths.get(fileName);
-            Stream<String> stream = Files.lines(path);
-            int count = (int) stream.count();
-            try {
-                stream.close();
-            } catch (Exception e) {
-                //
-            }
-            return count;
-        } catch (Exception e) {
-            return 0;
+    private void updateFileInfoMetrics(Document document, DocumentEvent documentEvent, KeystrokeCount.FileInfo fileInfo, KeystrokeCount keystrokeCount) {
+
+        String text = documentEvent.getNewFragment() != null ? documentEvent.getNewFragment().toString() : "";
+        String oldText = documentEvent.getOldFragment() != null ? documentEvent.getOldFragment().toString() : "";
+
+        int new_line_count = document.getLineCount();
+        fileInfo.length = document.getTextLength();
+
+        // this will give us the positive char change length
+        int numKeystrokes = documentEvent.getNewLength();
+        // this will tell us delete chars
+        int numDeleteKeystrokes = documentEvent.getOldLength();
+
+        // count the newline chars
+        int linesAdded = this.getNewlineCount(text);
+        int linesRemoved = this.getNewlineCount(oldText);
+
+        // check if its an auto indent
+        boolean hasAutoIndent = text.matches("^\\s{2,4}$") || TAB_PATTERN.matcher(text).find();
+        boolean newLineAutoIndent = text.matches("^\n\\s{2,4}$") || NEW_LINE_TAB_PATTERN.matcher(text).find();
+
+        // update the deletion keystrokes if there are lines removed
+        numDeleteKeystrokes = numDeleteKeystrokes >= linesRemoved ? numDeleteKeystrokes - linesRemoved : numDeleteKeystrokes;
+
+        // event updates
+        if (newLineAutoIndent) {
+            // it's a new line with auto-indent
+            fileInfo.auto_indents += 1;
+            fileInfo.linesAdded += 1;
+        } else if (hasAutoIndent) {
+            // it's an auto indent action
+            fileInfo.auto_indents += 1;
+        } else if (linesAdded == 1) {
+            // it's a single new line action (single_adds)
+            fileInfo.single_adds += 1;
+            fileInfo.linesAdded += 1;
+        } else if (linesAdded > 1) {
+            // it's a multi line paste action (multi_adds)
+            fileInfo.linesAdded += linesAdded;
+            fileInfo.paste += 1;
+            fileInfo.multi_adds += 1;
+            fileInfo.is_net_change = true;
+            fileInfo.characters_added += Math.abs(numKeystrokes - linesAdded);
+        } else if (numDeleteKeystrokes > 0 && numKeystrokes > 0) {
+            // it's a replacement
+            fileInfo.replacements += 1;
+            fileInfo.characters_added += numKeystrokes;
+            fileInfo.characters_deleted += numDeleteKeystrokes;
+        } else if (numKeystrokes > 1) {
+            // pasted characters (multi_adds)
+            fileInfo.paste += 1;
+            fileInfo.multi_adds += 1;
+            fileInfo.is_net_change = true;
+            fileInfo.characters_added += numKeystrokes;
+        } else if (numKeystrokes == 1) {
+            // it's a single keystroke action (single_adds)
+            fileInfo.add += 1;
+            fileInfo.single_adds += 1;
+            fileInfo.characters_added += 1;
+        } else if (linesRemoved == 1) {
+            // it's a single line deletion
+            fileInfo.linesRemoved += 1;
+            fileInfo.single_deletes += 1;
+            fileInfo.characters_deleted += numDeleteKeystrokes;
+        } else if (linesRemoved > 1) {
+            // it's a multi line deletion and may contain characters
+            fileInfo.characters_deleted += numDeleteKeystrokes;
+            fileInfo.multi_deletes += 1;
+            fileInfo.is_net_change = true;
+            fileInfo.linesRemoved += linesRemoved;
+        } else if (numDeleteKeystrokes == 1) {
+            // it's a single character deletion action
+            fileInfo.delete += 1;
+            fileInfo.single_deletes += 1;
+            fileInfo.characters_deleted += 1;
+        } else if (numDeleteKeystrokes > 1) {
+            // it's a multi character deletion action
+            fileInfo.multi_deletes += 1;
+            fileInfo.is_net_change = true;
+            fileInfo.characters_deleted += numDeleteKeystrokes;
         }
+
+        fileInfo.lines = new_line_count;
+        fileInfo.keystrokes += 1;
+        keystrokeCount.keystrokes += 1;
+    }
+
+    // this is used to close unended files
+    public void handleSelectionChangedEvents(String fileName, Project project) {
+        KeystrokeCount keystrokeCount =
+                getCurrentKeystrokeCount(project.getName(), project.getProjectFilePath());
+
+        KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
+        if (fileInfo == null) {
+            return;
+        }
+        keystrokeCount.endPreviousModifiedFiles(fileName);
     }
 
     public void handleFileOpenedEvents(String fileName, Project project) {
-        if (project == null || SoftwareCoUtils.isCodeTimeInstalled()) {
-            return;
-        }
         KeystrokeCount keystrokeCount =
-                getCurrentKeystrokeCount(project.getName(), fileName, project.getProjectFilePath());
+                getCurrentKeystrokeCount(project.getName(), project.getProjectFilePath());
+
         KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (fileInfo == null) {
             return;
         }
-        fileInfo.setOpen(fileInfo.getOpen() + 1);
-        int documentLineCount = getLineCount(fileName);
-        fileInfo.setLines(documentLineCount);
-        LOG.info("Music Time: file opened: " + fileName);
+        keystrokeCount.endPreviousModifiedFiles(fileName);
+        fileInfo.open = fileInfo.open + 1;
+        int documentLineCount = SoftwareCoUtils.getLineCount(fileName);
+        fileInfo.lines = documentLineCount;
+        LOG.info("Code Time: file opened: " + fileName);
+        tracker.trackEditorAction("file", "open", fileName);
     }
 
     public void handleFileClosedEvents(String fileName, Project project) {
-        if (project == null || SoftwareCoUtils.isCodeTimeInstalled()) {
-            return;
-        }
         KeystrokeCount keystrokeCount =
-                getCurrentKeystrokeCount(project.getName(), fileName, project.getProjectFilePath());
+                getCurrentKeystrokeCount(project.getName(), project.getProjectFilePath());
         KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
         if (fileInfo == null) {
             return;
         }
-        fileInfo.setClose(fileInfo.getClose() + 1);
-        LOG.info("Music Time: file closed: " + fileName);
+        fileInfo.close = fileInfo.close + 1;
+        LOG.info("Code Time: file closed: " + fileName);
+        tracker.trackEditorAction("file", "close", fileName);
     }
 
     /**
@@ -101,11 +231,12 @@ public class SoftwareCoEventManager {
      */
     public void handleChangeEvents(Document document, DocumentEvent documentEvent) {
 
-        if (document == null || SoftwareCoUtils.isCodeTimeInstalled()) {
+        if (document == null) {
             return;
         }
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
+
             FileDocumentManager instance = FileDocumentManager.getInstance();
             if (instance != null) {
                 VirtualFile file = instance.getFile(document);
@@ -116,10 +247,10 @@ public class SoftwareCoEventManager {
                         Project project = editors[0].getProject();
 
                         if (project != null) {
-                            KeystrokeCount keystrokeCount =
-                                    getCurrentKeystrokeCount(project.getName(), fileName, project.getProjectFilePath());
 
-                            keystrokeMgr.addKeystrokeWrapperIfNoneExists(project);
+                            // get the current keystroke count obj
+                            KeystrokeCount keystrokeCount =
+                                    getCurrentKeystrokeCount(project.getName(), project.getProjectFilePath());
 
                             // check whether it's a code time file or not
                             // .*\.software.*(data\.json|session\.json|latestKeystrokes\.json|ProjectContributorCodeSummary\.txt|CodeTime\.txt|SummaryInfo\.txt|events\.json|fileChangeSummary\.json)
@@ -127,60 +258,18 @@ public class SoftwareCoEventManager {
 
                             if (!skip && keystrokeCount != null) {
 
-                                KeystrokeManager.KeystrokeCountWrapper wrapper = keystrokeMgr.getKeystrokeWrapper();
-
-                                // Set the current text length and the current file and the current project
-                                //
-                                int currLen = document.getTextLength();
-                                wrapper.setCurrentFileName(fileName);
-                                wrapper.setCurrentTextLength(currLen);
-
                                 KeystrokeCount.FileInfo fileInfo = keystrokeCount.getSourceByFileName(fileName);
-                                String syntax = fileInfo.getSyntax();
-                                if (syntax == null || syntax.equals("")) {
+                                if (StringUtils.isBlank(fileInfo.syntax)) {
                                     // get the grammar
                                     try {
                                         String fileType = file.getFileType().getName();
                                         if (fileType != null && !fileType.equals("")) {
-                                            fileInfo.setSyntax(fileType);
+                                            fileInfo.syntax = fileType;
                                         }
-                                    } catch (Exception e) {
-                                        //
-                                    }
-                                }
-                                if (documentEvent.getOldLength() > 0) {
-                                    //it's a delete
-                                    fileInfo.setDelete(fileInfo.getDelete() + 1);
-                                    fileInfo.setNetkeys(fileInfo.getAdd() - fileInfo.getDelete());
-                                    LOG.info("Music Time: delete incremented");
-                                } else {
-                                    // it's an add
-                                    if (documentEvent.getNewLength() > 1) {
-                                        // it's a paste
-                                        fileInfo.setPaste(fileInfo.getPaste() + 1);
-                                    } else {
-                                        fileInfo.setAdd(fileInfo.getAdd() + 1);
-                                        fileInfo.setNetkeys(fileInfo.getAdd() - fileInfo.getDelete());
-                                        LOG.info("Music Time: add incremented");
-                                    }
+                                    } catch (Exception e) {}
                                 }
 
-                                keystrokeCount.setKeystrokes(keystrokeCount.getKeystrokes() + 1);
-
-                                int documentLineCount = document.getLineCount();
-                                int savedLines = fileInfo.getLines();
-                                if (savedLines > 0) {
-                                    int diff = documentLineCount - savedLines;
-                                    if (diff < 0) {
-                                        fileInfo.setLinesRemoved(fileInfo.getLinesRemoved() + Math.abs(diff));
-                                        LOG.info("Music Time: lines removed incremented");
-                                    } else if (diff > 0) {
-                                        fileInfo.setLinesAdded(fileInfo.getLinesAdded() + diff);
-                                        LOG.info("Music Time: lines added incremented");
-                                    }
-                                }
-                                fileInfo.setLines(documentLineCount);
-                                fileInfo.setLength(document.getTextLength());
+                                updateFileInfoMetrics(document, documentEvent, fileInfo, keystrokeCount);
 
                                 // update the latest payload
                                 keystrokeCount.updateLatestPayloadLazily();
@@ -193,51 +282,7 @@ public class SoftwareCoEventManager {
         });
     }
 
-    public void initializeKeystrokeObjectGraph(String fileName, String projectName, String projectFilepath) {
-        // initialize it in case it's not initialized yet
-        initializeKeystrokeCount(projectName, fileName, projectFilepath);
-
-        KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
-
-        //
-        // Make sure we have the project name and directory info
-        if(flag.get()) {
-            new Thread(() -> {
-                try {
-                    Thread.sleep(60000);
-                    flag.set(true);
-                    LOG.info("Music Time: Reset Flag for project check");
-                } catch (Exception e) {
-                    System.err.println(e);
-                }
-            }).start();
-
-            updateKeystrokeProject(projectName, fileName, keystrokeCount);
-            flag.set(false);
-            LOG.info("Music Time: Update project name & directory");
-        }
-    }
-
-    private void initializeKeystrokeCount(String projectName, String fileName, String projectFilepath) {
-        KeystrokeCount keystrokeCount = keystrokeMgr.getKeystrokeCount();
-        if ( keystrokeCount == null || keystrokeCount.getProject() == null ) {
-            createKeystrokeCountWrapper(projectName, projectFilepath);
-        } else if (!keystrokeCount.getProject().getName().equals(projectName)) {
-            final KeystrokeManager.KeystrokeCountWrapper current = keystrokeMgr.getKeystrokeWrapper();
-
-            // send the current wrapper and create a new one
-            current.getKeystrokeCount().processKeystrokes();
-
-            createKeystrokeCountWrapper(projectName, projectFilepath);
-        } else {
-            //
-            // update the end time for files that don't match the incoming fileName
-            //
-            keystrokeCount.endPreviousModifiedFiles(fileName);
-        }
-    }
-
-    private void createKeystrokeCountWrapper(String projectName, String projectFilepath) {
+    public void createKeystrokeCountWrapper(String projectName, String projectFilepath) {
         //
         // Create one since it hasn't been created yet
         // and set the start time (in seconds)
@@ -253,21 +298,6 @@ public class SoftwareCoEventManager {
         keystrokeMgr.setKeystrokeCount(projectName, keystrokeCount);
     }
 
-    private void updateKeystrokeProject(String projectName, String fileName, KeystrokeCount keystrokeCount) {
-        if (keystrokeCount == null) {
-            return;
-        }
-        KeystrokeProject project = keystrokeCount.getProject();
-        String projectDirectory = getProjectDirectory(projectName, fileName);
-
-        if (project == null) {
-            project = new KeystrokeProject( projectName, projectDirectory );
-            keystrokeCount.setProject( project );
-        } else if (project.getName() == null || project.getName() == "") {
-            project.setDirectory(projectDirectory);
-            project.setName(projectName);
-        }
-    }
 
     private String getProjectDirectory(String projectName, String fileName) {
         String projectDirectory = "";

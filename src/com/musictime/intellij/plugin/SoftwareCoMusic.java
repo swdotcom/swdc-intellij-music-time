@@ -14,6 +14,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
 import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.managers.EventTrackerManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
@@ -85,12 +86,12 @@ public class SoftwareCoMusic implements ApplicationComponent {
         boolean musicFileExist = SoftwareCoSessionManager.musicDataFileExists();
         if(musicFileExist) {
             String musicFile = FileManager.getMusicDataFile(false);
-            SoftwareCoSessionManager.deleteFile(musicFile);
+            FileManager.deleteFile(musicFile);
         }
         boolean readmeExist = SoftwareCoSessionManager.readmeFileExists();
         if(readmeExist) {
             String readmeFile = FileManager.getReadmeFile(false);
-            SoftwareCoSessionManager.deleteFile(readmeFile);
+            FileManager.deleteFile(readmeFile);
         }
         boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
         String jwt = FileManager.getItem("jwt");
@@ -157,13 +158,13 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private void initializeUserInfoWhenProjectsReady(boolean initializedUser) {
         Project p = SoftwareCoUtils.getOpenProject();
         if (p == null) {
-            // try again in 4 seconds
+            // try again in 5 seconds
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
                     initializeUserInfoWhenProjectsReady(initializedUser);
                 }
-            }, 4000);
+            }, 5000);
         } else {
             keystrokeMgr.addKeystrokeWrapperIfNoneExists(p);
             initializeUserInfo(initializedUser);
@@ -178,35 +179,43 @@ public class SoftwareCoMusic implements ApplicationComponent {
         // get the user status (jwt, email, spotify, slack)
         SoftwareCoUtils.getMusicTimeUserStatus();
 
-        // create the 15 minute interval timer to send code time payloads if code time is NOT installed
+        // initialize the tracker
+        EventTrackerManager.getInstance().init();
+        // send the 1st event: activate
+        EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
+
+        // create the 5 minute interval timer to send code time payloads if code time is NOT installed
         if (!SoftwareCoUtils.isCodeTimeInstalled()) {
-            // every 15 minutes
+            // every 5 minutes
             final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
-            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 15);
+            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 5);
         }
 
-        if (!MusicControlManager.hasSpotifyAccess()) {
+        boolean hasAccess = MusicControlManager.hasSpotifyAccess();
+
+        if (!hasAccess) {
             SoftwareCoUtils.setStatusLineMessage();
-        }
-        // check to see if we need to re-authenticate
-        if (hasExpiredAccessToken()) {
-            // disconnect
-            MusicControlManager.disConnectSpotify();
-
-            // show message
-            showReconnectPrompt();
         } else {
+            // check to see if we need to re-authenticate
+            if (hasExpiredAccessToken()) {
+                // disconnect
+                MusicControlManager.disConnectSpotify();
 
-            Apis.getUserProfile();
+                // show message
+                showReconnectPrompt();
+            } else {
 
-            PlaylistManager.getUserPlaylists(); // API call
-            PlayListCommands.updatePlaylists(0, null);
-            PlayListCommands.updatePlaylists(3, null);
-            PlayListCommands.getGenre(); // API call
-            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
-            DeviceManager.getDevices(); // API call
+                Apis.getUserProfile();
 
-            SoftwareCoUtils.updatePlayerControls(false);
+                PlaylistManager.getUserPlaylists(); // API call
+                PlayListCommands.updatePlaylists(0, null);
+                PlayListCommands.updatePlaylists(3, null);
+                PlayListCommands.getGenre(); // API call
+                PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+                DeviceManager.getDevices(); // API call
+
+                SoftwareCoUtils.updatePlayerControls(false);
+            }
         }
 
         if (initializedUser) {
@@ -218,17 +227,11 @@ public class SoftwareCoMusic implements ApplicationComponent {
             });
         }
 
-        // initiate gather music info
-        initiateGatherMusicInfo();
-
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
 
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                MusicToolWindowFactory.showWindow();
-            }
-        }, 1000);
+
+        AsyncManager.getInstance().executeOnceInSeconds(() -> MusicToolWindowFactory.showWindow(), 1);
+        AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
     }
 
     public static void showReconnectPrompt() {
@@ -256,25 +259,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
         return false;
     }
 
-    private void initiateGatherMusicInfo() {
-        // fetch currently playing track every 20 seconds
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                PlaylistManager.gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
-            }
-        }, 5000, SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS);
-
-        // a timer to check if the song is close to ending and will call gather music info once the song should end
-        // every 5 seconds
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                PlaylistManager.trackEndCheck();
-            }
-        }, 10000, 5000);
-    }
-
     public static String getRootPath() {
         Project[] projects = ProjectManager.getInstance().getOpenProjects();
         if (projects != null && projects.length > 0) {
@@ -285,9 +269,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     private void sendOfflineDataRunner() {
         new Thread(() -> {
-
             try {
-                SoftwareCoSessionManager.getInstance().sendOfflineData();
+                FileManager.sendOfflineData();
             } catch (Exception e) {
                 System.err.println(e);
             }
@@ -296,34 +279,44 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     // add the document change event listener
     private void setupEventListeners() {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            Disposable disposable = new Disposable() {
-                @Override
-                public void dispose() {
-                    try {
-                        if (connection != null) {
-                            connection.disconnect();
-                        }
-                    } catch(Exception e) {
-                        log.info("Error disconnecting the software.com plugin, reason: " + e.toString());
-                    }
+        // listen to editor events if codetime is not installed
+        if (!SoftwareCoUtils.isCodeTimeInstalled()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                Disposable disposable = new Disposable() {
+                    @Override
+                    public void dispose() {
 
-                    asyncManager.destroyServices();
-                }
-            };
-            // edit document
-            EditorFactory.getInstance().getEventMulticaster().addDocumentListener(
-                    new SoftwareCoDocumentListener(), disposable);
-        });
+                        // send the activate event
+                        EventTrackerManager.getInstance().trackEditorAction("editor", "deactivate");
+
+                        try {
+                            if (connection != null) {
+                                connection.disconnect();
+                            }
+                        } catch (Exception e) {
+                            log.info("Error disconnecting the software.com plugin, reason: " + e.toString());
+                        }
+
+                        asyncManager.destroyServices();
+                    }
+                };
+                // edit document
+                EditorFactory.getInstance().getEventMulticaster().addDocumentListener(
+                        new SoftwareCoDocumentListener(), disposable);
+            });
+        }
     }
 
     // add the file selection change event listener
     private void setupFileEditorEventListeners(Project p) {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            // file open,close,selection listener
-            p.getMessageBus().connect().subscribe(
-                    FileEditorManagerListener.FILE_EDITOR_MANAGER, new SoftwareCoFileEditorListener());
-        });
+        // listen to editor events if codetime is not installed
+        if (!SoftwareCoUtils.isCodeTimeInstalled()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                // file open,close,selection listener
+                p.getMessageBus().connect().subscribe(
+                        FileEditorManagerListener.FILE_EDITOR_MANAGER, new SoftwareCoFileEditorListener());
+            });
+        }
     }
 
 }
