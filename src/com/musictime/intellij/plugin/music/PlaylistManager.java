@@ -14,8 +14,6 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,12 +24,7 @@ public class PlaylistManager {
     public static JsonObject currentTrackData = null;
 
     public static long pauseTriggerTime = 0;
-    private static boolean gatheringTrack = false;
-    private static long endCheckThresholdMillis = 1000 * 19;
-    private static Timer endCheckTimer = null;
-    private static long lastIntervalSongCheck = 0;
     private static int deviceNullCounter = 0;
-    private static long lastSongCheck = 0;
 
     public static JsonObject getUserPlaylists() {
 
@@ -91,56 +84,6 @@ public class PlaylistManager {
         return new JsonObject();
     }
 
-    public static void trackEndCheck() {
-        // PlaylistManager.currentTrackData
-        // get progress_ms from the top level track data and duration_ms from the track data "item"
-        if (PlaylistManager.currentTrackData != null && PlaylistManager.currentTrackData.has("item")) {
-            JsonObject track = PlaylistManager.currentTrackData.get("item").getAsJsonObject();
-            long duration_ms = track.get("duration_ms").getAsLong();
-            long progress_ms = PlaylistManager.currentTrackData.has("progress_ms") ?
-                    PlaylistManager.currentTrackData.get("progress_ms").getAsLong() : 0;
-            long diff = duration_ms - progress_ms;
-
-            // the diff has to be less than the threshold (19 seconds)
-            // and a previous timer should be null before sending another fetch
-            if (diff > 0 && diff <= endCheckThresholdMillis && endCheckTimer == null) {
-                diff += 1000;
-                scheduleGatherMusicInfo(diff);
-            }
-        }
-    }
-
-    private static void scheduleGatherMusicInfo(long timeout) {
-        endCheckTimer = new Timer();
-        endCheckTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
-                endCheckTimer = null;
-            }
-        }, timeout);
-    }
-
-    public static void gatherMusicInfoRequest() {
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-        long diffSeconds = timesData.now - lastIntervalSongCheck;
-        long intervalSeconds = SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS / 1000;
-        long thresholdSeconds = intervalSeconds - 2;
-        // i.e. if the check seconds is 20, we'll subtract 2 and get 18 seconds
-        // which means it would be at least 2 more seconds until the gather music
-        // check will happen and is allowable to perform this intermediate check
-        if (diffSeconds < thresholdSeconds || diffSeconds > intervalSeconds) {
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    gatherMusicInfo(false /*updateIntervalSongCheckTime*/);
-                    endCheckTimer = null;
-                }
-            }, 500);
-        }
-        // otherwise we'll just wait until the interval call is made
-    }
-
     private static DeviceInfo deviceCheck() {
         // skip checking for a currently playing device if there's no
         // device and no previously playing track
@@ -159,21 +102,15 @@ public class PlaylistManager {
         return currentDevice;
     }
 
-    public static void gatherMusicInfo(boolean updateIntervalSongCheckTime) {
+    public static void fetchTrack() {
 
-        if (!MusicControlManager.hasSpotifyAccess() || gatheringTrack) {
+        if (!MusicControlManager.hasSpotifyAccess()) {
+            SoftwareCoUtils.setStatusLineMessage();
             return;
         }
 
-        gatheringTrack = true;
         try {
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-
-            long diff = timesData.now - lastSongCheck;
-            if (diff > 0 && diff < 3) {
-                // it's getting called too quickly, bail out
-                return;
-            }
 
             // in case we don't have a device
             DeviceInfo currentDevice = deviceCheck();
@@ -183,13 +120,6 @@ public class PlaylistManager {
             }
 
             SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack();
-
-            // set the last time we checked
-            if (updateIntervalSongCheckTime) {
-                lastIntervalSongCheck = timesData.now;
-            }
-            // this one is always set
-            lastSongCheck = timesData.now;
 
             boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
 
@@ -278,7 +208,6 @@ public class PlaylistManager {
         } catch (Exception e) {
             //
         } finally {
-            gatheringTrack = false;
             SoftwareCoUtils.setStatusLineMessage();
         }
     }

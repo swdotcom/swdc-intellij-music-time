@@ -227,17 +227,11 @@ public class SoftwareCoMusic implements ApplicationComponent {
             });
         }
 
-        // initiate gather music info
-        initiateGatherMusicInfo();
-
         SoftwareCoUtils.sendHeartbeat("INITIALIZED");
 
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                MusicToolWindowFactory.showWindow();
-            }
-        }, 1000);
+
+        AsyncManager.getInstance().executeOnceInSeconds(() -> MusicToolWindowFactory.showWindow(), 1);
+        AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
     }
 
     public static void showReconnectPrompt() {
@@ -263,29 +257,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
             return expired;
         }
         return false;
-    }
-
-    private void initiateGatherMusicInfo() {
-        // fetch currently playing track every 20 seconds
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (MusicControlManager.hasSpotifyAccess()) {
-                    PlaylistManager.gatherMusicInfo(true /*updateIntervalSongCheckTime*/);
-                }
-            }
-        }, 5000, SoftwareCoUtils.SONG_FETCH_INTERVAL_MILLIS);
-
-        // a timer to check if the song is close to ending and will call gather music info once the song should end
-        // every 5 seconds
-        new Timer().scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (MusicControlManager.hasSpotifyAccess()) {
-                    PlaylistManager.trackEndCheck();
-                }
-            }
-        }, 10000, 5000);
     }
 
     public static String getRootPath() {

@@ -1,12 +1,14 @@
 package com.musictime.intellij.plugin.managers;
 
 import com.intellij.openapi.project.Project;
+import com.musictime.intellij.plugin.AsyncManager;
 import com.musictime.intellij.plugin.KeystrokeCount;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.FileDetails;
 import com.musictime.intellij.plugin.models.ResourceInfo;
+import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.repo.GitUtil;
 import com.swdc.snowplow.tracker.entities.*;
@@ -83,13 +85,7 @@ public class EventTrackerManager {
             event.repoEntity = this.getRepoEntity(resourceInfo);
 
             // execute async
-            log.info("code time event processed");
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    trackerMgr.trackCodeTimeEvent(event);
-                }
-            }, 0);
+            trackerMgr.trackCodeTimeEvent(event);
         }
     }
 
@@ -108,12 +104,7 @@ public class EventTrackerManager {
 
         // execute async
         log.info("ui interaction event processed");
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                trackerMgr.trackUIInteraction(event);
-            }
-        }, 0);
+        trackerMgr.trackUIInteraction(event);
     }
 
     public void trackEditorAction(String entity, String type) {
@@ -139,12 +130,7 @@ public class EventTrackerManager {
 
         // execute async
         log.info("editor action event processed");
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                trackerMgr.trackEditorAction(event);
-            }
-        }, 0);
+        trackerMgr.trackEditorAction(event);
     }
 
     private AuthEntity getAuthEntity() {

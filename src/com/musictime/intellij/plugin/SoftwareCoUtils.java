@@ -59,10 +59,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -96,6 +93,8 @@ public class SoftwareCoUtils {
     private static int DASHBOARD_VALUE_WIDTH = 25;
 
     private static long DAYS_IN_SECONDS = 60 * 60 * 24;
+
+    private static ScheduledFuture toggleSongNameFuture = null;
 
     private static String workspace_name = null;
     private static boolean initiatedCodeTimeInstallCheck = false;
@@ -434,14 +433,14 @@ public class SoftwareCoUtils {
             final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
 
             if (statusBar != null) {
-                updateStatusBar();
+                updateStatusBar(false);
             }
         } catch (Exception e) {
             //
         }
     }
 
-    private static void updateStatusBar() {
+    private static void updateStatusBar(boolean hideTrack) {
 
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
@@ -450,7 +449,7 @@ public class SoftwareCoUtils {
 
                     try {
                         Project p = pm.getOpenProjects()[0];
-                        final StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
+                        StatusBar statusBar = WindowManager.getInstance().getStatusBar(p);
 
                         String headphoneiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_headphoneicon";
                         String likeiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_likeicon";
@@ -459,6 +458,7 @@ public class SoftwareCoUtils {
                         String pauseiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_pauseicon";
                         String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
                         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
+                        String pulseiconId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_pulseicon";
                         String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
                         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
 
@@ -485,6 +485,9 @@ public class SoftwareCoUtils {
                                 }
                                 if (statusBar.getWidget(nexticonId) != null) {
                                     statusBar.removeWidget(nexticonId);
+                                }
+                                if (statusBar.getWidget(pulseiconId) != null) {
+                                    statusBar.removeWidget(pulseiconId);
                                 }
                                 if (statusBar.getWidget(songtrackId) != null) {
                                     statusBar.removeWidget(songtrackId);
@@ -536,6 +539,7 @@ public class SoftwareCoUtils {
                         String pauseIcon = "pause.png";
                         String playIcon = "play.png";
                         String nextIcon = "next.png";
+                        String pulseIcon = "pulse.png";
 
                         String trackName = MusicControlManager.currentTrackName;
                         final String musicToolTipVal = trackName != null ? trackName : "";
@@ -575,11 +579,6 @@ public class SoftwareCoUtils {
                             }
                         }
 
-                        SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                trackName, musicToolTipVal, songtrackId);
-                        statusBar.addWidget(kpmWidget, songtrackId, disposable);
-                        statusBar.updateWidget(songtrackId);
-
                         if(MusicControlManager.currentTrackId != null) {
                             if (MusicControlManager.likedTracks.containsKey(MusicControlManager.currentTrackId)) {
                                 SoftwareCoStatusBarIconWidget likeIconWidget = buildStatusBarIconWidget(
@@ -594,12 +593,44 @@ public class SoftwareCoUtils {
                             }
                         }
 
+                        if (StringUtils.isBlank(trackName) || hideTrack) {
+                            SoftwareCoStatusBarIconWidget pulseIconWidget = buildStatusBarIconWidget(
+                                    pulseIcon, "Display song info", pulseiconId);
+                            statusBar.addWidget(pulseIconWidget, pulseiconId, disposable);
+                            statusBar.updateWidget(pulseiconId);
+                        }
+
+                        if (!hideTrack) {
+                            SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
+                                    trackName, musicToolTipVal, songtrackId);
+                            statusBar.addWidget(kpmWidget, songtrackId, disposable);
+                            statusBar.updateWidget(songtrackId);
+                        }
+
+                        // hide the song
+                        if (!hideTrack) {
+                            AsyncManager.getInstance().executeOnceInSeconds(() -> toggleSongName(), 1);
+                        }
+
                     } catch(Exception e){
                         //
                     }
                 }
             }
         });
+    }
+
+    private static void toggleSongName() {
+        if (toggleSongNameFuture != null) {
+            toggleSongNameFuture.cancel(false);
+            toggleSongNameFuture = null;
+        }
+        toggleSongNameFuture = AsyncManager.getInstance().executeOnceInSeconds(() -> hideSongName(), 5);
+    }
+
+    private static void hideSongName() {
+        updateStatusBar(true);
+        toggleSongNameFuture = null;
     }
 
     public static SoftwareCoStatusBarTextWidget buildStatusBarTextWidget(String msg, String tooltip, String id) {

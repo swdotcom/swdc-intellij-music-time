@@ -2,6 +2,7 @@ package com.musictime.intellij.plugin.music;
 
 import com.google.gson.JsonObject;
 import com.google.protobuf.Api;
+import com.musictime.intellij.plugin.AsyncManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.models.DeviceInfo;
@@ -47,7 +48,7 @@ public class PlayerControlManager {
                 if (Util.isMac()) {
                     String result = Util.playSongInPlaylist("spotify", MusicControlManager.currentPlaylistId, MusicControlManager.currentTrackId);
                     if (StringUtils.isBlank(result)) {
-                        PlaylistManager.gatherMusicInfoRequest();
+                        PlaylistManager.fetchTrack();
                     }
                 } else {
                     SoftwareCoUtils.showMsgPrompt(error.get("message").getAsString(), new Color(120, 23, 50, 100));
@@ -57,7 +58,7 @@ public class PlayerControlManager {
             }
         }
 
-        PlaylistManager.gatherMusicInfoRequest();
+        PlaylistManager.fetchTrack();
 
         return resp;
     }
@@ -82,7 +83,7 @@ public class PlayerControlManager {
             }
         }
 
-        PlaylistManager.gatherMusicInfoRequest();
+        PlaylistManager.fetchTrack();
     }
 
     public static void pauseIt() {
@@ -105,7 +106,7 @@ public class PlayerControlManager {
             }
         }
 
-        PlaylistManager.gatherMusicInfoRequest();
+        PlaylistManager.fetchTrack();
     }
 
     public static void previousIt() {
@@ -128,7 +129,7 @@ public class PlayerControlManager {
             }
         }
 
-        PlaylistManager.gatherMusicInfoRequest();
+        PlaylistManager.fetchTrack();
     }
 
     public static void nextIt() {
@@ -151,7 +152,7 @@ public class PlayerControlManager {
             }
         }
 
-        PlaylistManager.gatherMusicInfoRequest();
+        PlaylistManager.fetchTrack();
     }
 
     /**
@@ -169,14 +170,9 @@ public class PlayerControlManager {
                     resp = MusicController.likeSpotifyWeb(like, trackId);
                 }
                 if (resp.isOk()) {
-                    new Timer().schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            PlayListCommands.updatePlaylists(3, null);
-                            SoftwareCoUtils.sendLikedTrack(like, trackId, "spotify");
-                            PlaylistManager.gatherMusicInfoRequest();
-                        }
-                    }, 1000);
+                    PlayListCommands.updatePlaylists(3, null);
+                    SoftwareCoUtils.sendLikedTrack(like, trackId, "spotify");
+                    AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
                     return true;
                 } else if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
                     JsonObject error = resp.getJsonObj().getAsJsonObject("error");

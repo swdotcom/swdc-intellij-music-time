@@ -17,6 +17,7 @@ import com.musictime.intellij.plugin.models.ElapsedTime;
 import com.musictime.intellij.plugin.models.FileChangeInfo;
 import com.musictime.intellij.plugin.models.KeystrokeAggregate;
 import com.musictime.intellij.plugin.models.TimeData;
+import com.musictime.intellij.plugin.music.PlaylistManager;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -158,22 +159,19 @@ public class KeystrokeCount {
         }
     }
 
+    private void processKeystrokesHandler() {
+        if (triggered) {
+            processKeystrokes();
+        }
+        triggered = false;
+    }
+
     public FileInfo getSourceByFileName(String fileName) {
         // Initiate Process Keystrokes Timer
         if (!this.triggered) {
             this.triggered = true;
 
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    // check if its still in a triggered (true) state before processing
-                    // it, as the unfocus event can also process the keystrokes
-                    if (triggered) {
-                        processKeystrokes();
-                    }
-                    triggered = false;
-                }
-            }, 1000 * 60);
+            AsyncManager.getInstance().executeOnceInSeconds(() -> processKeystrokesHandler(), 60);
         }
 
         // Fetch the FileInfo

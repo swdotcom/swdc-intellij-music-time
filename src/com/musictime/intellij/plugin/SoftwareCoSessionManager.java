@@ -19,6 +19,8 @@ import java.awt.event.MouseEvent;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class SoftwareCoSessionManager {
@@ -172,6 +174,7 @@ public class SoftwareCoSessionManager {
         String playiconId = SoftwareCoStatusBarIconWidget.ICON_ID + "_playicon";
         String nexticonId = SoftwareCoStatusBarIconWidget.ICON_ID + "_nexticon";
         String songtrackId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_songtrack";
+        String pulseiconId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_pulseicon";
         String connectspotifyId = SoftwareCoStatusBarTextWidget.TEXT_ID + "_connectspotify";
 
         if (id.equals(headphoneiconId)) {
@@ -189,6 +192,8 @@ public class SoftwareCoSessionManager {
             PlayerControlManager.nextIt();
         } else if(id.equals(songtrackId)) {
             MusicControlManager.launchPlayer();
+        } else if (id.equals(pulseiconId)) {
+            PlaylistManager.fetchTrack();
         } else if(id.equals(unlikeiconId)) {
             PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
             PlayListCommands.updatePlaylists(3, null);

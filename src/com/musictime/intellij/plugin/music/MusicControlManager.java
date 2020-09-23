@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
+import com.musictime.intellij.plugin.AsyncManager;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.SoftwareResponse;
@@ -167,7 +168,7 @@ public class MusicControlManager {
             PlayListCommands.updateRecommendation("category", "Familiar"); // API call
             DeviceManager.getDevices();
 
-            PlaylistManager.gatherMusicInfoRequest();
+            AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
 
             // refresh the status bar
             SoftwareCoUtils.setStatusLineMessage();
@@ -261,12 +262,7 @@ public class MusicControlManager {
 
         if (SoftwareCoUtils.isLinux()) {
             // try in 5 seconds
-            new Timer().schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    lazilyCheckAvailablePlayer(6);
-                }
-            }, 5000);
+            AsyncManager.getInstance().executeOnceInSeconds(() -> lazilyCheckAvailablePlayer(6), 5);
         } else {
             lazilyCheckAvailablePlayer(4);
         }
