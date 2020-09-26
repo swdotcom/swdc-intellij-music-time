@@ -359,13 +359,12 @@ public class FileManager {
         return false;
     }
 
-    public static Long getNumericItem(String key, Long defaultVal) {
-        Long val = null;
+    public static long getNumericItem(String key, Long defaultVal) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
-            val = sessionJson.get(key).getAsLong();
+            return sessionJson.get(key).getAsLong();
         }
-        return defaultVal;
+        return defaultVal.longValue();
     }
 
     public static String getItem(String key) {
