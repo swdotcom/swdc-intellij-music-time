@@ -270,9 +270,6 @@ public class SoftwareCoEventManager {
                                 }
 
                                 updateFileInfoMetrics(document, documentEvent, fileInfo, keystrokeCount);
-
-                                // update the latest payload
-                                keystrokeCount.updateLatestPayloadLazily();
                             }
                         }
                     }

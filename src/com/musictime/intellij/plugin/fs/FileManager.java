@@ -154,7 +154,7 @@ public class FileManager {
         return softwareDataDir;
     }
 
-    public static synchronized String getSoftwareSessionFile(boolean autoCreate) {
+    public static String getSoftwareSessionFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
         if (SoftwareCoUtils.isWindows()) {
             file += "\\session.json";
@@ -214,33 +214,6 @@ public class FileManager {
         return file;
     }
 
-    public static String getCurrentPayloadFile() {
-        String file = getSoftwareDir(false);
-        if (SoftwareCoUtils.isWindows()) {
-            file += "\\latestKeystrokes.json";
-        } else {
-            file += "/latestKeystrokes.json";
-        }
-        return file;
-    }
-
-    public synchronized static void storeLatestPayloadLazily(final String data) {
-        if (_timer != null) {
-            _timer.cancel();
-            _timer = null;
-        }
-
-        _timer = new Timer();
-        if (_timer != null) {
-            _timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    FileManager.saveFileContent(FileManager.getCurrentPayloadFile(), data);
-                }
-            }, 2000);
-        }
-    }
-
     public static void saveFileContent(String file, String content) {
         File f = new File(file);
 
@@ -273,7 +246,7 @@ public class FileManager {
         return data;
     }
 
-    public synchronized static void writeData(String file, Object o) {
+    public static void writeData(String file, Object o) {
         if (o == null) {
             return;
         }
@@ -306,7 +279,7 @@ public class FileManager {
         return new JsonArray();
     }
 
-    public synchronized static void sendJsonArrayData(String file, String api) {
+    public static void sendJsonArrayData(String file, String api) {
         File f = new File(file);
         if (f.exists()) {
             try {
@@ -324,7 +297,7 @@ public class FileManager {
         }
     }
 
-    public static synchronized JsonObject getSoftwareSessionAsJson() {
+    public static JsonObject getSoftwareSessionAsJson() {
         JsonObject sessionJson = new JsonObject();
         String sessionFile = getSoftwareSessionFile(true);
         File f = new File(sessionFile);
@@ -349,19 +322,19 @@ public class FileManager {
         return sessionJson;
     }
 
-    public static synchronized void setNumericItem(String key, Long val) {
+    public static void setNumericItem(String key, Long val) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
         writeItem(sessionJson);
     }
 
-    public static synchronized void setBooleanItem(String key, boolean val) {
+    public static void setBooleanItem(String key, boolean val) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
         writeItem(sessionJson);
     }
 
-    public static synchronized void setItem(String key, String val) {
+    public static void setItem(String key, String val) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (val != null) {
             sessionJson.addProperty(key, val);
@@ -371,14 +344,14 @@ public class FileManager {
         writeItem(sessionJson);
     }
 
-    private static synchronized void writeItem(JsonObject sessionJson) {
+    private static void writeItem(JsonObject sessionJson) {
         String content = sessionJson.toString();
         String sessionFile = getSoftwareSessionFile(true);
 
         saveFileContent(sessionFile, content);
     }
 
-    public static synchronized boolean getBooleanItem(String key) {
+    public static boolean getBooleanItem(String key) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
             return sessionJson.get(key).getAsBoolean();
@@ -386,7 +359,7 @@ public class FileManager {
         return false;
     }
 
-    public static synchronized Long getNumericItem(String key, Long defaultVal) {
+    public static Long getNumericItem(String key, Long defaultVal) {
         Long val = null;
         JsonObject sessionJson = getSoftwareSessionAsJson();
         if (sessionJson != null && sessionJson.has(key) && !sessionJson.get(key).isJsonNull()) {
@@ -475,7 +448,7 @@ public class FileManager {
         return new ArrayList<>();
     }
 
-    public synchronized  static void storePayload(String payload) {
+    public static void storePayload(String payload) {
         if (payload == null || payload.length() == 0) {
             return;
         }
