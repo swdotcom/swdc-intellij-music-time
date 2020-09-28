@@ -339,9 +339,14 @@ public class SoftwareCoUtils {
             if (f.exists()) {
                 fileDetails.character_count = f.length();
                 fileDetails.file_name = f.getName();
-                if (StringUtils.isNotBlank(fileDetails.project_directory)) {
+                if (StringUtils.isNotBlank(fileDetails.project_directory) && fullFileName.indexOf(fileDetails.project_directory) != -1) {
                     // strip out the project_file_name
-                    fileDetails.project_file_name = fullFileName.split(fileDetails.project_directory)[1];
+                    String[] parts = fullFileName.split(fileDetails.project_directory);
+                    if (parts.length > 1) {
+                        fileDetails.project_file_name = parts[1];
+                    } else {
+                        fileDetails.project_file_name = fullFileName;
+                    }
                 } else {
                     fileDetails.project_file_name = fullFileName;
                 }
