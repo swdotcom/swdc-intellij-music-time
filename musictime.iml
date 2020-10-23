@@ -29,6 +29,9 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="gson-2.8.6" level="project" />
-    <orderEntry type="library" name="swdc-java-tracker-1.1.0" level="project" />
+    <orderEntry type="library" name="swdc-java-tracker-1.1.1" level="project" />
+    <orderEntry type="library" name="jackson-core-2.11.3" level="project" />
+    <orderEntry type="library" name="jackson-databind-2.11.3" level="project" />
+    <orderEntry type="library" name="groovy-3.0.6" level="application" />
   </component>
 </module>

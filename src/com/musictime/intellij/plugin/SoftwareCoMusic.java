@@ -93,9 +93,9 @@ public class SoftwareCoMusic implements ApplicationComponent {
             String readmeFile = FileManager.getReadmeFile(false);
             FileManager.deleteFile(readmeFile);
         }
-        boolean sessionFileExists = SoftwareCoSessionManager.softwareSessionFileExists();
+
         String jwt = FileManager.getItem("jwt");
-        if (!sessionFileExists || StringUtils.isBlank(jwt)) {
+        if (StringUtils.isBlank(jwt) || SoftwareCoUtils.isAppJwt()) {
             if (!serverIsOnline) {
                 // server isn't online, check again in 1 min
                 if (retry_counter == 0) {
