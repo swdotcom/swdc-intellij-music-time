@@ -3,9 +3,12 @@
     <output-path>$USER_HOME$/Desktop/artifacts/musictime_jar</output-path>
     <root id="archive" name="softwareco.jar">
       <element id="module-output" name="musictime" />
-      <element id="extracted-dir" path="$PROJECT_DIR$/lib/gson-2.8.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/gson-2.8.6.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/httpclient-4.5.7.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/httpcore-4.4.11.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jackson-core-2.11.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jackson-databind-2.11.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/swdc-java-tracker-1.1.1.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
