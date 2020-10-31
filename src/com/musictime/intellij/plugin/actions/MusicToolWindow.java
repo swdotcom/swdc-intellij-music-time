@@ -35,9 +35,9 @@ public class MusicToolWindow {
     private JScrollPane scrollPane;
     private JPanel dataPanel;
     private JLabel refresh;
-    private JLabel spotifyState;
     private JLabel menu;
     private JPanel recommendPanel;
+    private JLabel spotifyState;
     private JLabel spotifyConnect;
     private JScrollPane recommendScroll;
     private JLabel category;
@@ -216,6 +216,8 @@ public class MusicToolWindow {
         recommendRefresh.setIcon(refreshIcon);
 
         this.rebuildRecommendedTreeView();
+
+        recommendScroll.setMinimumSize(new Dimension(-1, 180));
         recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
         recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
         recommendScroll.repaint();
@@ -944,6 +946,7 @@ public class MusicToolWindow {
             recommendPanel.updateUI();
             recommendPanel.setVisible(true);
 
+            recommendScroll.setMinimumSize(new Dimension(-1, 180));
             recommendScroll.repaint();
             recommendScroll.updateUI();
             recommendScroll.revalidate();
@@ -1047,6 +1050,7 @@ public class MusicToolWindow {
             recommendPanel.updateUI();
             recommendPanel.setVisible(true);
 
+            recommendScroll.setMinimumSize(new Dimension(-1, 180));
             recommendScroll.repaint();
             recommendScroll.updateUI();
             recommendScroll.revalidate();
