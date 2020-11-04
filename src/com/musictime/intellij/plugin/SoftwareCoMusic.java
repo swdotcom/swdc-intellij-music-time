@@ -9,7 +9,6 @@ import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
 import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
@@ -99,6 +98,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
             if (!serverIsOnline) {
                 // server isn't online, check again in 1 min
                 if (retry_counter == 0) {
+                    retry_counter++;
                     SoftwareCoUtils.showOfflinePrompt();
                 }
                 new Thread(() -> {
@@ -184,13 +184,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
         // send the 1st event: activate
         EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
 
-        // create the 5 minute interval timer to send code time payloads if code time is NOT installed
-        if (!SoftwareCoUtils.isCodeTimeInstalled()) {
-            // every 5 minutes
-            final Runnable sendOfflineDataRunner = () -> this.sendOfflineDataRunner();
-            asyncManager.scheduleService(sendOfflineDataRunner, "offlineDataRunner", 2, 60 * 5);
-        }
-
         boolean hasAccess = MusicControlManager.hasSpotifyAccess();
 
         if (!hasAccess) {
@@ -226,10 +219,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 }
             });
         }
-
-        SoftwareCoUtils.sendHeartbeat("INITIALIZED");
-
-
         AsyncManager.getInstance().executeOnceInSeconds(() -> MusicToolWindowFactory.showWindow(), 1);
         AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
     }
@@ -257,24 +246,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
             return expired;
         }
         return false;
-    }
-
-    public static String getRootPath() {
-        Project[] projects = ProjectManager.getInstance().getOpenProjects();
-        if (projects != null && projects.length > 0) {
-            return projects[0].getBasePath();
-        }
-        return null;
-    }
-
-    private void sendOfflineDataRunner() {
-        new Thread(() -> {
-            try {
-                FileManager.sendOfflineData();
-            } catch (Exception e) {
-                System.err.println(e);
-            }
-        }).start();
     }
 
     // add the document change event listener

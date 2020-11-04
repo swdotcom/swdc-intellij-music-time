@@ -191,10 +191,6 @@ public class TimeDataManager {
         return summary;
     }
 
-    public static void sendOfflineTimeData() {
-        FileManager.sendJsonArrayData(getTimeDataSummaryFile(), "/data/time");
-    }
-
     private static void saveTimeDataSummaryToDisk(TimeData timeData) {
         if (timeData == null) {
             return;
