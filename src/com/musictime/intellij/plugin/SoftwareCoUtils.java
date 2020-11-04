@@ -79,7 +79,6 @@ public class SoftwareCoUtils {
     // 16 = intellij music time
     public static int pluginId = 16;
     public static String VERSION = null;
-    public static final int SONG_FETCH_INTERVAL_MILLIS = 1000 * 30;
 
     public static KeystrokeCount latestPayload = null;
 
@@ -1071,39 +1070,6 @@ public class SoftwareCoUtils {
             }
 
         return false;
-    }
-
-    public static void sendHeartbeat(String reason) {
-
-
-            long start = Math.round(System.currentTimeMillis() / 1000);
-
-            JsonObject payload = new JsonObject();
-            payload.addProperty("pluginId", pluginId);
-            payload.addProperty("os", getOs());
-            payload.addProperty("start", start);
-            payload.addProperty("version", VERSION);
-            payload.addProperty("hostname", getHostname());
-            payload.addProperty("trigger_annotation", reason);
-
-            String api = "/data/heartbeat";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString());
-            if (!resp.isOk()) {
-                LOG.log(Level.WARNING, SoftwareCoMusic.getPluginName() + ": unable to send heartbeat ping");
-            }
-    }
-
-    public static boolean sendSongSessionPayload(String songSession) {
-
-        LOG.info("Music Time: Sending payload: " + songSession);
-
-        String api = "/music/session";
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, songSession);
-        if (!resp.isOk()) {
-            LOG.log(Level.WARNING, SoftwareCoMusic.getPluginName() + ": Unable to send song session");
-            return false;
-        }
-        return true;
     }
 
     // sendLikedTrack(like: true|false, trackId, type: spotify|itunes)

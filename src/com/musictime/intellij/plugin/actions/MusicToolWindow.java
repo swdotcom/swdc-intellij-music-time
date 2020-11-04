@@ -874,7 +874,6 @@ public class MusicToolWindow {
             // Add VSpacer at last
             dataPanel.add(component, gridConstraints(dataPanel.getComponentCount(), 6, 1, 0, 2, 0));
 
-            //dataPanel.setBounds(rect);
             dataPanel.updateUI();
             dataPanel.setVisible(true);
 

@@ -279,24 +279,6 @@ public class FileManager {
         return new JsonArray();
     }
 
-    public static void sendJsonArrayData(String file, String api) {
-        File f = new File(file);
-        if (f.exists()) {
-            try {
-                JsonArray jsonArr = FileManager.getFileContentAsJsonArray(file);
-                String payloadData = SoftwareCoMusic.gson.toJson(jsonArr);
-                SoftwareResponse resp =
-                        SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payloadData);
-                if (!resp.isOk()) {
-                    // add these back to the offline file
-                    log.info("Code Time: Unable to send array data: " + resp.getErrorMessage());
-                }
-            } catch (Exception e) {
-                log.info("Code Time: Unable to send array data: " + e.getMessage());
-            }
-        }
-    }
-
     public static JsonObject getSoftwareSessionAsJson() {
         JsonObject sessionJson = new JsonObject();
         String sessionFile = getSoftwareSessionFile(true);
@@ -388,24 +370,6 @@ public class FileManager {
         }
     }
 
-    public static JsonObject readAsJsonObject(String data) {
-        try {
-            JsonObject jsonObject = SoftwareCoMusic.gson.fromJson(buildJsonReader(data), JsonObject.class);
-            return jsonObject;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public static JsonElement readAsJsonElement(String data) {
-        try {
-            JsonElement jsonElement = SoftwareCoMusic.gson.fromJson(buildJsonReader(data), JsonElement.class);
-            return jsonElement;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     public static JsonReader buildJsonReader(String data) {
         // Clean the data
         data = cleanJsonString(data);
@@ -445,29 +409,6 @@ public class FileManager {
             }
         }
         return new ArrayList<>();
-    }
-
-    public static void storePayload(String payload) {
-        if (payload == null || payload.length() == 0) {
-            return;
-        }
-        if (SoftwareCoUtils.isWindows()) {
-            payload += "\r\n";
-        } else {
-            payload += "\n";
-        }
-        String dataStoreFile = FileManager.getSoftwareDataStoreFile();
-
-        File f = new File(dataStoreFile);
-        try {
-            log.info("Code Time: Storing kpm metrics: " + payload);
-            Writer output;
-            output = new BufferedWriter(new FileWriter(f, true));  //clears file every time
-            output.append(payload);
-            output.close();
-        } catch (Exception e) {
-            log.warning("Code Time: Error appending to the Software data store file, error: " + e.getMessage());
-        }
     }
 
     private static String getKeystrokePayloads() {
@@ -511,60 +452,6 @@ public class FileManager {
             }
         }
         return null;
-    }
-
-    public static void sendOfflineData() {
-        try {
-            String payloads = getKeystrokePayloads();
-            if (payloads == null || StringUtils.isBlank(payloads)) {
-                return;
-            }
-
-            JsonArray jsonArray = readAsJsonArray(payloads);
-
-            JsonArray batch = new JsonArray();
-            int batch_size = 25;
-
-            // go through the array
-            for (int i = 0; i < jsonArray.size(); i++) {
-                batch.add(jsonArray.get(i));
-                if (i > 0 && i % batch_size == 0) {
-                    boolean succeeded = sendBatchData(jsonArray, batch);
-                    if (!succeeded) {
-                        return;
-                    }
-                    batch = new JsonArray();
-                }
-            }
-
-            if (batch.size() > 0) {
-                boolean succeeded = sendBatchData(jsonArray, batch);
-                if (!succeeded) {
-                    return;
-                }
-            }
-
-            // delete the file now that we've made it this far without http errors
-            deleteFile(getSoftwareDataStoreFile());
-        } catch (Exception e) {
-            log.warning("Code Time: Error trying to read and send offline data, error: " + e.getMessage());
-        }
-    }
-
-    private static boolean sendBatchData(JsonArray jsonArray, JsonArray batch) {
-        String payloadData = SoftwareCoMusic.gson.toJson(batch);
-        SoftwareResponse resp =
-                SoftwareCoUtils.makeApiCall("/data/batch", HttpPost.METHOD_NAME, payloadData);
-        if (!resp.isOk() && resp.getCode() != 401) {
-            // add these back to the offline file and it's not an unauthorized req
-            log.info("Code Time: Unable to send batch data: " + resp.getErrorMessage());
-            if (jsonArray.size() > 1000) {
-                // it's getting too large, delete it
-                deleteFile(getSoftwareDataStoreFile());
-            }
-            return false;
-        }
-        return true;
     }
 
     public static void deleteFile(String file) {

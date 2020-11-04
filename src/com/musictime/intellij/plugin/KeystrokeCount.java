@@ -17,7 +17,6 @@ import com.musictime.intellij.plugin.models.ElapsedTime;
 import com.musictime.intellij.plugin.models.FileChangeInfo;
 import com.musictime.intellij.plugin.models.KeystrokeAggregate;
 import com.musictime.intellij.plugin.models.TimeData;
-import com.musictime.intellij.plugin.music.PlaylistManager;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -268,9 +267,6 @@ public class KeystrokeCount {
 
                 final String payload = SoftwareCoMusic.gson.toJson(this);
 
-                // store to send later
-                FileManager.storePayload(payload);
-
                 // set the latest payload
                 SoftwareCoUtils.setLatestPayload(this);
 
@@ -421,14 +417,9 @@ public class KeystrokeCount {
 
     private void newDayChecker() {
         if (SoftwareCoUtils.isNewDay()) {
-            // send the payloads
-            FileManager.sendOfflineData();
 
             // clear the last payload we have in memory
             FileManager.clearLastSavedKeystrokeStats();
-
-            // send the time data
-            TimeDataManager.sendOfflineTimeData();
 
             // clear the wc time and the session summary and the file change info summary
             SessionDataManager.clearSessionSummaryData();
