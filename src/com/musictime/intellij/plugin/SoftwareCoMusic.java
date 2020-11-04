@@ -44,10 +44,9 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     private static IdeaPluginDescriptor getIdeaPluginDescriptor() {
-        IdeaPluginDescriptor[] desriptors = PluginManager.getPlugins();
-        if (desriptors != null && desriptors.length > 0) {
-            for (int i = 0; i < desriptors.length; i++) {
-                IdeaPluginDescriptor descriptor = desriptors[i];
+        IdeaPluginDescriptor[] descriptors = PluginManager.getPlugins();
+        if (descriptors != null && descriptors.length > 0) {
+            for (IdeaPluginDescriptor descriptor : descriptors) {
                 if (descriptor.getPluginId().getIdString().equals("com.musictime.intellij.plugin")) {
                     return descriptor;
                 }
