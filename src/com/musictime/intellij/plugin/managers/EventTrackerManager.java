@@ -1,14 +1,12 @@
 package com.musictime.intellij.plugin.managers;
 
 import com.intellij.openapi.project.Project;
-import com.musictime.intellij.plugin.AsyncManager;
 import com.musictime.intellij.plugin.KeystrokeCount;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.FileDetails;
 import com.musictime.intellij.plugin.models.ResourceInfo;
-import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.repo.GitUtil;
 import com.swdc.snowplow.tracker.entities.*;
@@ -22,8 +20,6 @@ import org.apache.commons.lang.StringUtils;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class EventTrackerManager {
