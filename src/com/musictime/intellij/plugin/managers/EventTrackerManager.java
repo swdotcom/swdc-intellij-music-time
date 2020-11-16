@@ -7,6 +7,7 @@ import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.FileDetails;
 import com.musictime.intellij.plugin.models.ResourceInfo;
+import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.repo.GitUtil;
 import com.swdc.snowplow.tracker.entities.*;
@@ -46,7 +47,7 @@ public class EventTrackerManager {
     }
 
     public void trackCodeTimeEvent(KeystrokeCount payload) {
-        if (!this.ready) {
+        if (!this.ready || !MusicControlManager.hasSpotifyAccess()) {
             return;
         }
         ResourceInfo resourceInfo = GitUtil.getResourceInfo(payload.getProject().getDirectory(), false);
@@ -87,7 +88,7 @@ public class EventTrackerManager {
     }
 
     public void trackUIInteraction(UIInteractionType interaction_type, UIElementEntity elementEntity) {
-        if (!this.ready) {
+        if (!this.ready || !MusicControlManager.hasSpotifyAccess()) {
             return;
         }
 
@@ -109,7 +110,7 @@ public class EventTrackerManager {
     }
 
     public void trackEditorAction(String entity, String type, String full_file_name) {
-        if (!this.ready) {
+        if (!this.ready || !MusicControlManager.hasSpotifyAccess()) {
             return;
         }
 
