@@ -81,51 +81,10 @@ public class SoftwareCoMusic implements ApplicationComponent {
     }
 
     public void initComponent() {
-        boolean serverIsOnline = SoftwareCoSessionManager.isServerOnline();
-        boolean musicFileExist = SoftwareCoSessionManager.musicDataFileExists();
-        if(musicFileExist) {
-            String musicFile = FileManager.getMusicDataFile(false);
-            FileManager.deleteFile(musicFile);
-        }
-        boolean readmeExist = SoftwareCoSessionManager.readmeFileExists();
-        if(readmeExist) {
-            String readmeFile = FileManager.getReadmeFile(false);
-            FileManager.deleteFile(readmeFile);
-        }
-
-        String jwt = FileManager.getItem("jwt");
-        if (StringUtils.isBlank(jwt) || SoftwareCoUtils.isAppJwt()) {
-            if (!serverIsOnline) {
-                // server isn't online, check again in 1 min
-                if (retry_counter == 0) {
-                    retry_counter++;
-                    SoftwareCoUtils.showOfflinePrompt();
-                }
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(check_online_interval_ms);
-                        initComponent();
-                    } catch (Exception e) {
-                        System.err.println(e);
-                    }
-                }).start();
-            } else {
-                getPluginName();
-
-                if (StringUtils.isBlank(jwt)) {
-                    SoftwareCoUtils.getAppJwt(serverIsOnline);
-                    initializePlugin(true);
-                } else {
-                    initializePlugin(false);
-                }
-            }
-        } else {
-            // session json already exists, continue with plugin init
-            initializePlugin(false);
-        }
+        initializePlugin();
     }
 
-    protected void initializePlugin(boolean initializedUser) {
+    protected void initializePlugin() {
         String plugName = getPluginName();
 
         log.info(plugName + ": Loaded v" + getVersion());
@@ -139,7 +98,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
         asyncManager.scheduleService(
                 userStatusRunner, "userStatusRunner", 60 * 45, 60 * 45);
 
-        initializeUserInfoWhenProjectsReady(initializedUser);
+        initializeUserInfoWhenProjectsReady();
     }
 
     private void checkUserStatusIfNotRegistered() {
@@ -155,29 +114,32 @@ public class SoftwareCoMusic implements ApplicationComponent {
         }).start();
     }
 
-    private void initializeUserInfoWhenProjectsReady(boolean initializedUser) {
+    private void initializeUserInfoWhenProjectsReady() {
         Project p = SoftwareCoUtils.getOpenProject();
         if (p == null) {
             // try again in 5 seconds
             new Timer().schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    initializeUserInfoWhenProjectsReady(initializedUser);
+                    initializeUserInfoWhenProjectsReady();
                 }
             }, 5000);
         } else {
             keystrokeMgr.addKeystrokeWrapperIfNoneExists(p);
-            initializeUserInfo(initializedUser);
+            initializeUserInfo();
             setupEventListeners();
             setupFileEditorEventListeners(p);
         }
     }
 
-    private void initializeUserInfo(boolean initializedUser) {
+    private void initializeUserInfo() {
         SoftwareCoUtils.getAndUpdateClientInfo();
 
-        // get the user status (jwt, email, spotify, slack)
-        SoftwareCoUtils.getMusicTimeUserStatus();
+        if (!MusicControlManager.hasSpotifyAccess()) {
+            // get the user status (jwt, email, spotify, slack) if no access
+            // in case this a different computer or it timed out in a previous session
+            SoftwareCoUtils.getMusicTimeUserStatus();
+        }
 
         // initialize the tracker
         EventTrackerManager.getInstance().init();
@@ -211,13 +173,16 @@ public class SoftwareCoMusic implements ApplicationComponent {
             }
         }
 
-        if (initializedUser) {
+        boolean initializedIntellijMtPlugin = FileManager.getBooleanItem("intellij_MtInit");
+
+        if (!initializedIntellijMtPlugin) {
             log.log(Level.INFO, "Initial launching README file");
             ApplicationManager.getApplication().invokeLater(new Runnable() {
                 public void run() {
                     sessionMgr.openReadmeFile();
                 }
             });
+            FileManager.setBooleanItem("intellij_MtInit", true);
         }
         AsyncManager.getInstance().executeOnceInSeconds(() -> MusicToolWindowFactory.showWindow(), 1);
         AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);

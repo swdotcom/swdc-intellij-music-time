@@ -293,7 +293,8 @@ public class MusicControlManager {
 
     public static boolean hasSpotifyAccess() {
         String accessToken = FileManager.getItem("spotify_access_token");
-        return !StringUtils.isBlank(accessToken);
+        // has a spotify access token if its not null or empty
+        return StringUtils.isNotBlank(accessToken);
     }
 
     public static boolean requiresReAuthentication() {

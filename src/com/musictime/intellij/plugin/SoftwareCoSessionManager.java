@@ -47,14 +47,6 @@ public class SoftwareCoSessionManager {
         return f.exists();
     }
 
-    public static boolean musicDataFileExists() {
-        // don't auto create the file
-        String file = FileManager.getMusicDataFile(false);
-        // check if it exists
-        File f = new File(file);
-        return f.exists();
-    }
-
     public static boolean readmeFileExists() {
         // don't auto create the file
         String file = FileManager.getReadmeFile(false);
