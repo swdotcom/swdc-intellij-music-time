@@ -128,6 +128,16 @@ public class MusicControlManager {
          *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
          */
         String jwt = FileManager.getItem("jwt");
+        if (StringUtils.isBlank(jwt)) {
+            // create the app jwt
+            SoftwareCoUtils.getAppJwt();
+            jwt = FileManager.getItem("jwt");
+            if (StringUtils.isBlank(jwt)) {
+                // show the offline message
+                SoftwareCoUtils.showOfflinePrompt();
+                return;
+            }
+        }
         String api = Client.api_endpoint + "/auth/spotify?token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
         BrowserUtil.browse(api);
     }

@@ -929,6 +929,16 @@ public class SoftwareCoUtils {
         return username;
     }
 
+    public static void getAppJwt() {
+        long now = Math.round(System.currentTimeMillis() / 1000);
+        String api = "/data/apptoken?token=" + now;
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
+        if (resp.isOk()) {
+            JsonObject obj = resp.getJsonObj();
+            FileManager.setItem("jwt", obj.get("jwt").getAsString());
+        }
+    }
+
     public static JsonObject getUser() {
         String api = "/users/me";
         SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
@@ -997,11 +1007,6 @@ public class SoftwareCoUtils {
         return pattern.matcher(email).matches();
     }
 
-    public static boolean isLoggedIn() {
-        String email = FileManager.getItem("name");
-        return StringUtils.isNotBlank(email);
-    }
-
     public static boolean getMusicTimeUserStatus() {
         String api = "/users/plugin/state";
         SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
@@ -1060,7 +1065,7 @@ public class SoftwareCoUtils {
     public static void showOfflinePrompt() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
-                String infoMsg = "Our service is temporarily unavailable. " +
+                String infoMsg = "Our service is temporarily unavailable or you are currently offline. " +
                         "We will try to reconnect again soon. Your status bar will not update at this time.";
                 // ask to download the PM
                 Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
