@@ -44,6 +44,7 @@ public class MusicToolWindow {
     private JLabel genre;
     private JLabel songSearch;
     private JLabel recommendRefresh;
+    private JLabel recommendationHeader;
 
     private static MusicToolWindow win;
     private static Map<String, PlaylistTree> playlists = new HashMap<>();
@@ -217,20 +218,14 @@ public class MusicToolWindow {
 
         this.rebuildRecommendedTreeView();
 
-        recommendScroll.setMinimumSize(new Dimension(-1, 180));
-        recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
-        recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
-        recommendScroll.repaint();
-
         playlistWindowContent.setBackground((Color) null);
 
         scrollPane.updateUI();
         scrollPane.setVisible(true);
         scrollPane.revalidate();
-        //scrollRect = scrollPane.getBounds();
-        recommendScroll.updateUI();
-        recommendScroll.setVisible(true);
-        recommendScroll.revalidate();
+
+        updateRecommendVisibility();
+
         playlistWindowContent.updateUI();
         playlistWindowContent.setVisible(true);
         playlistWindowContent.revalidate();
@@ -942,13 +937,7 @@ public class MusicToolWindow {
             actionList.setBackground((Color) null);
             recommendPanel.add(actionList, gridConstraints(recommendPanel.getComponentCount(), 1, 2, 0, 3, 0));
 
-            recommendPanel.updateUI();
-            recommendPanel.setVisible(true);
-
-            recommendScroll.setMinimumSize(new Dimension(-1, 180));
-            recommendScroll.repaint();
-            recommendScroll.updateUI();
-            recommendScroll.revalidate();
+            updateRecommendVisibility();
 
             playlistWindowContent.updateUI();
             playlistWindowContent.setVisible(true);
@@ -1046,13 +1035,7 @@ public class MusicToolWindow {
 
 //*********************************************************************************************************************************************
 
-            recommendPanel.updateUI();
-            recommendPanel.setVisible(true);
-
-            recommendScroll.setMinimumSize(new Dimension(-1, 180));
-            recommendScroll.repaint();
-            recommendScroll.updateUI();
-            recommendScroll.revalidate();
+            updateRecommendVisibility();
 
             playlistWindowContent.updateUI();
             playlistWindowContent.setVisible(true);
@@ -1105,5 +1088,29 @@ public class MusicToolWindow {
         } else {
             SoftwareCoUtils.showMsgPrompt("Unable to establish a device connection. Please check that you are logged into your Spotify account.", new Color(120, 23, 50, 100));
         }
+    }
+
+    private void updateRecommendVisibility() {
+        recommendPanel.updateUI();
+        if (MusicControlManager.hasSpotifyAccess()) {
+            recommendPanel.setVisible(true);
+            recommendationHeader.setVisible(true);
+            category.setVisible(true);
+            genre.setVisible(true);
+            recommendRefresh.setVisible(true);
+            recommendScroll.setMinimumSize(new Dimension(-1, 160));
+        } else {
+            recommendPanel.setVisible(false);
+            recommendationHeader.setVisible(false);
+            category.setVisible(false);
+            genre.setVisible(false);
+            recommendRefresh.setVisible(false);
+            recommendScroll.setMinimumSize(new Dimension(0, 0));
+        }
+        recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
+        recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
+        recommendScroll.repaint();
+        recommendScroll.updateUI();
+        recommendScroll.revalidate();
     }
 }

@@ -929,15 +929,13 @@ public class SoftwareCoUtils {
         return username;
     }
 
-    public static void getAppJwt(boolean serverIsOnline) {
-        if (serverIsOnline) {
-            long now = Math.round(System.currentTimeMillis() / 1000);
-            String api = "/data/apptoken?token=" + now;
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
-            if (resp.isOk()) {
-                JsonObject obj = resp.getJsonObj();
-                FileManager.setItem("jwt", obj.get("jwt").getAsString());
-            }
+    public static void getAppJwt() {
+        long now = Math.round(System.currentTimeMillis() / 1000);
+        String api = "/data/apptoken?token=" + now;
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
+        if (resp.isOk()) {
+            JsonObject obj = resp.getJsonObj();
+            FileManager.setItem("jwt", obj.get("jwt").getAsString());
         }
     }
 
@@ -1009,65 +1007,44 @@ public class SoftwareCoUtils {
         return pattern.matcher(email).matches();
     }
 
-    public static boolean isLoggedIn() {
-        String email = FileManager.getItem("name");
-        return StringUtils.isNotBlank(email);
-    }
-
     public static boolean getMusicTimeUserStatus() {
+        String api = "/users/plugin/state";
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
+        if (resp.isOk()) {
+            JsonObject data = resp.getJsonObj();
 
-            String api = "/users/plugin/state";
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
-            if (resp.isOk()) {
-                // check if we have the data and jwt
-                // resp.data.jwt and resp.data.user
-                // then update the session.json for the jwt
-                JsonObject data = resp.getJsonObj();
-                if (data == null || !data.has("jwt")) {
-                    return false;
-                }
-                String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
+            // get the user object
+            JsonObject userData = data.get("user").getAsJsonObject();
 
-                // at the very minimum update the JWT
-                String dataJwt = data.get("jwt").getAsString();
-                if (StringUtils.isNotBlank(dataJwt) && !isLoggedIn()) {
-                    FileManager.setItem("jwt", dataJwt);
-                }
-
-                // check if we have any data
-                if (state.equals("OK")) {
-                    FileManager.setItem("jwt", dataJwt);
-                    String dataEmail = data.get("email").getAsString();
-
-                    // update the email
-                    if (dataEmail != null) {
-                        FileManager.setItem("name", dataEmail);
-                    }
-
-                    // get the user object
-                    JsonObject userData = data.get("user").getAsJsonObject();
-                    // check if this user data has "auths"
-                    if (userData != null && userData.has("auths")) {
-                        // it does
-                        JsonArray auths = userData.getAsJsonArray("auths");
-                        for (int i = 0 ; i < auths.size(); i++) {
-                            JsonObject auth = auths.get(i).getAsJsonObject();
-                            if (auth.has("type")) {
-                                if (auth.get("type").getAsString().equals("spotify")) {
-                                    FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
-                                    FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
-                                } else if (auth.get("type").getAsString().equals("slack")) {
-                                    SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
-                                    FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
-                                    SlackControlManager.slackCacheState = true;
-                                }
-                            }
+            // set the spotify or slack access token
+            if (userData != null && userData.has("auths")) {
+                // it does
+                JsonArray auths = userData.getAsJsonArray("auths");
+                for (int i = 0 ; i < auths.size(); i++) {
+                    JsonObject auth = auths.get(i).getAsJsonObject();
+                    if (auth.has("type")) {
+                        if (auth.get("type").getAsString().equals("spotify")) {
+                            FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
+                            FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
+                        } else if (auth.get("type").getAsString().equals("slack")) {
+                            SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
+                            FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
+                            SlackControlManager.slackCacheState = true;
                         }
                     }
-
-                    return true;
                 }
             }
+
+            // set the email and jwt if the state === "OK"
+            String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
+            if (state.toLowerCase().equals("ok")) {
+                // set the jwt and name
+                FileManager.setItem("name", data.get("email").getAsString());
+                FileManager.setItem("jwt", data.get("jwt").getAsString());
+                // authorized, return true
+                return true;
+            }
+        }
 
         return false;
     }
@@ -1088,7 +1065,7 @@ public class SoftwareCoUtils {
     public static void showOfflinePrompt() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
-                String infoMsg = "Our service is temporarily unavailable. " +
+                String infoMsg = "Our service is temporarily unavailable or you are currently offline. " +
                         "We will try to reconnect again soon. Your status bar will not update at this time.";
                 // ask to download the PM
                 Messages.showInfoMessage(infoMsg, SoftwareCoMusic.getPluginName());
@@ -1302,32 +1279,6 @@ public class SoftwareCoUtils {
         String currentDay = FileManager.getItem("currentDay", "");
         String day = SoftwareCoUtils.getTodayInStandardFormat();
         return !day.equals(currentDay);
-    }
-
-    public static boolean isAppJwt() {
-        String jwt = FileManager.getItem("jwt");
-        if (StringUtils.isNotBlank(jwt)) {
-            String stippedDownJwt = jwt.indexOf("JWT ") != -1 ? jwt.substring("JWT ".length()) : jwt;
-            try {
-                String[] split_string = stippedDownJwt.split("\\.");
-                String base64EncodedBody = split_string[1];
-
-                org.apache.commons.codec.binary.Base64 base64Url = new Base64(true);
-                String body = new String(base64Url.decode(base64EncodedBody));
-                Map<String, String> jsonMap;
-
-                ObjectMapper mapper = new ObjectMapper();
-                // convert JSON string to Map
-                jsonMap = mapper.readValue(body,
-                        new TypeReference<Map<String, String>>() {
-                        });
-                Object idVal = jsonMap.getOrDefault("id", null);
-                if (idVal != null && Long.valueOf(idVal.toString()).longValue() > 9999999999L) {
-                    return true;
-                }
-            } catch (Exception ex) {}
-        }
-        return false;
     }
 
 }

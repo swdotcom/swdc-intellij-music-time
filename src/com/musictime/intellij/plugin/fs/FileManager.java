@@ -164,16 +164,6 @@ public class FileManager {
         return file;
     }
 
-    public static String getMusicDataFile(boolean autoCreate) {
-        String file = getSoftwareDir(autoCreate);
-        if (SoftwareCoUtils.isWindows()) {
-            file += "\\musicData.json";
-        } else {
-            file += "/musicData.json";
-        }
-        return file;
-    }
-
     public static String getSongSessionDataFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
         if (SoftwareCoUtils.isWindows()) {
