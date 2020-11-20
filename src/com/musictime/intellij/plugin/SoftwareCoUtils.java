@@ -1013,53 +1013,44 @@ public class SoftwareCoUtils {
         if (resp.isOk()) {
             JsonObject data = resp.getJsonObj();
 
-            // get the user object
-            JsonObject userData = data.get("user").getAsJsonObject();
-
-            // set the spotify or slack access token
-            if (userData != null && userData.has("auths")) {
-                // it does
-                JsonArray auths = userData.getAsJsonArray("auths");
-                for (int i = 0 ; i < auths.size(); i++) {
-                    JsonObject auth = auths.get(i).getAsJsonObject();
-                    if (auth.has("type")) {
-                        if (auth.get("type").getAsString().equals("spotify")) {
-                            FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
-                            FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
-                        } else if (auth.get("type").getAsString().equals("slack")) {
-                            SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
-                            FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
-                            SlackControlManager.slackCacheState = true;
-                        }
-                    }
-                }
-            }
-
             // set the email and jwt if the state === "OK"
             String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
             if (state.toLowerCase().equals("ok")) {
+                if (data.has("user") ) {
+                    // get the user object
+                    JsonObject userData = data.get("user").getAsJsonObject();
+
+                    // set the spotify or slack access token
+                    if (userData != null && userData.has("auths")) {
+                        // it does
+                        JsonArray auths = userData.getAsJsonArray("auths");
+                        for (int i = 0; i < auths.size(); i++) {
+                            JsonObject auth = auths.get(i).getAsJsonObject();
+                            if (auth.has("type")) {
+                                if (auth.get("type").getAsString().equals("spotify")) {
+                                    FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
+                                    FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
+                                } else if (auth.get("type").getAsString().equals("slack")) {
+                                    SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
+                                    FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
+                                    SlackControlManager.slackCacheState = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // set the jwt and name
                 FileManager.setItem("name", data.get("email").getAsString());
                 FileManager.setItem("jwt", data.get("jwt").getAsString());
                 // authorized, return true
                 return true;
             }
+
+
         }
 
         return false;
-    }
-
-    // sendLikedTrack(like: true|false, trackId, type: spotify|itunes)
-    public static void sendLikedTrack(boolean like, String trackId, String type) {
-
-        JsonObject payload = new JsonObject();
-        payload.addProperty("liked", like);
-
-        String api = "/music/liked/track/" + trackId + "?type=" + type;
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, payload.toString());
-        if (!resp.isOk()) {
-            LOG.log(Level.WARNING, "Music Time: unable to send liked song to software.com");
-        }
     }
 
     public static void showOfflinePrompt() {

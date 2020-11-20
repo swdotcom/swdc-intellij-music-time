@@ -102,26 +102,6 @@ public class MusicControlManager {
         }).start();
     }
 
-    public static void seedLikedSongSessions() {
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
-
-        JsonObject payload = new JsonObject();
-        int offset_minutes = ZonedDateTime.now().getOffset().getTotalSeconds() / 60;
-        payload.addProperty("offset_minutes", offset_minutes);
-        payload.addProperty("timezone", timesData.timezone);
-        payload.addProperty("pluginId", SoftwareCoUtils.pluginId);
-        payload.addProperty("os", SoftwareCoUtils.getOs());
-        payload.addProperty("version", SoftwareCoMusic.getVersion());
-        String jsonPayload = payload.toString();
-
-        String api = "/music/onboard";
-
-        SoftwareResponse resp = Client.makeApiCall(api, HttpPost.METHOD_NAME, jsonPayload, false);
-        if (!resp.isOk()) {
-            LOG.info("Error posting seed songs: " + resp.getErrorMessage());
-        }
-    }
-
     private static void authSpotify() {
         /**
          * const qryStr = `token=${encodedJwt}&mac=${mac}`;

@@ -289,7 +289,6 @@ public class MusicController {
         return Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, null);
 
     }
-    //const api = `/music/liked/track/${track.id}?type=${type}`; type = spotify
 
     /*
      * Turn on/off repeat

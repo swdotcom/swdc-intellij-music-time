@@ -64,18 +64,6 @@ public class SoftwareCoSessionManager {
         return null;
     }
 
-    public synchronized static boolean isServerOnline() {
-        long nowInSec = Math.round(System.currentTimeMillis() / 1000);
-        // 5 min threshold
-        boolean pastThreshold = (nowInSec - lastAppAvailableCheck > (60 * 5)) ? true : false;
-        if (pastThreshold) {
-            SoftwareResponse resp = SoftwareCoUtils.makeApiCall("/ping", HttpGet.METHOD_NAME, null);
-            SoftwareCoUtils.updateServerStatus(resp.isOk());
-            lastAppAvailableCheck = nowInSec;
-        }
-        return SoftwareCoUtils.isAppAvailable();
-    }
-
     public static void fetchMusicTimeMetricsDashboard(String plugin, boolean isHtml) {
         String dashboardFile = FileManager.getMusicDashboardFile();
 

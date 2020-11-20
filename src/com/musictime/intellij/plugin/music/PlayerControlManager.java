@@ -171,7 +171,6 @@ public class PlayerControlManager {
                 }
                 if (resp.isOk()) {
                     PlayListCommands.updatePlaylists(3, null);
-                    SoftwareCoUtils.sendLikedTrack(like, trackId, "spotify");
                     AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
                     return true;
                 } else if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {

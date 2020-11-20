@@ -187,9 +187,9 @@ public class FileManager {
     public static String getMusicDashboardFile() {
         String file = getSoftwareDir(true);
         if (SoftwareCoUtils.isWindows()) {
-            file += "\\musicTime.txt";
+            file += "\\musicTime.html";
         } else {
-            file += "/musicTime.txt";
+            file += "/musicTime.html";
         }
         return file;
     }
