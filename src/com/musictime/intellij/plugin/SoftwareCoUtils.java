@@ -1272,4 +1272,36 @@ public class SoftwareCoUtils {
         return !day.equals(currentDay);
     }
 
+    public static String createAnonymousUser() {
+        getAppJwt();
+        // make sure we've fetched the app jwt
+        String jwt = FileManager.getItem("jwt");
+
+        if (jwt != null) {
+            String timezone = TimeZone.getDefault().getID();
+
+            JsonObject payload = new JsonObject();
+            payload.addProperty("username", getOsUsername());
+            payload.addProperty("timezone", timezone);
+            payload.addProperty("hostname", getHostname());
+            payload.addProperty("creation_annotation", "NO_SESSION_FILE");
+
+            String api = "/data/onboard";
+            SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString());
+            if (resp.isOk()) {
+                // check if we have the data and jwt
+                // resp.data.jwt and resp.data.user
+                // then update the session.json for the jwt
+                JsonObject data = resp.getJsonObj();
+                // check if we have any data
+                if (data != null && data.has("jwt")) {
+                    String dataJwt = data.get("jwt").getAsString();
+                    FileManager.setItem("jwt", dataJwt);
+                    return dataJwt;
+                }
+            }
+        }
+        return null;
+    }
+
 }
