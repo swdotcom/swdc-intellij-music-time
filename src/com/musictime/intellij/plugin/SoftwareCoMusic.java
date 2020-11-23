@@ -83,8 +83,9 @@ public class SoftwareCoMusic implements ApplicationComponent {
     public void initComponent() {
         String jwt = FileManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
-            // create an app jwt to support spotify auth
-            SoftwareCoUtils.getAppJwt();
+            // create an anon user to allow our spotify strategy to update the anon
+            // user to registered once the user has connected via spotify
+            SoftwareCoUtils.createAnonymousUser();
         }
         initializePlugin();
     }
