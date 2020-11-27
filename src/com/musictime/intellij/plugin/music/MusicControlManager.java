@@ -108,7 +108,7 @@ public class MusicControlManager {
          *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
          */
         String jwt = FileManager.getItem("jwt");
-        String api = Client.api_endpoint + "/auth/spotify?token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
+        String api = Client.api_endpoint + "/auth/spotify?plugin_token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
         BrowserUtil.browse(api);
     }
 
