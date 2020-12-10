@@ -74,7 +74,6 @@ public class SoftwareCoUtils {
     public static final Logger LOG = Logger.getLogger("SoftwareCoUtils");
 
     public static HttpClient httpClient;
-    public static HttpClient pingClient;
 
     // 16 = intellij music time
     public static int pluginId = 16;
@@ -105,13 +104,12 @@ public class SoftwareCoUtils {
     static {
         // initialize the HttpClient
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(5000)
-                .setConnectionRequestTimeout(5000)
-                .setSocketTimeout(5000)
+                .setConnectTimeout(8000)
+                .setConnectionRequestTimeout(8000)
+                .setSocketTimeout(8000)
                 .build();
 
-        pingClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
-        httpClient = HttpClientBuilder.create().build();
+        httpClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
     }
 
     public static boolean isCodeTimeInstalled() {
@@ -197,36 +195,15 @@ public class SoftwareCoUtils {
         return SystemInfo.isMac;
     }
 
-    public static void updateServerStatus(boolean isOnlineStatus) {
-        appAvailable = isOnlineStatus;
-    }
-
-    public static boolean isAppAvailable() {
-        return appAvailable;
-    }
-
     public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload) {
+        return makeApiCall(api, httpMethodName, payload, null);
+    }
+
+    public static SoftwareResponse makeApiCall(String api, String httpMethodName, String payload, String overridingJwt) {
 
         SoftwareResponse softwareResponse = new SoftwareResponse();
 
-        SoftwareHttpManager httpTask = null;
-        if (api.contains("/ping") || api.contains("/sessions") || api.contains("/dashboard")
-                || api.contains("/users/plugin/accounts")) {
-            // if the server is having issues, we'll timeout within 5 seconds for these calls
-            httpTask = new SoftwareHttpManager(api, httpMethodName, payload, httpClient);
-        } else {
-            if (httpMethodName.equals(HttpPost.METHOD_NAME)) {
-                // continue, POSTS encapsulated "invokeLater" with a timeout of 5 seconds
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, pingClient);
-            } else {
-                if (!appAvailable) {
-                    // bail out
-                    softwareResponse.setIsOk(false);
-                    return softwareResponse;
-                }
-                httpTask = new SoftwareHttpManager(api, httpMethodName, payload, httpClient);
-            }
-        }
+        SoftwareHttpManager httpTask = new SoftwareHttpManager(api, httpMethodName, payload, overridingJwt, httpClient);
         Future<HttpResponse> response = EXECUTOR_SERVICE.submit(httpTask);
 
         //
@@ -1008,45 +985,47 @@ public class SoftwareCoUtils {
     }
 
     public static boolean getMusicTimeUserStatus() {
+        String jwt = FileManager.getItem("jwt");
+        String auth_callback_state = FileManager.getAuthCallbackState();
+        String token = (StringUtils.isNotBlank(auth_callback_state)) ? auth_callback_state : jwt;
+
         String api = "/users/plugin/state";
-        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
+        SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null, token);
         if (resp.isOk()) {
             JsonObject data = resp.getJsonObj();
 
             // set the email and jwt if the state === "OK"
             String state = (data != null && data.has("state")) ? data.get("state").getAsString() : "UNKNOWN";
-            if (state.toLowerCase().equals("ok")) {
-                if (data.has("user") ) {
-                    // get the user object
-                    JsonObject userData = data.get("user").getAsJsonObject();
+            if (state.toLowerCase().equals("ok") && data.has("user") ) {
+                // get the user object
+                JsonObject userData = data.get("user").getAsJsonObject();
 
-                    // set the spotify or slack access token
-                    if (userData != null && userData.has("auths")) {
-                        // it does
-                        JsonArray auths = userData.getAsJsonArray("auths");
-                        for (int i = 0; i < auths.size(); i++) {
-                            JsonObject auth = auths.get(i).getAsJsonObject();
-                            if (auth.has("type")) {
-                                if (auth.get("type").getAsString().equals("spotify")) {
-                                    FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
-                                    FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
-                                } else if (auth.get("type").getAsString().equals("slack")) {
-                                    SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
-                                    FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
-                                    SlackControlManager.slackCacheState = true;
-                                }
+                // set the spotify or slack access token
+                if (userData != null && userData.has("auths")) {
+                    // it does
+                    JsonArray auths = userData.getAsJsonArray("auths");
+                    for (int i = 0; i < auths.size(); i++) {
+                        JsonObject auth = auths.get(i).getAsJsonObject();
+                        if (auth.has("type")) {
+                            if (auth.get("type").getAsString().equals("spotify")) {
+                                FileManager.setItem("spotify_access_token", auth.get("access_token").getAsString());
+                                FileManager.setItem("spotify_refresh_token", auth.get("refresh_token").getAsString());
+                            } else if (auth.get("type").getAsString().equals("slack")) {
+                                SlackControlManager.ACCESS_TOKEN = auth.get("access_token").getAsString();
+                                FileManager.setItem("slack_access_token", SlackControlManager.ACCESS_TOKEN);
+                                SlackControlManager.slackCacheState = true;
                             }
                         }
                     }
                 }
-
                 // set the jwt and name
-                FileManager.setItem("name", data.get("email").getAsString());
-                FileManager.setItem("jwt", data.get("jwt").getAsString());
+                FileManager.setItem("name", userData.get("email").getAsString());
+                FileManager.setItem("jwt", userData.get("plugin_jwt").getAsString());
+                FileManager.setAuthCallbackState(null);
+
                 // authorized, return true
                 return true;
             }
-
 
         }
 
@@ -1272,21 +1251,29 @@ public class SoftwareCoUtils {
         return !day.equals(currentDay);
     }
 
-    public static String createAnonymousUser() {
-        getAppJwt();
+    public static String createAnonymousUser(boolean ignoreJwt) {
         // make sure we've fetched the app jwt
         String jwt = FileManager.getItem("jwt");
 
-        if (jwt != null) {
+        if (StringUtils.isBlank(jwt) || ignoreJwt) {
             String timezone = TimeZone.getDefault().getID();
+
+            String plugin_uuid = FileManager.getPluginUuid();
+            String auth_callback_state = FileManager.getAuthCallbackState();
+
+            if (StringUtils.isBlank(auth_callback_state)) {
+                auth_callback_state = UUID.randomUUID().toString();
+                FileManager.setAuthCallbackState(auth_callback_state);
+            }
 
             JsonObject payload = new JsonObject();
             payload.addProperty("username", getOsUsername());
             payload.addProperty("timezone", timezone);
             payload.addProperty("hostname", getHostname());
-            payload.addProperty("creation_annotation", "NO_SESSION_FILE");
+            payload.addProperty("auth_callback_state", auth_callback_state);
+            payload.addProperty("plugin_uuid", plugin_uuid);
 
-            String api = "/data/onboard";
+            String api = "/plugins/onboard";
             SoftwareResponse resp = SoftwareCoUtils.makeApiCall(api, HttpPost.METHOD_NAME, payload.toString());
             if (resp.isOk()) {
                 // check if we have the data and jwt
@@ -1297,6 +1284,8 @@ public class SoftwareCoUtils {
                 if (data != null && data.has("jwt")) {
                     String dataJwt = data.get("jwt").getAsString();
                     FileManager.setItem("jwt", dataJwt);
+                    FileManager.setBooleanItem("switching_account", false);
+                    FileManager.setAuthCallbackState(null);
                     return dataJwt;
                 }
             }

@@ -18,6 +18,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.velocity.texen.util.FileUtil;
+import org.jetbrains.annotations.Async;
 
 import javax.swing.*;
 import java.awt.*;
@@ -115,19 +116,17 @@ public class MusicControlManager {
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
         boolean connected = SoftwareCoUtils.getMusicTimeUserStatus();
 
-        if (!connected && retryCount > 0) {
-            final int newRetryCount = retryCount - 1;
-            new Thread(() -> {
-                try {
-                    Thread.sleep(10000);
-                    lazilyFetchSpotifyStatus(newRetryCount);
-                }
-                catch (Exception e){
-                    System.err.println(e);
-                }
-            }).start();
+        if (!connected) {
+            if (retryCount > 0) {
+                final int newRetryCount = retryCount - 1;
+                final Runnable service = () -> lazilyFetchSpotifyStatus(newRetryCount);
+                AsyncManager.getInstance().executeOnceInSeconds(service, 10);
+            } else {
+                FileManager.setAuthCallbackState(null);
+            }
         } else if (connected) {
             spotifyStatus = "Connected";
+            FileManager.setAuthCallbackState(null);
             SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
 
             FileManager.setBooleanItem("requiresSpotifyReAuth", false);

@@ -16,6 +16,7 @@ import org.apache.http.client.methods.HttpPost;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -164,6 +165,16 @@ public class FileManager {
         return file;
     }
 
+    private static String getDeviceFile() {
+        String file = getSoftwareDir(true);
+        if (SoftwareCoUtils.isWindows()) {
+            file += "\\device.json";
+        } else {
+            file += "/device.json";
+        }
+        return file;
+    }
+
     public static String getSongSessionDataFile(boolean autoCreate) {
         String file = getSoftwareDir(autoCreate);
         if (SoftwareCoUtils.isWindows()) {
@@ -294,6 +305,36 @@ public class FileManager {
         return sessionJson;
     }
 
+    public static JsonObject getJsonObjectFromFile(String fileName) {
+        JsonObject jsonObject = new JsonObject();
+        String content = getFileContent(fileName);
+
+        if (content != null) {
+            // json parse it
+            jsonObject = readAsJsonObject(content);
+        }
+
+        if (jsonObject == null) {
+            jsonObject = new JsonObject();
+        }
+        return jsonObject;
+    }
+
+    public static String getFileContent(String file) {
+        String content = null;
+
+        File f = new File(file);
+        if (f.exists()) {
+            try {
+                byte[] encoded = Files.readAllBytes(Paths.get(file));
+                content = new String(encoded, StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                log.warning("Code Time: Error trying to read and parse: " + e.getMessage());
+            }
+        }
+        return content;
+    }
+
     public static void setNumericItem(String key, Long val) {
         JsonObject sessionJson = getSoftwareSessionAsJson();
         sessionJson.addProperty(key, val);
@@ -355,6 +396,15 @@ public class FileManager {
         try {
             JsonArray jsonArray = SoftwareCoMusic.gson.fromJson(buildJsonReader(data), JsonArray.class);
             return jsonArray;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static JsonObject readAsJsonObject(String data) {
+        try {
+            JsonObject jsonObject = SoftwareCoMusic.gson.fromJson(buildJsonReader(data), JsonObject.class);
+            return jsonObject;
         } catch (Exception e) {
             return null;
         }
@@ -444,11 +494,36 @@ public class FileManager {
         return null;
     }
 
-    public static void deleteFile(String file) {
-        File f = new File(file);
-        // if the file exists, delete it
-        if (f.exists()) {
-            f.delete();
+    public static String getPluginUuid() {
+        String plugin_uuid = null;
+        JsonObject deviceJson = getJsonObjectFromFile(getDeviceFile());
+        if (deviceJson.has("plugin_uuid") && !deviceJson.get("plugin_uuid").isJsonNull()) {
+            plugin_uuid = deviceJson.get("plugin_uuid").getAsString();
+        } else {
+            // set it for the 1st and only time
+            plugin_uuid = UUID.randomUUID().toString();
+            deviceJson.addProperty("plugin_uuid", plugin_uuid);
+            String content = deviceJson.toString();
+            saveFileContent(getDeviceFile(), content);
         }
+        return plugin_uuid;
+    }
+
+    public static String getAuthCallbackState() {
+        JsonObject deviceJson = getJsonObjectFromFile(getDeviceFile());
+        if (deviceJson != null && deviceJson.has("auth_callback_state") && !deviceJson.get("auth_callback_state").isJsonNull()) {
+            return deviceJson.get("auth_callback_state").getAsString();
+        }
+        return null;
+    }
+
+    public static void setAuthCallbackState(String value) {
+        String deviceFile = getDeviceFile();
+        JsonObject deviceJson = getJsonObjectFromFile(deviceFile);
+        deviceJson.addProperty("auth_callback_state", value);
+
+        String content = deviceJson.toString();
+
+        saveFileContent(deviceFile, content);
     }
 }
