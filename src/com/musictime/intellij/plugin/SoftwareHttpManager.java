@@ -2,6 +2,7 @@ package com.musictime.intellij.plugin;
 
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.Client;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.*;
@@ -20,12 +21,14 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
     private String api;
     private String httpMethodName;
     private HttpClient httpClient;
+    private String overridingJwt = null;
 
-    public SoftwareHttpManager(String api, String httpMethodName, String payload, HttpClient httpClient) {
+    public SoftwareHttpManager(String api, String httpMethodName, String payload, String overridingJwt, HttpClient httpClient) {
         this.payload = payload;
         this.api = api;
         this.httpMethodName = httpMethodName;
         this.httpClient = httpClient;
+        this.overridingJwt = overridingJwt;
     }
 
     @Override
@@ -64,7 +67,11 @@ public class SoftwareHttpManager implements Callable<HttpResponse> {
             }
 
 
-            req.addHeader("Authorization", FileManager.getItem("jwt"));
+            if (!StringUtils.isNotBlank(overridingJwt)) {
+                req.addHeader("Authorization", overridingJwt);
+            } else {
+                req.addHeader("Authorization", FileManager.getItem("jwt"));
+            }
             req.addHeader("Content-type", "application/json");
 
             SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();

@@ -85,7 +85,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
         if (StringUtils.isBlank(jwt)) {
             // create an anon user to allow our spotify strategy to update the anon
             // user to registered once the user has connected via spotify
-            SoftwareCoUtils.createAnonymousUser();
+            SoftwareCoUtils.createAnonymousUser(false);
         }
         initializePlugin();
     }
@@ -99,25 +99,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
         log.info(plugName + ": Finished initializing SoftwareCoMusic plugin");
 
-        // check user status every 45 minutes
-        final Runnable userStatusRunner = () -> checkUserStatusIfNotRegistered();
-        asyncManager.scheduleService(
-                userStatusRunner, "userStatusRunner", 60 * 45, 60 * 45);
-
         initializeUserInfoWhenProjectsReady();
-    }
-
-    private void checkUserStatusIfNotRegistered() {
-        new Thread(() -> {
-            try {
-                String email = FileManager.getItem("name");
-                if (StringUtils.isBlank(email)) {
-                    SoftwareCoUtils.getMusicTimeUserStatus();
-                }
-            } catch (Exception e) {
-                System.err.println(e);
-            }
-        }).start();
     }
 
     private void initializeUserInfoWhenProjectsReady() {
@@ -140,12 +122,6 @@ public class SoftwareCoMusic implements ApplicationComponent {
 
     private void initializeUserInfo() {
         SoftwareCoUtils.getAndUpdateClientInfo();
-
-        if (!MusicControlManager.hasSpotifyAccess()) {
-            // get the user status (jwt, email, spotify, slack) if no access
-            // in case this a different computer or it timed out in a previous session
-            SoftwareCoUtils.getMusicTimeUserStatus();
-        }
 
         // initialize the tracker
         EventTrackerManager.getInstance().init();

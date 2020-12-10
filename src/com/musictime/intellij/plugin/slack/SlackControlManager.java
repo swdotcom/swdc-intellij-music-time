@@ -44,7 +44,7 @@ public class SlackControlManager {
 
         SlackHttpManager slackHttpTask = null;
 
-        slackHttpTask = new SlackHttpManager(api, httpMethodName, payload, overridingJwt, SoftwareCoUtils.pingClient);
+        slackHttpTask = new SlackHttpManager(api, httpMethodName, payload, overridingJwt, SoftwareCoUtils.httpClient);
 
         Future<HttpResponse> response = SoftwareCoUtils.EXECUTOR_SERVICE.submit(slackHttpTask);
 
