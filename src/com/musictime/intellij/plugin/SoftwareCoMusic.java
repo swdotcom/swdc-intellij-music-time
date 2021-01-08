@@ -157,12 +157,16 @@ public class SoftwareCoMusic implements ApplicationComponent {
     public static void showReconnectPrompt() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
-                String email = FileUtilManager.getItem("name");
-                String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
-                String[] options = new String[] {"Reconnect", "Cancel"};
-                int response = Messages.showDialog(infoMsg, SoftwareCoUtils.getPluginName(), options, 0, Messages.getInformationIcon());
-                if (response == 0) {
-                    MusicControlManager.connectSpotify();
+                long one_day_millis = 1000 * 60 * 60 * 24;
+                long lastReconnectPromptTime = FileUtilManager.getNumericItem("lastMtReconnectPromptTime", 0);
+                if (lastReconnectPromptTime == 0 || System.currentTimeMillis() - lastReconnectPromptTime > one_day_millis) {
+                    String email = FileUtilManager.getItem("name");
+                    String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
+                    String[] options = new String[]{"Reconnect", "Cancel"};
+                    int response = Messages.showDialog(infoMsg, SoftwareCoUtils.getPluginName(), options, 0, Messages.getInformationIcon());
+                    if (response == 0) {
+                        MusicControlManager.connectSpotify();
+                    }
                 }
             }
         });

@@ -124,8 +124,7 @@ public class PlaylistManager {
 
             boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
 
-            if (resp != null && resp.isOk() && resp.getCode() == 200) {
-
+            if (resp.isOk()) {
                 JsonObject trackInfo = resp.getJsonObj();
                 if (trackInfo != null && trackInfo.has("item") && !trackInfo.get("item").isJsonNull()) {
                     JsonObject track = trackInfo.get("item").getAsJsonObject();
@@ -196,14 +195,6 @@ public class PlaylistManager {
                     }
 
                     MusicToolWindow.refresh();
-                }
-            } else if (resp.getJsonObj() != null) {
-                MusicControlManager.currentTrackPlaying = false;
-                JsonObject tracks = resp.getJsonObj();
-                if (tracks != null && tracks.has("error")) {
-                    if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                        MusicControlManager.refreshAccessToken();
-                    }
                 }
             }
         } catch (Exception e) {

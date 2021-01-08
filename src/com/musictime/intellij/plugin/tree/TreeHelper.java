@@ -64,6 +64,22 @@ public class TreeHelper {
         return pTree;
     }
 
+    // my ai playlist
+    public static PlaylistTree buildAIPlaylistTree() {
+        JsonArray items = new JsonArray();
+        JsonObject obj = PlayListCommands.myAITopTracks;
+        if (obj != null && obj.has("items")) {
+            items = obj.get("items").getAsJsonArray();
+        }
+        PlaylistTree pTree = TreeHelper.buildTreeNode("My AI Top 40",
+                PlayListCommands.myAIPlaylistId,
+                pawIcon,
+                PlaylistAction.UPDATE_MY_AI_PLAYLIST,
+                TreeHelper.getNodeLabelsJsonTracks(items),
+                "Your tracks will appear here");
+        return pTree;
+    }
+
     public static PlaylistTree buildSlackWorkspacesNode() {
         List<Integration> workspaces = SlackManager.getSlackWorkspaces(false);
         List<NodeLabel> nodeLabels = new ArrayList<>();

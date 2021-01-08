@@ -1,6 +1,7 @@
 package com.musictime.intellij.plugin.music;
 
 import com.google.gson.JsonObject;
+import com.google.protobuf.Api;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
@@ -162,9 +163,10 @@ public class PlayerControlManager {
         try {
             if (trackId != null) {
                 ClientResponse resp = MusicController.likeSpotifyWeb(like, trackId);
-                if (resp != null && resp.getCode() == 401) {
-                    Apis.refreshAccessToken();
-                    resp = MusicController.likeSpotifyWeb(like, trackId);
+                if (!resp.isOk()) {
+                    if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                        resp = MusicController.likeSpotifyWeb(like, trackId);
+                    }
                 }
                 if (resp.isOk()) {
                     PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);

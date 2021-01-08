@@ -248,19 +248,12 @@ public class Apis {
 
             String api = "/v1/search?type=track&q="+encodedKeywords+"&limit=50";
             ClientResponse resp = OpsHttpClient.spotifyGet(api, getSpotifyAccessToken());
-            if (resp.isOk()) {
-                JsonObject data = resp.getJsonObj();
-                if (data.has("tracks") && data.get("tracks").getAsJsonObject().has("items")) {
-                    return data.get("tracks").getAsJsonObject().get("items").getAsJsonArray();
-                }
-            } else if(resp.getJsonObj() != null) {
-                JsonObject data = resp.getJsonObj();
-                if (MusicControlManager.requiresSpotifyAccessTokenRefresh(data)) {
-                    refreshAccessToken();
+            if (!resp.isOk()) {
+                if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
                     resp = OpsHttpClient.spotifyGet(api, getSpotifyAccessToken());
                 }
             }
-            if (resp != null && resp.isOk()) {
+            if (resp.isOk()) {
                 JsonObject data = resp.getJsonObj();
                 if (data.has("tracks") && data.get("tracks").getAsJsonObject().has("items")) {
                     return data.get("tracks").getAsJsonObject().get("items").getAsJsonArray();
@@ -280,6 +273,11 @@ public class Apis {
         if (playlistId != null) {
             String api = "/v1/playlists/" + playlistId;
             ClientResponse resp = OpsHttpClient.spotifyGet(api, getSpotifyAccessToken());
+            if (!resp.isOk()) {
+                if (refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                    resp = OpsHttpClient.spotifyGet(api, getSpotifyAccessToken());
+                }
+            }
             if (resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
@@ -291,13 +289,6 @@ public class Apis {
                     }
                 } else {
                     LOG.log(Level.INFO, "Music Time: Unable to get Playlist Tracks, null response");
-                }
-            } else if(resp.getJsonObj() != null) {
-                JsonObject tracks = resp.getJsonObj();
-                if (tracks != null && tracks.has("error")) {
-                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                        refreshAccessToken();
-                    }
                 }
             }
             return resp;
@@ -313,7 +304,12 @@ public class Apis {
     public static ClientResponse getSpotifyWebCurrentTrack() {
         String api = "/v1/me/player/currently-playing";
         ClientResponse resp = OpsHttpClient.spotifyGet(api, getSpotifyAccessToken());
-        if (resp.isOk() && resp.getCode() == 200) {
+        if (!resp.isOk()) {
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyGet(api, getSpotifyAccessToken());
+            }
+        }
+        if (resp.isOk()) {
             JsonObject tracks = resp.getJsonObj();
             if (tracks != null && tracks.has("item") && !tracks.get("item").isJsonNull()) {
                 JsonObject track = tracks.get("item").getAsJsonObject();
@@ -323,13 +319,6 @@ public class Apis {
                     JsonObject context = tracks.get("context").getAsJsonObject();
                     String[] uri = context.get("uri").getAsString().split(":");
                     MusicControlManager.currentPlaylistId = uri[uri.length - 1];
-                }
-            }
-        } else if(resp.getJsonObj() != null) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    refreshAccessToken();
                 }
             }
         }
@@ -348,10 +337,11 @@ public class Apis {
                 if (!refreshAccessToken()) {
 
                     // disconnect spotify
-                    MusicControlManager.disConnectSpotify();
+                    // MusicControlManager.disConnectSpotify();
 
                     // show reconnect prompt
-                    SoftwareCoMusic.showReconnectPrompt();
+                    // SoftwareCoMusic.showReconnectPrompt();
+                    LOG.log(Level.WARNING, "Music Time: Failed to refresh Spotify access");
                     return false;
                 }
 

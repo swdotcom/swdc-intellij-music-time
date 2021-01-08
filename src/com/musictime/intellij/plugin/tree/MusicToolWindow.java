@@ -15,7 +15,6 @@ import com.musictime.intellij.plugin.music.*;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import org.apache.commons.lang.StringUtils;
-import org.bouncycastle.pqc.crypto.gmss.Treehash;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -129,6 +128,7 @@ public class MusicToolWindow {
 
         this.rebuildPlaylistTreeView();
 
+        scrollPane.setMinimumSize(new Dimension(-1, 235));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
         scrollPane.repaint();
@@ -472,7 +472,7 @@ public class MusicToolWindow {
             createPlaylist.setToolTipText("Create your personalized playlist");
             refreshAIModel.add(1, createPlaylist);
 
-            JList<JLabel> refreshAIList = new JList<>(refreshAIModel);
+            JList<JLabel> refreshAIList = new JBList<>(refreshAIModel);
             refreshAIList.setVisibleRowCount(1);
             refreshAIList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
             refreshAIList.setCellRenderer(new ListRenderer());
@@ -555,67 +555,9 @@ public class MusicToolWindow {
 //*********************************************************************************************************************************************
             // My AI Top 40 Playlist
             if (PlayListCommands.myAIPlaylistId != null) {
-                PlaylistTreeNode myAIPlaylist = new PlaylistTreeNode("My AI Top 40", PlayListCommands.myAIPlaylistId);
-                DefaultTreeModel myAIPlaylistModel = new DefaultTreeModel(myAIPlaylist);
-                myAIPlaylist.setModel(myAIPlaylistModel);
-                JsonObject obj1 = PlayListCommands.myAITopTracks;
-                if (obj1 != null && obj1.has("tracks")) {
-                    JsonObject tracks = obj1.get("tracks").getAsJsonObject();
-                    JsonArray items = tracks.get("items").getAsJsonArray();
-                    if (items.size() == 0) {
-                        PlaylistTreeNode node = new PlaylistTreeNode("Your tracks will appear here", null);
-                        myAIPlaylist.add(node);
-                    } else {
-                        for (JsonElement array : items) {
-                            JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                            String trackName = TreeHelper.getTrackLabelSnippet(track);
-
-                            PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
-                            myAIPlaylist.add(node);
-                        }
-                    }
-                } else {
-                    PlaylistTreeNode node = new PlaylistTreeNode("Fetching playlist…", null);
-                    myAIPlaylist.add(node);
-                }
-
-                PlaylistTree myAIPlaylistTree;
-                if (TreeHelper.playlistTreeMap != null && TreeHelper.playlistTreeMap.containsKey(PlayListCommands.myAIPlaylistId)) {
-                    myAIPlaylistTree = TreeHelper.playlistTreeMap.get(PlayListCommands.myAIPlaylistId);
-                    myAIPlaylistTree.setModel(myAIPlaylistModel);
-                } else {
-                    myAIPlaylistTree = new PlaylistTree(myAIPlaylistModel);
-                    myAIPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                    myAIPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
-
-                    myAIPlaylistTree.addMouseListener(new PlaylistMouseListener(myAIPlaylistTree));
-
-                    myAIPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
-                        @Override
-                        public void treeExpanded(TreeExpansionEvent event) {
-                            PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_MY_AI_PLAYLIST, null);
-                        }
-
-                        @Override
-                        public void treeCollapsed(TreeExpansionEvent event) {
-
-                        }
-                    });
-
-                    myAIPlaylistTree.addMouseMotionListener(new TreeScanner());
-
-                    TreeHelper.playlistTreeMap.put(PlayListCommands.myAIPlaylistId, myAIPlaylistTree);
-                }
-                PlaylistTreeRenderer myAIPlaylistRenderer = (PlaylistTreeRenderer) myAIPlaylistTree.getCellRenderer();
-                myAIPlaylistRenderer.setBackgroundNonSelectionColor(new Color(0, 0, 0, 0));
-                myAIPlaylistRenderer.setBorderSelectionColor(new Color(0, 0, 0, 0));
-                myAIPlaylistTree.setBackground((Color) null);
-
-                myAIPlaylistTree.setExpandedState(new TreePath(myAIPlaylistModel.getPathToRoot(myAIPlaylist)), myAIPlaylistTree.expandState);
-
+                PlaylistTree myAIPlaylistTree = TreeHelper.buildAIPlaylistTree();
                 dataPanel.add(myAIPlaylistTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
             }
-
 //*********************************************************************************************************************************************
             // Liked Songs Playlist
             if (MusicControlManager.likedTracks.size() > 0) {
@@ -832,12 +774,12 @@ public class MusicToolWindow {
                 recommendedPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
                     @Override
                     public void treeExpanded(TreeExpansionEvent event) {
-                        refresh();
+                        // refresh();
                     }
 
                     @Override
                     public void treeCollapsed(TreeExpansionEvent event) {
-                        refresh();
+                        // refresh();
                     }
                 });
 
@@ -920,8 +862,7 @@ public class MusicToolWindow {
             category.setVisible(true);
             genre.setVisible(true);
             recommendRefresh.setVisible(true);
-            recommendScroll.setMinimumSize(new Dimension(-1, 80));
-            recommendScroll.setMaximumSize(new Dimension(-1, 80));
+            recommendScroll.setMinimumSize(new Dimension(-1, 75));
         } else {
             recommendPanel.setVisible(false);
             recommendationHeader.setVisible(false);

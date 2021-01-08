@@ -276,19 +276,6 @@ public class MusicControlManager {
         Apis.refreshAccessToken();
     }
 
-    public static boolean requiresSpotifyAccessTokenRefresh(JsonObject resp) {
-        if (resp != null && resp.has("error")) {
-            JsonObject error = resp.get("error").getAsJsonObject();
-            if (error.has("status")) {
-                int statusCode = error.get("status").getAsInt();
-                if (statusCode == 401) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     public static void changeCurrentTrack(boolean hasNext) {
         if(currentPlaylistId == null || currentTrackId == null)
             return;

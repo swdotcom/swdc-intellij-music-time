@@ -282,7 +282,7 @@ public class MusicController {
             String api = "/v1/me/tracks";
             resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
             if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
-                resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+                OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
             }
         }
         // remove from liked playlist
