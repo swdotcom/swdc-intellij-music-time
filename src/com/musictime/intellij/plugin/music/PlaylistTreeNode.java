@@ -1,8 +1,8 @@
 package com.musictime.intellij.plugin.music;
 
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 
+import javax.swing.*;
 import javax.swing.tree.*;
 
 public class PlaylistTreeNode extends DefaultMutableTreeNode {
@@ -13,6 +13,7 @@ public class PlaylistTreeNode extends DefaultMutableTreeNode {
     private String id;
     private String name;
     private String toolTip;
+    private Icon icon;
 
     public PlaylistTreeNode(String nodeName, String id) {
         super(nodeName);
@@ -24,6 +25,14 @@ public class PlaylistTreeNode extends DefaultMutableTreeNode {
 
     public void setModel(DefaultTreeModel model) {
         this.model = model;
+    }
+
+    public void setIcon(Icon icon) {
+        this.icon = icon;
+    }
+
+    public Icon getIcon() {
+        return this.icon;
     }
 
     public void add(MutableTreeNode node) {

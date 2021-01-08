@@ -2,10 +2,10 @@ package com.musictime.intellij.plugin.musicjava;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.SoftwareResponse;
-import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.manager.FileUtilManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,12 +125,12 @@ public class DeviceManager {
     private static void populateDevices() {
         devices = new ArrayList<>();
 
-        String spotifyAccessToken = FileManager.getItem("spotify_access_token");
+        String spotifyAccessToken = FileUtilManager.getItem("spotify_access_token");
         if (StringUtils.isBlank(spotifyAccessToken)) {
             return;
         }
 
-        SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyDevices();
+        ClientResponse resp = Apis.getSpotifyDevices();
         if (resp != null && resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("devices")) {

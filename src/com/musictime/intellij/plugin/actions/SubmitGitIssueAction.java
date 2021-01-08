@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.editor.Editor;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class SubmitGitIssueAction extends AnAction {

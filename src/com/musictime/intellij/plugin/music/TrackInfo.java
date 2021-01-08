@@ -2,7 +2,6 @@ package com.musictime.intellij.plugin.music;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.KeystrokeCount;
 
 import java.util.HashMap;
 import java.util.Map;

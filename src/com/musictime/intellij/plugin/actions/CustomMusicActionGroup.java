@@ -4,7 +4,6 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
 
 public class CustomMusicActionGroup extends DefaultActionGroup {
     @Override

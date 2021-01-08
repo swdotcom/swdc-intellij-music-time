@@ -3,13 +3,11 @@ package com.musictime.intellij.plugin.musicjava;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.FileUtilManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +17,11 @@ public class MusicController {
 
     public static final Logger LOG = Logger.getLogger("Controller");
 
-    public static SoftwareResponse playLikedOrRecommendedTracks(String deviceId, String playlistId, String trackId) {
+    private static String getSpotifyAccessToken() {
+        return FileUtilManager.getItem("spotify_access_token");
+    }
+
+    public static ClientResponse playLikedOrRecommendedTracks(String deviceId, String playlistId, String trackId) {
         JsonObject obj;
         List<String> tracks = new ArrayList<>();
         if (playlistId.equals(PlayListCommands.likedPlaylistId)) {
@@ -51,13 +53,13 @@ public class MusicController {
      * trackId - spotify track id
      * accessToken - spotify access token
      */
-    public static SoftwareResponse playSpotifyPlaylist(String deviceId, String playlistId, String trackId) {
+    public static ClientResponse playSpotifyPlaylist(String deviceId, String playlistId, String trackId) {
 
         if (deviceId == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
 
-        SoftwareResponse resp = null;
+        ClientResponse resp = null;
 
         if(playlistId != null && playlistId.length() > 5) {
             JsonObject obj = new JsonObject();
@@ -71,14 +73,16 @@ public class MusicController {
             }
 
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
-
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            }
         } else {
             resp = playSpotifyWebTrack(deviceId, trackId);
         }
 
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
 
         return resp;
@@ -97,10 +101,10 @@ public class MusicController {
      * trackId - spotify track id
      * accessToken - spotify access token
      */
-    public static SoftwareResponse playSpotifyWebTrack(String deviceId, String trackId) {
+    public static ClientResponse playSpotifyWebTrack(String deviceId, String trackId) {
 
         if (deviceId == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
 
         JsonObject obj = new JsonObject();
@@ -110,14 +114,17 @@ public class MusicController {
             obj.add("uris", array);
         }
 
-        SoftwareResponse resp = null;
+        ClientResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            }
         }
 
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
 
         return resp;
@@ -131,10 +138,10 @@ public class MusicController {
      * tracks - list of tracks to play as context (max 50)
      * accessToken - spotify access token
      */
-    public static SoftwareResponse playSpotifyTracks(String deviceId, String trackId, List<String> tracks) {
+    public static ClientResponse playSpotifyTracks(String deviceId, String trackId, List<String> tracks) {
 
         if (deviceId == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
 
         JsonObject obj = new JsonObject();
@@ -160,44 +167,34 @@ public class MusicController {
             }
         }
 
-        SoftwareResponse resp = null;
+        ClientResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
-            if(!resp.getJsonObj().isJsonNull()) {
-                JsonObject data = resp.getJsonObj();
-                if (MusicControlManager.requiresSpotifyAccessTokenRefresh(data)) {
-                    Apis.refreshAccessToken();
-                    resp = Client.makeSpotifyApiCall(api, HttpGet.METHOD_NAME, null);
-                }
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
             }
         }
 
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
 
         return resp;
     }
 
     //***** Player controls ****************
-    public static SoftwareResponse playSpotifyWeb(String deviceId) {
-        SoftwareResponse resp = null;
+    public static ClientResponse playSpotifyWeb(String deviceId) {
+        ClientResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/play?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-            if(resp != null && !resp.getJsonObj().isJsonNull()) {
-                JsonObject tracks = resp.getJsonObj();
-                if (tracks != null && tracks.has("error")) {
-                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                        Apis.refreshAccessToken();
-                        resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-                    }
-                }
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
             }
         }
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
         return resp;
     }
@@ -206,23 +203,17 @@ public class MusicController {
         return Util.playPlayer("Spotify").equals("");
     }
 
-    public static SoftwareResponse pauseSpotifyWeb(String deviceId) {
-        SoftwareResponse resp = null;
+    public static ClientResponse pauseSpotifyWeb(String deviceId) {
+        ClientResponse resp = null;
         if (deviceId != null) {
             String api = "/v1/me/player/pause?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-            if(resp != null && !resp.getJsonObj().isJsonNull()) {
-                JsonObject tracks = resp.getJsonObj();
-                if (tracks != null && tracks.has("error")) {
-                    if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                        Apis.refreshAccessToken();
-                        resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-                    }
-                }
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
             }
         }
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
         return resp;
     }
@@ -231,14 +222,17 @@ public class MusicController {
         return Util.pausePlayer("Spotify").equals("");
     }
 
-    public static SoftwareResponse previousSpotifyWeb(String deviceId) {
-        SoftwareResponse resp = null;
+    public static ClientResponse previousSpotifyWeb(String deviceId) {
+        ClientResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/previous?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null);
+            resp = OpsHttpClient.spotifyPost(api, getSpotifyAccessToken(), null);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPost(api, getSpotifyAccessToken(), null);
+            }
         }
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
         return resp;
     }
@@ -247,14 +241,17 @@ public class MusicController {
         return Util.previousTrack("Spotify").equals("");
     }
 
-    public static SoftwareResponse nextSpotifyWeb(String deviceId) {
-        SoftwareResponse resp = null;
+    public static ClientResponse nextSpotifyWeb(String deviceId) {
+        ClientResponse resp = null;
         if(deviceId != null) {
             String api = "/v1/me/player/next?device_id=" + deviceId;
-            resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null);
+            resp = OpsHttpClient.spotifyPost(api, getSpotifyAccessToken(), null);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPost(api, getSpotifyAccessToken(), null);
+            }
         }
         if (resp == null) {
-            return new SoftwareResponse();
+            return new ClientResponse();
         }
         return resp;
     }
@@ -271,7 +268,8 @@ public class MusicController {
      * trackId - only track id not uri
      * accessToken - spotify access token
      */
-    public static SoftwareResponse likeSpotifyWeb(boolean like, String trackId) {
+    public static ClientResponse likeSpotifyWeb(boolean like, String trackId) {
+        ClientResponse resp;
         if (like) {
             // Add to liked playlist
             JsonObject obj = new JsonObject();
@@ -282,12 +280,18 @@ public class MusicController {
             }
 
             String api = "/v1/me/tracks";
-            return Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, obj.toString());
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), obj);
+            }
         }
         // remove from liked playlist
         String api = "/v1/me/tracks?ids=" + trackId;
-        return Client.makeSpotifyApiCall(api, HttpDelete.METHOD_NAME, null);
-
+        resp = OpsHttpClient.spotifyDelete(api, getSpotifyAccessToken(), null);
+        if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+            resp = OpsHttpClient.spotifyDelete(api, getSpotifyAccessToken(), null);
+        }
+        return resp;
     }
 
     /*
@@ -298,18 +302,12 @@ public class MusicController {
      *
      * response success code 204
      */
-    public static Object updateRepeatMode(boolean repeatOn) {
+    public static ClientResponse updateRepeatMode(boolean repeatOn) {
         String state = repeatOn ? "track" : "off";
         String api = "/v1/me/player/repeat?state=" + state;
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-        if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    Apis.refreshAccessToken();
-                    resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-                }
-            }
+        ClientResponse resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
+        if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
         }
         return resp;
     }
@@ -322,17 +320,11 @@ public class MusicController {
      *
      * response success code 204
      */
-    public static Object updateShuffleMode(boolean shuffleOn) {
+    public static ClientResponse updateShuffleMode(boolean shuffleOn) {
         String api = "/v1/me/player/shuffle?state=" + shuffleOn;
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-        if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    Apis.refreshAccessToken();
-                    resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-                }
-            }
+        ClientResponse resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
+        if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
         }
         return resp;
     }
@@ -345,17 +337,11 @@ public class MusicController {
      *
      * response success code 204
      */
-    public static Object updateVolumeLevel(int volumePercent) {
+    public static ClientResponse updateVolumeLevel(int volumePercent) {
         String api = "/v1/me/player/volume?volume_percent=" + volumePercent;
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-        if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    Apis.refreshAccessToken();
-                    resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-                }
-            }
+        ClientResponse resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
+        if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
         }
         return resp;
     }
@@ -368,17 +354,11 @@ public class MusicController {
      *
      * response success code 204
      */
-    public static Object seekPlayback(long seekMillis) {
+    public static ClientResponse seekPlayback(long seekMillis) {
         String api = "/v1/me/player/seek?position_ms=" + seekMillis;
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-        if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    Apis.refreshAccessToken();
-                    resp = Client.makeSpotifyApiCall(api, HttpPut.METHOD_NAME, null);
-                }
-            }
+        ClientResponse resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
+        if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+            resp = OpsHttpClient.spotifyPut(api, getSpotifyAccessToken(), null);
         }
         return resp;
     }
@@ -391,20 +371,14 @@ public class MusicController {
     *
     * response success code 204
     */
-    public static Object addToPlaybackQueue(String track) {
+    public static ClientResponse addToPlaybackQueue(String track) {
         if(!track.contains("track")) {
             track = "spotify:track:" + track;
         }
         String api = "/v1/me/player/queue?uri=" + track;
-        SoftwareResponse resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null);
-        if(!resp.getJsonObj().isJsonNull()) {
-            JsonObject tracks = resp.getJsonObj();
-            if (tracks != null && tracks.has("error")) {
-                if(MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                    Apis.refreshAccessToken();
-                    resp = Client.makeSpotifyApiCall(api, HttpPost.METHOD_NAME, null);
-                }
-            }
+        ClientResponse resp = OpsHttpClient.spotifyPost(api, getSpotifyAccessToken(), null);
+        if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+            resp = OpsHttpClient.spotifyPost(api, getSpotifyAccessToken(), null);
         }
         return resp;
     }
