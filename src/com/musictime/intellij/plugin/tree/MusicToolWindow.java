@@ -343,7 +343,7 @@ public class MusicToolWindow {
             Icon dashboardIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/dashboard.png");
             JLabel openDashboard = new JLabel();
             openDashboard.setIcon(dashboardIcon);
-            openDashboard.setText("Open dashboard");
+            openDashboard.setText("Dashboard");
             openDashboard.setToolTipText("View your latest music matrix right here in your editor");
             listModel.add(listIndex, openDashboard);
             listIndex++;
@@ -416,7 +416,7 @@ public class MusicToolWindow {
                         if (label.getText().equals("See web analytics")) {
                             //Code to call web analytics
                             SoftwareCoUtils.launchMusicWebDashboard();
-                        } else if (label.getText().equals("Open dashboard")) {
+                        } else if (label.getText().equals("Dashboard")) {
                             //Code to open web dashboard
                             SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
                         } else if (label.getText().equals("Learn more")) {
@@ -579,67 +579,9 @@ public class MusicToolWindow {
                 userPlaylistSeparator.setForeground(new Color(255, 255, 255, 63));
                 dataPanel.add(userPlaylistSeparator, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 1, 0));
                 //*****************************************************************************************************************************
-                Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist-16x16.png");
 
                 for (String playlistId : playlistIds) {
-                    PlaylistTreeNode userPlaylist = new PlaylistTreeNode(PlayListCommands.userPlaylists.get(playlistId), playlistId);
-                    DefaultTreeModel userPlaylistModel = new DefaultTreeModel(userPlaylist);
-                    userPlaylist.setModel(userPlaylistModel);
-                    JsonObject obj1 = PlayListCommands.userTracks.get(playlistId);
-                    if (obj1 != null && obj1.has("tracks")) {
-                        JsonObject tracks = obj1.get("tracks").getAsJsonObject();
-                        JsonArray items = tracks.get("items").getAsJsonArray();
-                        if (items.size() == 0) {
-                            PlaylistTreeNode node = new PlaylistTreeNode("Your tracks will appear here", null);
-                            userPlaylist.add(node);
-                        } else {
-                            for (JsonElement array : items) {
-                                JsonObject track = array.getAsJsonObject().get("track").getAsJsonObject();
-                                String trackName = TreeHelper.getTrackLabelSnippet(track);
-
-                                PlaylistTreeNode node = new PlaylistTreeNode(trackName, track.get("id").getAsString());
-                                userPlaylist.add(node);
-                            }
-                        }
-                    } else {
-                        PlaylistTreeNode node = new PlaylistTreeNode("Fetching playlist…", null);
-                        userPlaylist.add(node);
-                    }
-
-                    PlaylistTree userPlaylistTree;
-                    if (TreeHelper.playlistTreeMap != null && TreeHelper.playlistTreeMap.containsKey(playlistId)) {
-                        userPlaylistTree = TreeHelper.playlistTreeMap.get(playlistId);
-                        userPlaylistTree.setModel(userPlaylistModel);
-                    } else {
-                        userPlaylistTree = new PlaylistTree(userPlaylistModel);
-                        userPlaylistTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                        userPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(playlistIcon));
-
-                        userPlaylistTree.addMouseListener(new PlaylistMouseListener(userPlaylistTree));
-
-                        userPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
-                            @Override
-                            public void treeExpanded(TreeExpansionEvent event) {
-                                PlaylistTreeNode node = (PlaylistTreeNode) event.getPath().getPathComponent(0);
-                                PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_PLAYLIST_BY_ID, node.getId());
-                            }
-
-                            @Override
-                            public void treeCollapsed(TreeExpansionEvent event) {
-                            }
-                        });
-
-                        userPlaylistTree.addMouseMotionListener(new TreeScanner());
-
-                        TreeHelper.playlistTreeMap.put(playlistId, userPlaylistTree);
-                    }
-                    PlaylistTreeRenderer userPlaylistRenderer = (PlaylistTreeRenderer) userPlaylistTree.getCellRenderer();
-                    userPlaylistRenderer.setBackgroundNonSelectionColor(new Color(0, 0, 0, 0));
-                    userPlaylistRenderer.setBorderSelectionColor(new Color(0, 0, 0, 0));
-                    userPlaylistTree.setBackground((Color) null);
-
-                    userPlaylistTree.setExpandedState(new TreePath(userPlaylistModel.getPathToRoot(userPlaylist)), userPlaylistTree.expandState);
-
+                    PlaylistTree userPlaylistTree = TreeHelper.buildNormalPlaylistTree(playlistId);
                     dataPanel.add(userPlaylistTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
                 }
             }

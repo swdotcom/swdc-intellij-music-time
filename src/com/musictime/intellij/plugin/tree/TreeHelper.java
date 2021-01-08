@@ -29,6 +29,7 @@ public class TreeHelper {
     public static Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/add.png");
     public static Icon slackIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/slack.png");
     public static Icon likeIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/heart-filled.png");
+    public static Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist-16x16.png");
 
     private static Map<String, String> trackNameMap = new HashMap<>();
 
@@ -75,6 +76,24 @@ public class TreeHelper {
                 PlayListCommands.myAIPlaylistId,
                 pawIcon,
                 PlaylistAction.UPDATE_MY_AI_PLAYLIST,
+                TreeHelper.getNodeLabelsJsonTracks(items),
+                "Your tracks will appear here");
+        return pTree;
+    }
+
+    // non-liked playlist
+    public static PlaylistTree buildNormalPlaylistTree(String playlistId) {
+        JsonArray items = new JsonArray();
+        JsonObject obj = PlayListCommands.userTracks.get(playlistId);
+        if (obj != null && obj.has("tracks")) {
+            JsonObject tracks = obj.get("tracks").getAsJsonObject();
+            items = tracks.get("items").getAsJsonArray();
+        }
+
+        PlaylistTree pTree = TreeHelper.buildTreeNode(PlayListCommands.userPlaylists.get(playlistId),
+                playlistId,
+                playlistIcon,
+                PlaylistAction.UPDATE_PLAYLIST_BY_ID,
                 TreeHelper.getNodeLabelsJsonTracks(items),
                 "Your tracks will appear here");
         return pTree;
