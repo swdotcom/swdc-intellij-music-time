@@ -1,7 +1,6 @@
 package com.musictime.intellij.plugin.tree;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.IconLoader;
@@ -128,7 +127,6 @@ public class MusicToolWindow {
 
         this.rebuildPlaylistTreeView();
 
-        scrollPane.setMinimumSize(new Dimension(-1, 235));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
         scrollPane.repaint();
@@ -805,14 +803,12 @@ public class MusicToolWindow {
             category.setVisible(true);
             genre.setVisible(true);
             recommendRefresh.setVisible(true);
-            recommendScroll.setMinimumSize(new Dimension(-1, 75));
         } else {
             recommendPanel.setVisible(false);
             recommendationHeader.setVisible(false);
             category.setVisible(false);
             genre.setVisible(false);
             recommendRefresh.setVisible(false);
-            recommendScroll.setMinimumSize(new Dimension(0, 0));
         }
         recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
         recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
