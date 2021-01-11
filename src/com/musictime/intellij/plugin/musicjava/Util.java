@@ -1,19 +1,10 @@
 package com.musictime.intellij.plugin.musicjava;
 
 import com.google.gson.JsonObject;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
-import com.musictime.intellij.plugin.SoftwareCoMusic;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
-import com.musictime.intellij.plugin.music.PlaylistManager;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -22,6 +13,7 @@ public class Util {
     private static long lastAppAvailableCheck = 0;
     private static boolean appAvailable = true;
     private static Map<String, String> sessionMap = new HashMap<>();
+    public static String pluginName = "Music Time";
 
     private final static int EOF = -1;
 

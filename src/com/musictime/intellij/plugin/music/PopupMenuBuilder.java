@@ -4,8 +4,11 @@ import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.util.IconLoader;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.slack.SlackControlManager;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
+import com.musictime.intellij.plugin.tree.PlaylistAction;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.manager.SlackManager;
+import swdc.java.ops.model.SlackChannel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,9 +16,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.UnsupportedEncodingException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class PopupMenuBuilder {
@@ -27,6 +29,19 @@ public class PopupMenuBuilder {
     public static String selectedValue = "Familiar";
     public static Icon slackIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/slack.png");
     public static Icon spotifyIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
+
+    public static JPopupMenu buildWorkspaceMenu(String authId) {
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem removeWorkspaceItem = new JMenuItem("Remove workspace");
+        removeWorkspaceItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SlackManager.disconnectSlackAuth(authId, () -> { MusicToolWindow.refresh();});
+            }
+        });
+        menu.add(removeWorkspaceItem);
+        return menu;
+    }
 
     public static JPopupMenu buildSongPopupMenu(String trackId, String playlistId) {
         popupMenu = new JPopupMenu();
@@ -41,7 +56,7 @@ public class PopupMenuBuilder {
                 public void actionPerformed(ActionEvent e) {
                     boolean status = PlayerControlManager.likeSpotifyTrack(false, trackId);
                     if(status) {
-                        PlayListCommands.updatePlaylists(3, null);
+                        PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
                         SoftwareCoUtils.showMsgPrompt("Removed from your Liked Songs", new Color(55, 108, 137, 100));
                     } else {
                         SoftwareCoUtils.showMsgPrompt("Failed to remove from Liked Songs", new Color(120, 23, 50, 100));
@@ -57,7 +72,7 @@ public class PopupMenuBuilder {
                 public void actionPerformed(ActionEvent e) {
                     boolean status = PlayerControlManager.likeSpotifyTrack(true, trackId);
                     if(status) {
-                        PlayListCommands.updatePlaylists(3, null);
+                        PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
                         SoftwareCoUtils.showMsgPrompt("Added to your Liked Songs", new Color(55, 108, 137, 100));
                     } else {
                         SoftwareCoUtils.showMsgPrompt("Failed to add in Liked Songs", new Color(120, 23, 50, 100));
@@ -103,7 +118,7 @@ public class PopupMenuBuilder {
                                         JsonObject err = resp.get("error").getAsJsonObject();
                                         error = err.get("message").getAsString();
                                     } else {
-                                        PlayListCommands.updatePlaylists(4, status.get("id").getAsString());
+                                        PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_PLAYLIST_BY_ID, status.get("id").getAsString());
                                     }
                                 }
                             } else {
@@ -121,7 +136,7 @@ public class PopupMenuBuilder {
                                 JsonObject err = resp.get("error").getAsJsonObject();
                                 error = err.get("message").getAsString();
                             } else {
-                                PlayListCommands.updatePlaylists(4, playlist_id);
+                                PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_PLAYLIST_BY_ID, playlist_id);
                                 playlistName = value;
                             }
                         }
@@ -152,7 +167,7 @@ public class PopupMenuBuilder {
                             JsonObject err = resp.get("error").getAsJsonObject();
                             error = err.get("message").getAsString();
                         } else {
-                            PlayListCommands.updatePlaylists(4, playlistId);
+                            PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_PLAYLIST_BY_ID, playlistId);
                             playlistName = PlayListCommands.userPlaylists.get(playlistId);
                         }
                     }
@@ -228,63 +243,48 @@ public class PopupMenuBuilder {
         sharePopup.add(whatsApp);
 
         /* share on slack */
-        String[] channels;
-        if(SlackControlManager.slackCacheState) {
-            SlackControlManager.getSlackChannels();
-            if(SlackControlManager.slackChannels.size() > 0) {
-                channels = new String[SlackControlManager.slackChannels.size()];
-                Set<String> ids = SlackControlManager.slackChannels.keySet();
-                int counter = 0;
-                for(String channel : ids) {
-                    channels[counter] = channel;
-                    counter++;
-                }
-            } else {
-                channels = new String[1];
-                channels[0] = "No Slack Channel Found";
-            }
-            JMenuItem slack = new JMenuItem("Slack");
-            String[] finalChannels = channels;
-            slack.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+        JMenuItem slack = new JMenuItem("Slack");
+        slack.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                List<SlackChannel> slackChannels = SlackManager.getSlackChannels(null);
+                if (slackChannels != null) {
+                    String[] finalChannels = getSlackChannelNames(slackChannels);
+
                     String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
 
-                    if(StringUtils.isNotBlank(channel)) {
-                        String slackId = SlackControlManager.slackChannels.get(channel);
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("channel", slackId);
-                        obj.addProperty("text", "Check out this song \n" + uri);
-
-                        boolean status = SlackControlManager.postMessage(obj.toString());
-                        if (status)
-                            SoftwareCoUtils.showMsgPrompt("Song shared successfully", new Color(55, 108, 137, 100));
-                        else
-                            SoftwareCoUtils.showMsgPrompt("Song sharing failed", new Color(120, 23, 50, 100));
+                    if (StringUtils.isNotBlank(channel)) {
+                        SlackChannel selectedChannel = getSelectedChannelByName(channel, slackChannels);
+                        String message = "Check out this song \n" + uri;
+                        SlackManager.postMessageToChannel(selectedChannel, selectedChannel.workspace_access_token, message);
                     }
                 }
-            });
-            sharePopup.add(slack); // add to share menu
-        } else {
-            JMenuItem slack = new JMenuItem("Connect Slack");
-            slack.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    try {
-                        SlackControlManager.connectSlack();
-                    } catch (UnsupportedEncodingException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-            sharePopup.add(slack); // add to share menu
-        }
+            }
+        });
+        sharePopup.add(slack);
 
         popupMenu.add(copySongLink);
         popupMenu.add(new JSeparator());
         popupMenu.add(sharePopup);
 
         return popupMenu;
+    }
+
+    private static String[] getSlackChannelNames(List<SlackChannel> channels) {
+        String[] options = new String[channels.size()];
+        for (int i = 0; i < channels.size(); i++) {
+            options[i] = channels.get(i).name;
+        }
+        return options;
+    }
+
+    private static SlackChannel getSelectedChannelByName(String name, List<SlackChannel> channels) {
+        for (SlackChannel channel : channels) {
+            if (channel.name.equals(name)) {
+                return channel;
+            }
+        }
+        return null;
     }
 
     public static JPopupMenu buildPlaylistPopupMenu(String id) {
@@ -370,57 +370,25 @@ public class PopupMenuBuilder {
         sharePopup.add(whatsApp);
 
         /* share on slack */
-        String[] channels;
-        if(SlackControlManager.slackCacheState) {
-            SlackControlManager.getSlackChannels();
-            if(SlackControlManager.slackChannels.size() > 0) {
-                channels = new String[SlackControlManager.slackChannels.size()];
-                Set<String> ids = SlackControlManager.slackChannels.keySet();
-                int counter = 0;
-                for(String channel : ids) {
-                    channels[counter] = channel;
-                    counter++;
-                }
-            } else {
-                channels = new String[1];
-                channels[0] = "No Slack Channel Found";
-            }
-            JMenuItem slack = new JMenuItem("Slack");
-            String[] finalChannels = channels;
-            slack.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
+        JMenuItem slack = new JMenuItem("Slack");
+        slack.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                List<SlackChannel> slackChannels = SlackManager.getSlackChannels(null);
+                if (slackChannels != null) {
+                    String[] finalChannels = getSlackChannelNames(slackChannels);
+
                     String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
 
-                    if(channel != null) {
-                        String slackId = SlackControlManager.slackChannels.get(channel);
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("channel", slackId);
-                        obj.addProperty("text", "Check out this playlist \n" + uri);
-
-                        boolean status = SlackControlManager.postMessage(obj.toString());
-                        if (status)
-                            SoftwareCoUtils.showMsgPrompt("Playlist shared successfully", new Color(55, 108, 137, 100));
-                        else
-                            SoftwareCoUtils.showMsgPrompt("Playlist sharing failed", new Color(120, 23, 50, 100));
+                    if (StringUtils.isNotBlank(channel)) {
+                        SlackChannel selectedChannel = getSelectedChannelByName(channel, slackChannels);
+                        String message = "Check out this playlist \n" + uri;
+                        SlackManager.postMessageToChannel(selectedChannel, selectedChannel.workspace_access_token, message);
                     }
                 }
-            });
-            sharePopup.add(slack); // add to share menu
-        } else {
-            JMenuItem slack = new JMenuItem("Connect Slack");
-            slack.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    try {
-                        SlackControlManager.connectSlack();
-                    } catch (UnsupportedEncodingException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
-            sharePopup.add(slack); // add to share menu
-        }
+            }
+        });
+        sharePopup.add(slack);
 
         popupMenu.add(copyPlaylistLink);
         popupMenu.add(new JSeparator());

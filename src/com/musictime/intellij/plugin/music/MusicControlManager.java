@@ -4,28 +4,23 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.IconLoader;
-import com.musictime.intellij.plugin.AsyncManager;
-import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareResponse;
-import com.musictime.intellij.plugin.actions.MusicToolWindow;
-import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
+import com.musictime.intellij.plugin.tree.PlaylistAction;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.velocity.texen.util.FileUtil;
-import org.jetbrains.annotations.Async;
+import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.AsyncManager;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.UserState;
 
 import javax.swing.*;
-import java.awt.*;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.List;
-import java.util.Timer;
 import java.util.logging.Logger;
 
 public class MusicControlManager {
@@ -67,11 +62,11 @@ public class MusicControlManager {
     public static void disConnectSpotify() {
 
         String api = "/auth/spotify/disconnect";
-        SoftwareCoUtils.makeApiCall(api, HttpPut.METHOD_NAME, null);
+        OpsHttpClient.softwarePut(api, FileUtilManager.getItem("jwt"), null);
 
-        FileManager.setItem("spotify_access_token", null);
-        FileManager.setItem("spotify_refresh_token", null);
-        FileManager.setBooleanItem("requiresSpotifyReAuth", true);
+        FileUtilManager.setItem("spotify_access_token", null);
+        FileUtilManager.setItem("spotify_refresh_token", null);
+        FileUtilManager.setBooleanItem("requiresSpotifyReAuth", true);
 
         resetSpotify();
 
@@ -92,15 +87,8 @@ public class MusicControlManager {
         authSpotify();
 
         // Periodically check that the user has connected
-        new Thread(() -> {
-            try {
-                Thread.sleep(10000);
-                lazilyFetchSpotifyStatus(30);
-            }
-            catch (Exception e){
-                System.err.println(e);
-            }
-        }).start();
+        final Runnable service = () -> lazilyFetchSpotifyStatus(40);
+        AsyncManager.getInstance().executeOnceInSeconds(service, 10);
     }
 
     private static void authSpotify() {
@@ -108,28 +96,28 @@ public class MusicControlManager {
          * const qryStr = `token=${encodedJwt}&mac=${mac}`;
          *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
          */
-        String jwt = FileManager.getItem("jwt");
-        String api = Client.api_endpoint + "/auth/spotify?plugin_token=" + jwt + "&mac=" + SoftwareCoUtils.isMac();
+        String jwt = FileUtilManager.getItem("jwt");
+        String api = SoftwareCoUtils.api_endpoint + "/auth/spotify?plugin_token=" + jwt + "&mac=" + UtilManager.isMac();
         BrowserUtil.browse(api);
     }
 
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
-        boolean connected = SoftwareCoUtils.getMusicTimeUserStatus();
+        UserState userState = AccountManager.getUserLoginState(false);
 
-        if (!connected) {
+        if (!userState.loggedIn) {
             if (retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
                 final Runnable service = () -> lazilyFetchSpotifyStatus(newRetryCount);
                 AsyncManager.getInstance().executeOnceInSeconds(service, 10);
             } else {
-                FileManager.setAuthCallbackState(null);
+                FileUtilManager.setAuthCallbackState(null);
             }
-        } else if (connected) {
+        } else {
             spotifyStatus = "Connected";
-            FileManager.setAuthCallbackState(null);
+            FileUtilManager.setAuthCallbackState(null);
             SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
 
-            FileManager.setBooleanItem("requiresSpotifyReAuth", false);
+            FileUtilManager.setBooleanItem("requiresSpotifyReAuth", false);
 
             // get the spotify user profile
             Apis.getUserProfile();
@@ -137,10 +125,10 @@ public class MusicControlManager {
             // fetch the user playlists (ai and top 40)
             PlaylistManager.getUserPlaylists(); // API call
 
-            PlayListCommands.updatePlaylists(0, null);
+            PlayListCommands.updatePlaylists(PlaylistAction.GET_ALL_PLAYLISTS, null);
 
             // fetch the liked songs (type 3 = liked songs)
-            PlayListCommands.updatePlaylists(3, null);
+            PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
 
             // get genres to show in the options
             PlayListCommands.getGenre(); // API call
@@ -239,7 +227,7 @@ public class MusicControlManager {
     public static void launchDesktopPlayer() {
         Util.startPlayer();
 
-        if (SoftwareCoUtils.isLinux()) {
+        if (UtilManager.isLinux()) {
             // try in 5 seconds
             AsyncManager.getInstance().executeOnceInSeconds(() -> lazilyCheckAvailablePlayer(6), 5);
         } else {
@@ -271,13 +259,13 @@ public class MusicControlManager {
     }
 
     public static boolean hasSpotifyAccess() {
-        String accessToken = FileManager.getItem("spotify_access_token");
+        String accessToken = FileUtilManager.getItem("spotify_access_token");
         // has a spotify access token if its not null or empty
         return StringUtils.isNotBlank(accessToken);
     }
 
     public static boolean requiresReAuthentication() {
-        boolean requiresReAuth = FileManager.getBooleanItem("requiresSpotifyReAuth");
+        boolean requiresReAuth = FileUtilManager.getBooleanItem("requiresSpotifyReAuth");
         if (requiresReAuth) {
             return true;
         }
@@ -285,20 +273,7 @@ public class MusicControlManager {
     }
 
     public static void refreshAccessToken() {
-        SoftwareResponse resp = (SoftwareResponse) Apis.refreshAccessToken();
-    }
-
-    public static boolean requiresSpotifyAccessTokenRefresh(JsonObject resp) {
-        if (resp != null && resp.has("error")) {
-            JsonObject error = resp.get("error").getAsJsonObject();
-            if (error.has("status")) {
-                int statusCode = error.get("status").getAsInt();
-                if (statusCode == 401) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        Apis.refreshAccessToken();
     }
 
     public static void changeCurrentTrack(boolean hasNext) {

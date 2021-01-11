@@ -4,36 +4,26 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.ElapsedTime;
 import com.musictime.intellij.plugin.models.KeystrokeAggregate;
 import com.musictime.intellij.plugin.models.SessionSummary;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
 
 import java.lang.reflect.Type;
 
 public class SessionDataManager {
 
-    public static String getSessionDataSummaryFile() {
-        String file = FileManager.getSoftwareDir(true);
-        if (SoftwareCoUtils.isWindows()) {
-            file += "\\sessionSummary.json";
-        } else {
-            file += "/sessionSummary.json";
-        }
-        return file;
-    }
-
     public static void clearSessionSummaryData() {
         SessionSummary summary = new SessionSummary();
-        FileManager.writeData(getSessionDataSummaryFile(), summary);
+        FileUtilManager.writeData(FileUtilManager.getSessionDataSummaryFile(), summary);
     }
 
     public static SessionSummary getSessionSummaryData() {
-        JsonObject jsonObj = FileManager.getFileContentAsJson(getSessionDataSummaryFile());
+        JsonObject jsonObj = FileUtilManager.getFileContentAsJson(FileUtilManager.getSessionDataSummaryFile());
         if (jsonObj == null) {
             clearSessionSummaryData();
-            jsonObj = FileManager.getFileContentAsJson(getSessionDataSummaryFile());
+            jsonObj = FileUtilManager.getFileContentAsJson(FileUtilManager.getSessionDataSummaryFile());
         }
         JsonElement lastUpdatedToday = jsonObj.get("lastUpdatedToday");
         if (lastUpdatedToday != null) {
@@ -69,7 +59,7 @@ public class SessionDataManager {
         summary.setCurrentDayLinesRemoved(summary.getCurrentDayLinesRemoved() + aggregate.linesRemoved);
 
         // save the file
-        FileManager.writeData(getSessionDataSummaryFile(), summary);
+        FileUtilManager.writeData(FileUtilManager.getSessionDataSummaryFile(), summary);
     }
 
     public static ElapsedTime getTimeBetweenLastPayload() {
@@ -79,9 +69,9 @@ public class SessionDataManager {
         long sessionSeconds = 60;
         long elapsedSeconds = 60;
 
-        long lastPayloadEnd = FileManager.getNumericItem("latestPayloadTimestampEndUtc", 0L);
+        long lastPayloadEnd = FileUtilManager.getNumericItem("latestPayloadTimestampEndUtc", 0L);
         if (lastPayloadEnd > 0) {
-            SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+            UtilManager.TimesData timesData = UtilManager.getTimesData();
             elapsedSeconds = Math.max(60, timesData.now - lastPayloadEnd);
             long sessionThresholdSeconds = 60 * 15;
             if (elapsedSeconds > 0 && elapsedSeconds <= sessionThresholdSeconds) {

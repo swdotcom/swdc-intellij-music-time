@@ -11,15 +11,24 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.messages.MessageBusConnection;
-import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
-import com.musictime.intellij.plugin.fs.FileManager;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
+import com.musictime.intellij.plugin.tree.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.managers.EventTrackerManager;
 import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.music.PlaylistManager;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
+import com.musictime.intellij.plugin.tree.PlaylistAction;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.event.SlackStateChangeModel;
+import swdc.java.ops.event.SlackStateChangeObserver;
+import swdc.java.ops.event.UserStateChangeModel;
+import swdc.java.ops.event.UserStateChangeObserver;
+import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.AsyncManager;
+import swdc.java.ops.manager.ConfigManager;
+import swdc.java.ops.manager.FileUtilManager;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -36,9 +45,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private AsyncManager asyncManager = AsyncManager.getInstance();
     private KeystrokeManager keystrokeMgr = KeystrokeManager.getInstance();
 
-    private static int retry_counter = 0;
-    private static String pluginName = null;
-    private static long check_online_interval_ms = 1000 * 60;
+    private UserStateChangeObserver userStateChangeObserver;
+    private SlackStateChangeObserver slackStateChangeObserver;
 
     public SoftwareCoMusic() {
     }
@@ -56,44 +64,29 @@ public class SoftwareCoMusic implements ApplicationComponent {
         return null;
     }
 
-    public static String getVersion() {
-        if (SoftwareCoUtils.VERSION == null) {
-            IdeaPluginDescriptor pluginDescriptor = getIdeaPluginDescriptor();
-            if (pluginDescriptor != null) {
-                SoftwareCoUtils.VERSION = pluginDescriptor.getVersion();
-            } else {
-                return "1.1.0";
-            }
-        }
-        return SoftwareCoUtils.VERSION;
-    }
-
-    public static String getPluginName() {
-        if (pluginName == null) {
-            IdeaPluginDescriptor pluginDescriptor = getIdeaPluginDescriptor();
-            if (pluginDescriptor != null) {
-                pluginName = pluginDescriptor.getName();
-            } else {
-                pluginName = "Music Time";
-            }
-        }
-        return pluginName;
-    }
-
     public void initComponent() {
-        String jwt = FileManager.getItem("jwt");
+        ConfigManager.init(
+                SoftwareCoUtils.api_endpoint,
+                SoftwareCoUtils.launch_url,
+                SoftwareCoUtils.pluginId,
+                SoftwareCoUtils.getPluginName(),
+                SoftwareCoUtils.getVersion(),
+                SoftwareCoUtils.IDE_NAME,
+                SoftwareCoUtils.IDE_VERSION);
+
+        String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isBlank(jwt)) {
             // create an anon user to allow our spotify strategy to update the anon
             // user to registered once the user has connected via spotify
-            SoftwareCoUtils.createAnonymousUser(false);
+            AccountManager.createAnonymousUser(false);
         }
         initializePlugin();
     }
 
     protected void initializePlugin() {
-        String plugName = getPluginName();
+        String plugName = SoftwareCoUtils.getPluginName();
 
-        log.info(plugName + ": Loaded v" + getVersion());
+        log.info(plugName + ": Loaded v" + SoftwareCoUtils.getVersion());
 
         gson = new Gson();
 
@@ -116,6 +109,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
             keystrokeMgr.addKeystrokeWrapperIfNoneExists(p);
             initializeUserInfo();
             setupEventListeners();
+            setupOpsListeners();
             setupFileEditorEventListeners(p);
         }
     }
@@ -133,29 +127,19 @@ public class SoftwareCoMusic implements ApplicationComponent {
         if (!hasAccess) {
             SoftwareCoUtils.setStatusLineMessage();
         } else {
-            // check to see if we need to re-authenticate
-            if (hasExpiredAccessToken()) {
-                // disconnect
-                MusicControlManager.disConnectSpotify();
+            Apis.getUserProfile();
 
-                // show message
-                showReconnectPrompt();
-            } else {
+            PlaylistManager.getUserPlaylists(); // API call
+            PlayListCommands.updatePlaylists(PlaylistAction.GET_ALL_PLAYLISTS, null);
+            PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
+            PlayListCommands.getGenre(); // API call
+            PlayListCommands.updateRecommendation("category", "Familiar"); // API call
+            DeviceManager.getDevices(); // API call
 
-                Apis.getUserProfile();
-
-                PlaylistManager.getUserPlaylists(); // API call
-                PlayListCommands.updatePlaylists(0, null);
-                PlayListCommands.updatePlaylists(3, null);
-                PlayListCommands.getGenre(); // API call
-                PlayListCommands.updateRecommendation("category", "Familiar"); // API call
-                DeviceManager.getDevices(); // API call
-
-                SoftwareCoUtils.updatePlayerControls(false);
-            }
+            SoftwareCoUtils.updatePlayerControls(false);
         }
 
-        boolean initializedIntellijMtPlugin = FileManager.getBooleanItem("intellij_MtInit");
+        boolean initializedIntellijMtPlugin = FileUtilManager.getBooleanItem("intellij_MtInit");
 
         if (!initializedIntellijMtPlugin) {
             log.log(Level.INFO, "Initial launching README file");
@@ -164,7 +148,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
                     sessionMgr.openReadmeFile();
                 }
             });
-            FileManager.setBooleanItem("intellij_MtInit", true);
+            FileUtilManager.setBooleanItem("intellij_MtInit", true);
         }
         AsyncManager.getInstance().executeOnceInSeconds(() -> MusicToolWindowFactory.showWindow(), 1);
         AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
@@ -173,26 +157,19 @@ public class SoftwareCoMusic implements ApplicationComponent {
     public static void showReconnectPrompt() {
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             public void run() {
-                String email = FileManager.getItem("name");
-                String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
-                String[] options = new String[] {"Reconnect", "Cancel"};
-                int response = Messages.showDialog(infoMsg, SoftwareCoMusic.getPluginName(), options, 0, Messages.getInformationIcon());
-                if (response == 0) {
-                    MusicControlManager.connectSpotify();
+                long one_day_millis = 1000 * 60 * 60 * 24;
+                long lastReconnectPromptTime = FileUtilManager.getNumericItem("lastMtReconnectPromptTime", 0);
+                if (lastReconnectPromptTime == 0 || System.currentTimeMillis() - lastReconnectPromptTime > one_day_millis) {
+                    String email = FileUtilManager.getItem("name");
+                    String infoMsg = "To continue using Music Time, please reconnect your Spotify account (" + email + ").";
+                    String[] options = new String[]{"Reconnect", "Cancel"};
+                    int response = Messages.showDialog(infoMsg, SoftwareCoUtils.getPluginName(), options, 0, Messages.getInformationIcon());
+                    if (response == 0) {
+                        MusicControlManager.connectSpotify();
+                    }
                 }
             }
         });
-    }
-
-    public static boolean hasExpiredAccessToken() {
-        boolean checkedSpotifyAccess = FileManager.getBooleanItem("intellij_checkedSpotifyAccess");
-        String accessToken = FileManager.getItem("spotify_access_token");
-        if (!checkedSpotifyAccess && StringUtils.isNotBlank(accessToken)) {
-            boolean expired = Apis.accessExpired();
-            FileManager.setBooleanItem("intellij_checkedSpotifyAccess", true);
-            return expired;
-        }
-        return false;
     }
 
     // add the document change event listener
@@ -233,6 +210,19 @@ public class SoftwareCoMusic implements ApplicationComponent {
                 // file open,close,selection listener
                 p.getMessageBus().connect().subscribe(
                         FileEditorManagerListener.FILE_EDITOR_MANAGER, new SoftwareCoFileEditorListener());
+            });
+        }
+    }
+
+    private void setupOpsListeners() {
+        if (userStateChangeObserver == null) {
+            userStateChangeObserver = new UserStateChangeObserver(new UserStateChangeModel(), () -> {
+                MusicToolWindow.refresh();
+            });
+        }
+        if (slackStateChangeObserver == null) {
+            slackStateChangeObserver = new SlackStateChangeObserver(new SlackStateChangeModel(), () -> {
+                MusicToolWindow.refresh();
             });
         }
     }

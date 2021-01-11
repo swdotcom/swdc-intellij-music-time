@@ -33,5 +33,6 @@
     <orderEntry type="library" name="jackson-core-2.11.3" level="project" />
     <orderEntry type="library" name="jackson-databind-2.11.3" level="project" />
     <orderEntry type="library" name="groovy-3.0.6" level="application" />
+    <orderEntry type="library" name="swdc-java-ops-1.0.0" level="project" />
   </component>
 </module>

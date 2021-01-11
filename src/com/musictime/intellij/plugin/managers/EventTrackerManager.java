@@ -4,11 +4,9 @@ import com.intellij.openapi.project.Project;
 import com.musictime.intellij.plugin.KeystrokeCount;
 import com.musictime.intellij.plugin.SoftwareCoMusic;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.models.FileDetails;
 import com.musictime.intellij.plugin.models.ResourceInfo;
 import com.musictime.intellij.plugin.music.MusicControlManager;
-import com.musictime.intellij.plugin.musicjava.Client;
 import com.musictime.intellij.plugin.repo.GitUtil;
 import com.swdc.snowplow.tracker.entities.*;
 import com.swdc.snowplow.tracker.events.CodetimeEvent;
@@ -17,6 +15,7 @@ import com.swdc.snowplow.tracker.events.UIInteractionEvent;
 import com.swdc.snowplow.tracker.events.UIInteractionType;
 import com.swdc.snowplow.tracker.manager.TrackerManager;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.manager.FileUtilManager;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -42,7 +41,7 @@ public class EventTrackerManager {
 
     public void init() {
         trackerMgr = new TrackerManager(
-                Client.api_endpoint, "MusicTime", "swdc-intellij");
+                SoftwareCoUtils.api_endpoint, "MusicTime", "swdc-intellij");
         ready = true;
     }
 
@@ -133,7 +132,7 @@ public class EventTrackerManager {
 
     private AuthEntity getAuthEntity() {
         AuthEntity authEntity = new AuthEntity();
-        String jwt = FileManager.getItem("jwt");
+        String jwt = FileUtilManager.getItem("jwt");
         if (StringUtils.isNotBlank(jwt)) {
             if (jwt.indexOf("JWT") == 0) {
                 authEntity.setJwt(jwt.split("JWT ")[1].trim());
@@ -192,8 +191,8 @@ public class EventTrackerManager {
 
     private PluginEntity getPluginEntity() {
         PluginEntity pluginEntity = new PluginEntity();
-        pluginEntity.plugin_name = SoftwareCoMusic.getPluginName();
-        pluginEntity.plugin_version = SoftwareCoMusic.getVersion();
+        pluginEntity.plugin_name = SoftwareCoUtils.getPluginName();
+        pluginEntity.plugin_version = SoftwareCoUtils.getVersion();
         pluginEntity.plugin_id = SoftwareCoUtils.pluginId;
         return pluginEntity;
     }

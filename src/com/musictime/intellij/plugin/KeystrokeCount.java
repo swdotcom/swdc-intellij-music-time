@@ -8,7 +8,6 @@ package com.musictime.intellij.plugin;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.project.Project;
-import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.managers.EventTrackerManager;
 import com.musictime.intellij.plugin.managers.FileAggregateDataManager;
 import com.musictime.intellij.plugin.managers.SessionDataManager;
@@ -17,6 +16,9 @@ import com.musictime.intellij.plugin.models.ElapsedTime;
 import com.musictime.intellij.plugin.models.FileChangeInfo;
 import com.musictime.intellij.plugin.models.KeystrokeAggregate;
 import com.musictime.intellij.plugin.models.TimeData;
+import swdc.java.ops.manager.AsyncManager;
+import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.manager.UtilManager;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -49,20 +51,15 @@ public class KeystrokeCount {
     public boolean triggered = false;
 
     public KeystrokeCount() {
-        String appVersion = SoftwareCoMusic.getVersion();
-        if (appVersion != null) {
-            this.version = appVersion;
-        } else {
-            this.version = SoftwareCoUtils.VERSION;
-        }
+        this.version = SoftwareCoUtils.getVersion();
         this.pluginId = SoftwareCoUtils.pluginId;
-        this.os = SoftwareCoUtils.getOs();
+        this.os = UtilManager.getOs();
     }
 
     public KeystrokeCount(String version) {
         this.version = version;
         this.pluginId = SoftwareCoUtils.pluginId;
-        this.os = SoftwareCoUtils.getOs();
+        this.os = UtilManager.getOs();
     }
 
     public KeystrokeCount clone() {
@@ -102,7 +99,6 @@ public class KeystrokeCount {
         this.elapsed_seconds = 0;
         this.workspace_name = "";
         this.project_null_error = "";
-        SoftwareCoUtils.setLatestPayload(null);
     }
 
     private boolean hasOpenAndCloseMetrics() {
@@ -182,7 +178,7 @@ public class KeystrokeCount {
             source = new HashMap<>();
         }
 
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+        UtilManager.TimesData timesData = UtilManager.getTimesData();
 
         // Keystrokes metadata needs to be initialized
         if (this.start == 0) {
@@ -202,7 +198,7 @@ public class KeystrokeCount {
     }
 
     public void endPreviousModifiedFiles(String fileName) {
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+        UtilManager.TimesData timesData = UtilManager.getTimesData();
         if (this.source != null) {
             for (String key : this.source.keySet()) {
                 FileInfo fileInfo = this.source.get(key);
@@ -267,12 +263,9 @@ public class KeystrokeCount {
 
                 final String payload = SoftwareCoMusic.gson.toJson(this);
 
-                // set the latest payload
-                SoftwareCoUtils.setLatestPayload(this);
-
-                SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+                UtilManager.TimesData timesData = UtilManager.getTimesData();
                 // set the latest payload timestamp utc so help with session time calculations
-                FileManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
+                FileUtilManager.setNumericItem("latestPayloadTimestampEndUtc", timesData.now);
             }
         } catch (Exception e) {
         }
@@ -285,10 +278,7 @@ public class KeystrokeCount {
         TimeData td = TimeDataManager.incrementSessionAndFileSeconds(this.project, sessionSeconds);
 
         // get the current payloads so we can compare our last cumulative seconds
-        KeystrokeCount lastPayload = FileManager.getLastSavedKeystrokeStats();
-        if (SoftwareCoUtils.isNewDay()) {
-            // don't use the last kpm since the day is different
-            lastPayload = null;
+        if (UtilManager.isNewDay()) {
 
             // clear out data from the previous day
             newDayChecker();
@@ -301,18 +291,13 @@ public class KeystrokeCount {
 
         // add the cumulative data
         this.workspace_name = SoftwareCoUtils.getWorkspaceName();
-        this.hostname = SoftwareCoUtils.getHostname();
+        this.hostname = UtilManager.getHostname();
         this.cumulative_session_seconds = 60;
         this.cumulative_editor_seconds = 60;
 
         if (td != null) {
             this.cumulative_editor_seconds = td.getEditor_seconds();
             this.cumulative_session_seconds = td.getSession_seconds();
-        } else if (lastPayload != null) {
-            // no time data found, project null error
-            this.project_null_error = "TimeData not found using " + this.project.getDirectory() + " for editor and session seconds";
-            this.cumulative_editor_seconds = lastPayload.cumulative_editor_seconds + 60;
-            this.cumulative_session_seconds = lastPayload.cumulative_session_seconds + 60;
         }
 
         if (this.cumulative_editor_seconds < this.cumulative_session_seconds) {
@@ -328,7 +313,7 @@ public class KeystrokeCount {
         // set the elapsed seconds (last end time to this end time)
         this.elapsed_seconds = elapsedSeconds;
 
-        SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+        UtilManager.TimesData timesData = UtilManager.getTimesData();
         Map<String, FileInfo> fileInfoDataSet = this.source;
         for ( FileInfo fileInfoData : fileInfoDataSet.values() ) {
             // end the ones that don't have an end time
@@ -416,10 +401,7 @@ public class KeystrokeCount {
     }
 
     private void newDayChecker() {
-        if (SoftwareCoUtils.isNewDay()) {
-
-            // clear the last payload we have in memory
-            FileManager.clearLastSavedKeystrokeStats();
+        if (UtilManager.isNewDay()) {
 
             // clear the wc time and the session summary and the file change info summary
             SessionDataManager.clearSessionSummaryData();
@@ -427,11 +409,11 @@ public class KeystrokeCount {
             FileAggregateDataManager.clearFileChangeInfoSummaryData();
 
             // update the current day
-            String day = SoftwareCoUtils.getTodayInStandardFormat();
-            FileManager.setItem("currentDay", day);
+            String day = UtilManager.getTodayInStandardFormat();
+            FileUtilManager.setItem("currentDay", day);
 
             // update the last payload timestamp
-            FileManager.setNumericItem("latestPayloadTimestampEndUtc", 0L);
+            FileUtilManager.setNumericItem("latestPayloadTimestampEndUtc", 0L);
 
         }
     }

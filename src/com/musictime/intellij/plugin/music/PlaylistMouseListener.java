@@ -1,16 +1,11 @@
 package com.musictime.intellij.plugin.music;
 
-import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareResponse;
-import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
 import com.musictime.intellij.plugin.models.DeviceInfo;
-import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
-import com.musictime.intellij.plugin.musicjava.MusicController;
+import swdc.java.ops.manager.SlackManager;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -30,6 +25,12 @@ public class PlaylistMouseListener extends MouseAdapter {
 
         /* if nothing is selected */
         if (node == null || node.getId() == null) return;
+
+        // handle non-ploylist actions
+        if (node.getId().equals(PlayListCommands.addSlackWorkspaceId)) {
+            SlackManager.connectSlackWorkspace(() -> {MusicToolWindow.refresh();});
+            return;
+        }
 
         boolean parentExpanded = true;
         if (node.isLeaf() && node.getParent() != null) {
@@ -54,14 +55,19 @@ public class PlaylistMouseListener extends MouseAdapter {
         }
 
         if (e.getButton() == 3) { // right-click button
-            if(MusicControlManager.currentPlaylistId != null) {
-                JPopupMenu popupMenu;
+            JPopupMenu popupMenu = null;
+            String parentId = node.getParent() != null ? ((PlaylistTreeNode)node.getParent()).getId() : null;
+            if (parentId != null && parentId.equals(PlayListCommands.slackWorkspacesId)) {
+                popupMenu = PopupMenuBuilder.buildWorkspaceMenu(node.getId());
+
+            } else if (MusicControlManager.currentPlaylistId != null) {
                 if (node.isLeaf()) {
                     popupMenu = PopupMenuBuilder.buildSongPopupMenu(MusicControlManager.currentTrackId, MusicControlManager.currentPlaylistId);
                 } else {
                     popupMenu = PopupMenuBuilder.buildPlaylistPopupMenu(MusicControlManager.currentPlaylistId);
                 }
-
+            }
+            if (popupMenu != null) {
                 popupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
         } else if(e.getButton() == 1) { // track play click

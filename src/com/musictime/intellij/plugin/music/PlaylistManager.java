@@ -4,13 +4,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.musictime.intellij.plugin.SoftwareCoSessionManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareResponse;
-import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.manager.UtilManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class PlaylistManager {
             Apis.getUserProfile();
         }
 
-        SoftwareResponse resp = (SoftwareResponse) Apis.getUserPlaylists(MusicStore.getSpotifyUserId());
+        ClientResponse resp = Apis.getUserPlaylists(MusicStore.getSpotifyUserId());
         if (resp != null && resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -64,7 +65,7 @@ public class PlaylistManager {
     public static JsonObject getTracksByPlaylistId(String playlistId) {
 
         if(playlistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) Apis.getTracksByPlaylistId(playlistId);
+            ClientResponse resp = Apis.getTracksByPlaylistId(playlistId);
             if (resp != null && resp.isOk()) {
                 JsonObject obj = resp.getJsonObj();
                 if (obj != null && obj.has("tracks")) {
@@ -110,7 +111,7 @@ public class PlaylistManager {
         }
 
         try {
-            SoftwareCoUtils.TimesData timesData = SoftwareCoUtils.getTimesData();
+            UtilManager.TimesData timesData = UtilManager.getTimesData();
 
             // in case we don't have a device
             DeviceInfo currentDevice = deviceCheck();
@@ -119,12 +120,11 @@ public class PlaylistManager {
                 return;
             }
 
-            SoftwareResponse resp = (SoftwareResponse) Apis.getSpotifyWebCurrentTrack();
+            ClientResponse resp = Apis.getSpotifyWebCurrentTrack();
 
             boolean hasPrevTrack = (StringUtils.isNotBlank(PlaylistManager.previousTrackName)) ? true : false;
 
-            if (resp != null && resp.isOk() && resp.getCode() == 200) {
-
+            if (resp.isOk()) {
                 JsonObject trackInfo = resp.getJsonObj();
                 if (trackInfo != null && trackInfo.has("item") && !trackInfo.get("item").isJsonNull()) {
                     JsonObject track = trackInfo.get("item").getAsJsonObject();
@@ -195,14 +195,6 @@ public class PlaylistManager {
                     }
 
                     MusicToolWindow.refresh();
-                }
-            } else if (!resp.getJsonObj().isJsonNull()) {
-                MusicControlManager.currentTrackPlaying = false;
-                JsonObject tracks = resp.getJsonObj();
-                if (tracks != null && tracks.has("error")) {
-                    if (MusicControlManager.requiresSpotifyAccessTokenRefresh(tracks)) {
-                        MusicControlManager.refreshAccessToken();
-                    }
                 }
             }
         } catch (Exception e) {

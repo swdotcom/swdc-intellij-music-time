@@ -3,11 +3,10 @@ package com.musictime.intellij.plugin.music;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.musictime.intellij.plugin.SoftwareCoSessionManager;
-import com.musictime.intellij.plugin.SoftwareResponse;
-import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.musicjava.PlaylistController;
-import com.musictime.intellij.plugin.actions.MusicToolWindow;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
+import com.musictime.intellij.plugin.tree.PlaylistAction;
+import swdc.java.ops.http.ClientResponse;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -27,6 +26,8 @@ public class PlayListCommands {
     public static JsonObject currentRecommendedTracks = new JsonObject(); // 50 recommended tracks to play
     public static int currentBatch = 1; // range 1-10 for 100 tracks (max 10 batches)
     public static String recommendedPlaylistId = "__musictime-recs__";
+    public static String slackWorkspacesId = "__slack-workspaces__";
+    public static String addSlackWorkspaceId = "__add-slack-workspace__";
     public static JsonObject myAITopTracks = null;
     public static String myAIPlaylistId = null;
     public static List<String> userPlaylistIds = new ArrayList<>();
@@ -46,54 +47,52 @@ public class PlayListCommands {
     }
 
     /*
-    * type = 0 to get all playlists and sort them
-    * type = 1 to update software top 40 playlist
-    * type = 2 to update my ai top 40 playlist
-    * type = 3 to update liked songs
-    * type = 4 to update user playlist with playlist id
-    * type = 5 to refresh playlist window
+    * type = 0 (GET_ALL_PLAYLISTS)to get all playlists and sort them
+    * type = 1 (UPDATE_SOFTWARE_TOP_FORTY)to update software top 40 playlist
+    * type = 2 (UPDATE_MY_AI_PLAYLIST)to update my ai top 40 playlist
+    * type = 3 (UPDATE_LIKED_SONGS)to update liked songs
+    * type = 4 (UPDATE_PLAYLIST_BY_ID)to update user playlist with playlist id
+    * type = 5 (REFRESH_PLAYLIST_WINDOW)to refresh playlist window
     */
-    public static synchronized void updatePlaylists(int type, String playlistId) {
-        if (type == 0) {
-            PlaylistManager.getUserPlaylists(); // API call
-            // Sort Playlists ****************************************************
-            if (userPlaylists.size() > 0 && sortType.equals("Sort A-Z")) {
-                sortHashMapByValues((HashMap<String, String>) userPlaylists);
-            }
-            // End Sort Playlists ***************************************************************
-        } else if(type == 1) {
-            // Software Top 40 Playlist ******************************************
-            JsonObject obj = PlaylistManager.getTracksByPlaylistId(topSpotifyPlaylistId); // API call
-            if (obj != null && obj.has("tracks"))
-                topSpotifyTracks = obj.get("tracks").getAsJsonObject();
-            // End Software Top 40 ***************************************************************
-        } else if(type == 2) {
-            // My AI Top 40 ******************************************************
-            myAITopTracks = getAITopTracks(); // API call
-            // End My AI Top 40 ***************************************************************
-        } else if(type == 3) {
-
-            // Liked Songs Playlist **********************************************
-            JsonObject tracks = getLikedSpotifyTracks(); // API call
-            if(tracks != null) {
-                // this is just the top level (the tracks are found in the items)
-                likedTracks = tracks;
-                likedTracksList = new JsonArray();
-                // set the raw liked tracks
-                if (likedTracks != null && likedTracks.get("items") != null) {
-                    JsonArray items = likedTracks.getAsJsonArray("items");
-                    if (items != null && items.size() > 0) {
-                        for (JsonElement el : items) {
-                            likedTracksList.add(el.getAsJsonObject().getAsJsonObject("track"));
+    public static synchronized void updatePlaylists(PlaylistAction type, String playlistId) {
+        switch (type) {
+            case GET_ALL_PLAYLISTS:
+                PlaylistManager.getUserPlaylists(); // API call
+                // Sort Playlists ****************************************************
+                if (userPlaylists.size() > 0 && sortType.equals("Sort A-Z")) {
+                    sortHashMapByValues((HashMap<String, String>) userPlaylists);
+                }
+                break;
+            case UPDATE_SOFTWARE_TOP_FORTY:
+                JsonObject obj = PlaylistManager.getTracksByPlaylistId(topSpotifyPlaylistId); // API call
+                if (obj != null && obj.has("tracks"))
+                    topSpotifyTracks = obj.get("tracks").getAsJsonObject();
+                break;
+            case UPDATE_MY_AI_PLAYLIST:
+                myAITopTracks = getAITopTracks(); // API call
+                break;
+            case UPDATE_LIKED_SONGS:
+                JsonObject tracks = getLikedSpotifyTracks(); // API call
+                if(tracks != null) {
+                    // this is just the top level (the tracks are found in the items)
+                    likedTracks = tracks;
+                    likedTracksList = new JsonArray();
+                    // set the raw liked tracks
+                    if (likedTracks != null && likedTracks.get("items") != null) {
+                        JsonArray items = likedTracks.getAsJsonArray("items");
+                        if (items != null && items.size() > 0) {
+                            for (JsonElement el : items) {
+                                likedTracksList.add(el.getAsJsonObject().getAsJsonObject("track"));
+                            }
                         }
                     }
                 }
-            }
-            // End Liked Songs ***************************************************************
-        } else if(type == 4 && playlistId != null) {
-            // User Playlists ****************************************************
-            userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId)); // API call
-            // End User Playlists ***************************************************************
+                break;
+            case UPDATE_PLAYLIST_BY_ID:
+                userTracks.put(playlistId, PlaylistManager.getTracksByPlaylistId(playlistId)); // API call
+                break;
+            case REFRESH_PLAYLIST_WINDOW:
+                break;
         }
 
         if(genres.size() == 0) {
@@ -141,12 +140,12 @@ public class PlayListCommands {
 
     public static void sortAtoZ() {
         sortType = "Sort A-Z";
-        updatePlaylists(0, null);
+        updatePlaylists(PlaylistAction.GET_ALL_PLAYLISTS, null);
     }
 
     public static void sortLatest() {
         sortType = "Latest";
-        updatePlaylists(0, null);
+        updatePlaylists(PlaylistAction.GET_ALL_PLAYLISTS, null);
     }
 
     public static void updateRecommendation(String type, String selected) {
@@ -206,7 +205,7 @@ public class PlayListCommands {
                     trackIds = trackIds.substring(0, trackIds.lastIndexOf(","));
                 }
             } else {
-                updatePlaylists(1, null); // Update software playlist
+                updatePlaylists(PlaylistAction.UPDATE_SOFTWARE_TOP_FORTY, null); // Update software playlist
                 JsonObject obj = topSpotifyTracks;
                 if (obj != null && obj.has("items")) {
                     JsonArray items = obj.get("items").getAsJsonArray();
@@ -293,7 +292,7 @@ public class PlayListCommands {
 
     public static JsonObject getTopSpotifyTracks() {
 
-        SoftwareResponse resp = (SoftwareResponse) PlaylistController.getTopSpotifyTracks();
+        ClientResponse resp = PlaylistController.getTopSpotifyTracks();
         if (resp != null && resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -311,7 +310,7 @@ public class PlayListCommands {
     }
 
     public static JsonObject getLikedSpotifyTracks() {
-        SoftwareResponse resp = (SoftwareResponse) PlaylistController.getLikedSpotifyTracks();
+        ClientResponse resp = PlaylistController.getLikedSpotifyTracks();
         if (resp.isOk()) {
             JsonObject obj = resp.getJsonObj();
             if (obj != null && obj.has("items")) {
@@ -331,7 +330,7 @@ public class PlayListCommands {
 
     public static JsonObject generateAIPlaylist() {
 
-        SoftwareResponse resp = (SoftwareResponse) PlaylistController.generateAIPlaylist();
+        ClientResponse resp = PlaylistController.generateAIPlaylist();
         if (resp.isOk()) {
             PlaylistManager.getUserPlaylists();
             refreshAIPlaylist();
@@ -341,7 +340,7 @@ public class PlayListCommands {
             obj.addProperty("playlistTypeId", 1);
             obj.addProperty("name", "My AI Top 40");
 
-            PlaylistController.sendPlaylistToSoftware(obj.toString());
+            PlaylistController.sendPlaylistToSoftware(obj);
             return resp.getJsonObj();
         }
         return null;
@@ -350,10 +349,10 @@ public class PlayListCommands {
     public static JsonObject refreshAIPlaylist() {
 
         if(myAIPlaylistId != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.refreshAIPlaylist(myAIPlaylistId);
+            ClientResponse resp = PlaylistController.refreshAIPlaylist(myAIPlaylistId);
             if (resp.isOk()) {
                 myAITopTracks = getAITopTracks();
-                updatePlaylists(5, null);
+                updatePlaylists(PlaylistAction.REFRESH_PLAYLIST_WINDOW, null);
                 return resp.getJsonObj();
             }
         }
@@ -361,10 +360,9 @@ public class PlayListCommands {
     }
 
     public static JsonObject createPlaylist(String playlistName) {
-
-        SoftwareResponse resp = (SoftwareResponse) PlaylistController.createPlaylist(playlistName);
+        ClientResponse resp = PlaylistController.createPlaylist(playlistName);
         if (resp.isOk()) {
-            updatePlaylists(0, null);
+            updatePlaylists(PlaylistAction.GET_ALL_PLAYLISTS, null);
             return resp.getJsonObj();
         }
         return null;
@@ -373,7 +371,7 @@ public class PlayListCommands {
     public static JsonObject addTracksInPlaylist(String playlist_id, Set<String> tracks) {
 
         if(playlist_id != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.addTracksInPlaylist(playlist_id, tracks);
+            ClientResponse resp = PlaylistController.addTracksInPlaylist(playlist_id, tracks);
             if (resp.isOk()) {
                 return resp.getJsonObj();
             } else if(resp.getCode() == 403) {
@@ -386,7 +384,7 @@ public class PlayListCommands {
     public static JsonObject updatePlaylist(String playlist_id, JsonObject tracks) {
 
         if(playlist_id != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.updatePlaylist(playlist_id, tracks);
+            ClientResponse resp = PlaylistController.updatePlaylist(playlist_id, tracks);
             if (resp.isOk()) {
                 return resp.getJsonObj();
             }
@@ -397,7 +395,7 @@ public class PlayListCommands {
     public static JsonObject removeTracksInPlaylist(String playlist_id, Set<String> tracks) {
 
         if(playlist_id != null) {
-            SoftwareResponse resp = (SoftwareResponse) PlaylistController.removeTracksInPlaylist(playlist_id, tracks);
+            ClientResponse resp = PlaylistController.removeTracksInPlaylist(playlist_id, tracks);
             if (resp.isOk()) {
                 return resp.getJsonObj();
             } else if(resp.getCode() == 403) {
@@ -427,7 +425,7 @@ public class PlayListCommands {
     public static boolean removePlaylist(String playlistId) {
         boolean state = PlaylistController.removePlaylist(playlistId);
         if(state)
-            updatePlaylists(0, null);
+            updatePlaylists(PlaylistAction.GET_ALL_PLAYLISTS, null);
 
         return state;
     }

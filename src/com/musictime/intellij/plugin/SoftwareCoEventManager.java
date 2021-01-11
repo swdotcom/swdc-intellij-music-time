@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.musictime.intellij.plugin.managers.EventTrackerManager;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.manager.AsyncManager;
 
 import java.util.logging.Logger;
 import java.util.regex.Matcher;

@@ -2,24 +2,22 @@ package com.musictime.intellij.plugin.music;
 
 import com.google.gson.JsonObject;
 import com.google.protobuf.Api;
-import com.musictime.intellij.plugin.AsyncManager;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
-import com.musictime.intellij.plugin.SoftwareResponse;
 import com.musictime.intellij.plugin.models.DeviceInfo;
 import com.musictime.intellij.plugin.musicjava.*;
+import com.musictime.intellij.plugin.tree.PlaylistAction;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.client.methods.HttpGet;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.manager.AsyncManager;
 
 import java.awt.*;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class PlayerControlManager {
 
     public static final Logger LOG = Logger.getLogger("PlayerControlManager");
 
-    public static SoftwareResponse playSpotifyPlaylist() {
+    public static ClientResponse playSpotifyPlaylist() {
 
         DeviceInfo currentDevice = DeviceManager.getBestDeviceOption();
 
@@ -28,7 +26,7 @@ public class PlayerControlManager {
         }
 
         // if it's a liked or recommended song then play it with offset context
-        SoftwareResponse resp = null;
+        ClientResponse resp = null;
         if (MusicControlManager.currentPlaylistId.equals(PlayListCommands.likedPlaylistId) ||
                 MusicControlManager.currentPlaylistId.equals(PlayListCommands.recommendedPlaylistId)) {
             // liked or recommended playlist
@@ -38,7 +36,7 @@ public class PlayerControlManager {
             resp = MusicController.playSpotifyPlaylist(currentDevice.id, MusicControlManager.currentPlaylistId, MusicControlManager.currentTrackId);
         }
 
-        if (resp != null &&
+        if (resp != null && resp.getJsonObj() != null &&
                 resp.getCode() == 403 &&
                 !resp.getJsonObj().isJsonNull() &&
                 resp.getJsonObj().has("error")) {
@@ -68,7 +66,7 @@ public class PlayerControlManager {
         if (currentDevice == null) {
             return;
         }
-        SoftwareResponse resp = MusicController.playSpotifyWeb(currentDevice.id);
+        ClientResponse resp = MusicController.playSpotifyWeb(currentDevice.id);
         if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
             JsonObject error = resp.getJsonObj().getAsJsonObject("error");
             if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED")) {
@@ -91,7 +89,7 @@ public class PlayerControlManager {
         if (currentDevice == null) {
             return;
         }
-        SoftwareResponse resp = MusicController.pauseSpotifyWeb(currentDevice.id);
+        ClientResponse resp = MusicController.pauseSpotifyWeb(currentDevice.id);
         if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
             JsonObject error = resp.getJsonObj().getAsJsonObject("error");
             if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED")) {
@@ -114,7 +112,7 @@ public class PlayerControlManager {
         if (currentDevice == null) {
             return;
         }
-        SoftwareResponse resp = MusicController.previousSpotifyWeb(currentDevice.id);
+        ClientResponse resp = MusicController.previousSpotifyWeb(currentDevice.id);
         if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
             JsonObject error = resp.getJsonObj().getAsJsonObject("error");
             if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED")) {
@@ -137,7 +135,7 @@ public class PlayerControlManager {
         if (currentDevice == null) {
             return;
         }
-        SoftwareResponse resp = MusicController.nextSpotifyWeb(currentDevice.id);
+        ClientResponse resp = MusicController.nextSpotifyWeb(currentDevice.id);
         if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {
             JsonObject error = resp.getJsonObj().getAsJsonObject("error");
             if (error.get("reason").getAsString().equals("PREMIUM_REQUIRED")) {
@@ -164,13 +162,14 @@ public class PlayerControlManager {
     public static boolean likeSpotifyTrack(boolean like, String trackId) {
         try {
             if (trackId != null) {
-                SoftwareResponse resp = MusicController.likeSpotifyWeb(like, trackId);
-                if (resp != null && resp.getCode() == 401) {
-                    Apis.refreshAccessToken();
-                    resp = MusicController.likeSpotifyWeb(like, trackId);
+                ClientResponse resp = MusicController.likeSpotifyWeb(like, trackId);
+                if (!resp.isOk()) {
+                    if (Apis.refreshAccessTokenIfExpired(resp.getJsonObj())) {
+                        resp = MusicController.likeSpotifyWeb(like, trackId);
+                    }
                 }
                 if (resp.isOk()) {
-                    PlayListCommands.updatePlaylists(3, null);
+                    PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
                     AsyncManager.getInstance().executeOnceInSeconds(() -> PlaylistManager.fetchTrack(), 3);
                     return true;
                 } else if (resp.getCode() == 403 && !resp.getJsonObj().isJsonNull() && resp.getJsonObj().has("error")) {

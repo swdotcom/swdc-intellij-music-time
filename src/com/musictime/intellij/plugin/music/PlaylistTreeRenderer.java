@@ -36,8 +36,10 @@ public class PlaylistTreeRenderer extends DefaultTreeCellRenderer {
         PlaylistTreeNode node = (PlaylistTreeNode)value;
         String id = node.getId();
         setToolTipText(node.getToolTip() + " (Right click for more options)");
-        
-        if (node.isLeaf() && node.getParent() != null) {
+
+        if (node.getIcon() != null) {
+            setIcon(node.getIcon());
+        } else if (node.isLeaf() && node.getParent() != null) {
             // it's a child node
             setIcon(musicIcon);
         } else if (!node.isLeaf() && node.getId() != null && node.getChildCount() > 0) {

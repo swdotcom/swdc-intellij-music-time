@@ -10,17 +10,18 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.musictime.intellij.plugin.actions.MusicToolWindowFactory;
+import com.musictime.intellij.plugin.tree.MusicToolWindowFactory;
 import com.musictime.intellij.plugin.fs.FileManager;
 import com.musictime.intellij.plugin.music.*;
-import org.apache.http.client.methods.HttpGet;
+import com.musictime.intellij.plugin.tree.PlaylistAction;
+import swdc.java.ops.http.ClientResponse;
+import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.FileUtilManager;
 
 import java.awt.event.MouseEvent;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.logging.Logger;
 
 public class SoftwareCoSessionManager {
@@ -41,7 +42,7 @@ public class SoftwareCoSessionManager {
 
     public static boolean softwareSessionFileExists() {
         // don't auto create the file
-        String file = FileManager.getSoftwareSessionFile(false);
+        String file = FileUtilManager.getSoftwareSessionFile(false);
         // check if it exists
         File f = new File(file);
         return f.exists();
@@ -70,9 +71,9 @@ public class SoftwareCoSessionManager {
         Writer writer = null;
 
         String api = "/dashboard/music";
-        SoftwareResponse response = SoftwareCoUtils.makeApiCall(api, HttpGet.METHOD_NAME, null);
-        if(response.isOk()) {
-            String dashboardSummary = response.getJsonStr();
+        ClientResponse resp = OpsHttpClient.softwareGet(api, FileUtilManager.getItem("jwt"));
+        if(resp.isOk()) {
+            String dashboardSummary = resp.getJsonStr();
 
             // write the dashboard summary content
             try {
@@ -138,7 +139,7 @@ public class SoftwareCoSessionManager {
             if (vFile != null) {
                 OpenFileDescriptor descriptor = new OpenFileDescriptor(p, vFile);
                 FileEditorManager.getInstance(p).openTextEditor(descriptor, true);
-                FileManager.setItem("intellij_MtReadme", "true");
+                FileUtilManager.setItem("intellij_MtReadme", "true");
             }
         } catch (Exception e) {
             System.out.println("error opening file: " + e.getMessage());
@@ -176,10 +177,10 @@ public class SoftwareCoSessionManager {
             PlaylistManager.fetchTrack();
         } else if(id.equals(unlikeiconId)) {
             PlayerControlManager.likeSpotifyTrack(true, MusicControlManager.currentTrackId);
-            PlayListCommands.updatePlaylists(3, null);
+            PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
         } else if(id.equals(likeiconId)) {
             PlayerControlManager.likeSpotifyTrack(false, MusicControlManager.currentTrackId);
-            PlayListCommands.updatePlaylists(3, null);
+            PlayListCommands.updatePlaylists(PlaylistAction.UPDATE_LIKED_SONGS, null);
         }
     }
 }

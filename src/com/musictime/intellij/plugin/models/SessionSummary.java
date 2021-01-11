@@ -174,16 +174,8 @@ public class SessionSummary {
         return latestPayloadTimestampEndUtc;
     }
 
-    public void setLatestPayloadTimestampEndUtc(long latestPayloadTimestampEndUtc) {
-        this.latestPayloadTimestampEndUtc = latestPayloadTimestampEndUtc;
-    }
-
     public long getLatestPayloadTimestamp() {
         return latestPayloadTimestamp;
-    }
-
-    public void setLatestPayloadTimestamp(long latestPayloadTimestamp) {
-        this.latestPayloadTimestamp = latestPayloadTimestamp;
     }
 
     public boolean isLastUpdatedToday() {
