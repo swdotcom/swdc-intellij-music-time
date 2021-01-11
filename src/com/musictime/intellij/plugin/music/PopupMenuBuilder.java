@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.util.IconLoader;
 import com.musictime.intellij.plugin.SoftwareCoUtils;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
 import com.musictime.intellij.plugin.tree.PlaylistAction;
 import org.apache.commons.lang.StringUtils;
 import swdc.java.ops.manager.SlackManager;
@@ -28,6 +29,19 @@ public class PopupMenuBuilder {
     public static String selectedValue = "Familiar";
     public static Icon slackIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/slack.png");
     public static Icon spotifyIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/spotify.png");
+
+    public static JPopupMenu buildWorkspaceMenu(String authId) {
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem removeWorkspaceItem = new JMenuItem("Remove workspace");
+        removeWorkspaceItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SlackManager.disconnectSlackAuth(authId, () -> { MusicToolWindow.refresh();});
+            }
+        });
+        menu.add(removeWorkspaceItem);
+        return menu;
+    }
 
     public static JPopupMenu buildSongPopupMenu(String trackId, String playlistId) {
         popupMenu = new JPopupMenu();

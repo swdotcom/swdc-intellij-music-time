@@ -55,14 +55,19 @@ public class PlaylistMouseListener extends MouseAdapter {
         }
 
         if (e.getButton() == 3) { // right-click button
-            if(MusicControlManager.currentPlaylistId != null) {
-                JPopupMenu popupMenu;
+            JPopupMenu popupMenu = null;
+            String parentId = node.getParent() != null ? ((PlaylistTreeNode)node.getParent()).getId() : null;
+            if (parentId != null && parentId.equals(PlayListCommands.slackWorkspacesId)) {
+                popupMenu = PopupMenuBuilder.buildWorkspaceMenu(node.getId());
+
+            } else if (MusicControlManager.currentPlaylistId != null) {
                 if (node.isLeaf()) {
                     popupMenu = PopupMenuBuilder.buildSongPopupMenu(MusicControlManager.currentTrackId, MusicControlManager.currentPlaylistId);
                 } else {
                     popupMenu = PopupMenuBuilder.buildPlaylistPopupMenu(MusicControlManager.currentPlaylistId);
                 }
-
+            }
+            if (popupMenu != null) {
                 popupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
         } else if(e.getButton() == 1) { // track play click

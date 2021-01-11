@@ -442,6 +442,7 @@ public class MusicToolWindow {
             dataPanel.add(actionList, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
 
             PlaylistTree slackWorkspaceTree = TreeHelper.buildSlackWorkspacesNode();
+            slackWorkspaceTree.addMouseListener(new PlaylistMouseListener(slackWorkspaceTree));
             dataPanel.add(slackWorkspaceTree, gridConstraints(dataPanel.getComponentCount(), 1, 6, 0, 3, 0));
 //*********************************************************************************************************************************************
             JSeparator softwarePlaylistSeparator = new JSeparator();
