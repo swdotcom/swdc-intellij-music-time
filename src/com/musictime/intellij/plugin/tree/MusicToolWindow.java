@@ -245,17 +245,20 @@ public class MusicToolWindow {
         if (refreshing) {
             return;
         }
-        refreshing = true;
 
         if (win != null) {
             ApplicationManager.getApplication().invokeLater(new Runnable() {
                 public void run() {
-                    win.rebuildRecommendedTreeView();
-                    win.rebuildPlaylistTreeView();
+                    refreshing = true;
+                    try {
+                        win.rebuildRecommendedTreeView();
+                        win.rebuildPlaylistTreeView();
+                    } finally {
+                        refreshing = false;
+                    }
                 }
             });
         }
-        refreshing = false;
     }
 
     public static void reset() {
@@ -453,7 +456,6 @@ public class MusicToolWindow {
             /* Generate or Refresh AI playlist */
             Icon gearIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/generate.png");
             JLabel aiPlaylist = new JLabel();
-            aiPlaylist.setIcon(gearIcon);
             if (PlayListCommands.myAIPlaylistId != null) {
                 aiPlaylist.setText("Refresh my AI playlist");
                 aiPlaylist.setToolTipText("Refresh your personalized playlist (My AI Top 40)");
@@ -464,9 +466,8 @@ public class MusicToolWindow {
             refreshAIModel.add(0, aiPlaylist);
 
             /* Create playlist */
-            Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/add.png");
+            Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist.png");
             JLabel createPlaylist = new JLabel();
-            createPlaylist.setIcon(addIcon);
             createPlaylist.setText("Create Playlist");
             createPlaylist.setToolTipText("Create your personalized playlist");
             refreshAIModel.add(1, createPlaylist);
@@ -712,17 +713,6 @@ public class MusicToolWindow {
                 recommendedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
                 recommendedPlaylistTree.addMouseListener(new PlaylistMouseListener(recommendedPlaylistTree));
-                recommendedPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
-                    @Override
-                    public void treeExpanded(TreeExpansionEvent event) {
-                        // refresh();
-                    }
-
-                    @Override
-                    public void treeCollapsed(TreeExpansionEvent event) {
-                        // refresh();
-                    }
-                });
 
                 recommendedPlaylistTree.addMouseMotionListener(new TreeScanner());
                 recommendedPlaylistTree.setExpandedState(new TreePath(recommendedPlaylistModel.getPathToRoot(recommendedPlaylist)), true);
