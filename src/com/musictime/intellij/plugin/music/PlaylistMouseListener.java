@@ -28,7 +28,9 @@ public class PlaylistMouseListener extends MouseAdapter {
 
         // handle non-ploylist actions
         if (node.getId().equals(PlayListCommands.addSlackWorkspaceId)) {
-            SlackManager.connectSlackWorkspace(() -> {MusicToolWindow.refresh();});
+            SwingUtilities.invokeLater(() -> {
+                SlackManager.connectSlackWorkspace(() -> {MusicToolWindow.refresh();});
+            });
             return;
         }
 

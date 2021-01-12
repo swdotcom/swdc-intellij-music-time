@@ -36,7 +36,11 @@ public class PopupMenuBuilder {
         removeWorkspaceItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SlackManager.disconnectSlackAuth(authId, () -> { MusicToolWindow.refresh();});
+                SwingUtilities.invokeLater(() -> {
+                    SlackManager.disconnectSlackAuth(authId, () -> {
+                        MusicToolWindow.refresh();
+                    });
+                });
             }
         });
         menu.add(removeWorkspaceItem);
@@ -247,18 +251,20 @@ public class PopupMenuBuilder {
         slack.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                List<SlackChannel> slackChannels = SlackManager.getSlackChannels(null);
-                if (slackChannels != null) {
-                    String[] finalChannels = getSlackChannelNames(slackChannels);
+                SwingUtilities.invokeLater(() -> {
+                    List<SlackChannel> slackChannels = SlackManager.getSlackChannels(null);
+                    if (slackChannels != null) {
+                        String[] finalChannels = getSlackChannelNames(slackChannels);
 
-                    String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
+                        String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
 
-                    if (StringUtils.isNotBlank(channel)) {
-                        SlackChannel selectedChannel = getSelectedChannelByName(channel, slackChannels);
-                        String message = "Check out this song \n" + uri;
-                        SlackManager.postMessageToChannel(selectedChannel, selectedChannel.workspace_access_token, message);
+                        if (StringUtils.isNotBlank(channel)) {
+                            SlackChannel selectedChannel = getSelectedChannelByName(channel, slackChannels);
+                            String message = "Check out this song \n" + uri;
+                            SlackManager.postMessageToChannel(selectedChannel, selectedChannel.workspace_access_token, message);
+                        }
                     }
-                }
+                });
             }
         });
         sharePopup.add(slack);
@@ -374,18 +380,20 @@ public class PopupMenuBuilder {
         slack.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                List<SlackChannel> slackChannels = SlackManager.getSlackChannels(null);
-                if (slackChannels != null) {
-                    String[] finalChannels = getSlackChannelNames(slackChannels);
+                SwingUtilities.invokeLater(() -> {
+                    List<SlackChannel> slackChannels = SlackManager.getSlackChannels(null);
+                    if (slackChannels != null) {
+                        String[] finalChannels = getSlackChannelNames(slackChannels);
 
-                    String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
+                        String channel = SoftwareCoUtils.showMsgInputPrompt("Select channel", "Slack", slackIcon, finalChannels);
 
-                    if (StringUtils.isNotBlank(channel)) {
-                        SlackChannel selectedChannel = getSelectedChannelByName(channel, slackChannels);
-                        String message = "Check out this playlist \n" + uri;
-                        SlackManager.postMessageToChannel(selectedChannel, selectedChannel.workspace_access_token, message);
+                        if (StringUtils.isNotBlank(channel)) {
+                            SlackChannel selectedChannel = getSelectedChannelByName(channel, slackChannels);
+                            String message = "Check out this playlist \n" + uri;
+                            SlackManager.postMessageToChannel(selectedChannel, selectedChannel.workspace_access_token, message);
+                        }
                     }
-                }
+                });
             }
         });
         sharePopup.add(slack);

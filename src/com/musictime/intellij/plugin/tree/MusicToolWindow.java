@@ -1,7 +1,6 @@
 package com.musictime.intellij.plugin.tree;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.IconLoader;
@@ -128,7 +127,6 @@ public class MusicToolWindow {
 
         this.rebuildPlaylistTreeView();
 
-        scrollPane.setMinimumSize(new Dimension(-1, 235));
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.getHorizontalScrollBar().setUnitIncrement(16);
         scrollPane.repaint();
@@ -247,17 +245,20 @@ public class MusicToolWindow {
         if (refreshing) {
             return;
         }
-        refreshing = true;
 
         if (win != null) {
             ApplicationManager.getApplication().invokeLater(new Runnable() {
                 public void run() {
-                    win.rebuildRecommendedTreeView();
-                    win.rebuildPlaylistTreeView();
+                    refreshing = true;
+                    try {
+                        win.rebuildRecommendedTreeView();
+                        win.rebuildPlaylistTreeView();
+                    } finally {
+                        refreshing = false;
+                    }
                 }
             });
         }
-        refreshing = false;
     }
 
     public static void reset() {
@@ -455,7 +456,6 @@ public class MusicToolWindow {
             /* Generate or Refresh AI playlist */
             Icon gearIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/generate.png");
             JLabel aiPlaylist = new JLabel();
-            aiPlaylist.setIcon(gearIcon);
             if (PlayListCommands.myAIPlaylistId != null) {
                 aiPlaylist.setText("Refresh my AI playlist");
                 aiPlaylist.setToolTipText("Refresh your personalized playlist (My AI Top 40)");
@@ -466,9 +466,8 @@ public class MusicToolWindow {
             refreshAIModel.add(0, aiPlaylist);
 
             /* Create playlist */
-            Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/add.png");
+            Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist.png");
             JLabel createPlaylist = new JLabel();
-            createPlaylist.setIcon(addIcon);
             createPlaylist.setText("Create Playlist");
             createPlaylist.setToolTipText("Create your personalized playlist");
             refreshAIModel.add(1, createPlaylist);
@@ -714,17 +713,6 @@ public class MusicToolWindow {
                 recommendedPlaylistTree.setCellRenderer(new PlaylistTreeRenderer(pawIcon));
 
                 recommendedPlaylistTree.addMouseListener(new PlaylistMouseListener(recommendedPlaylistTree));
-                recommendedPlaylistTree.addTreeExpansionListener(new TreeExpansionListener() {
-                    @Override
-                    public void treeExpanded(TreeExpansionEvent event) {
-                        // refresh();
-                    }
-
-                    @Override
-                    public void treeCollapsed(TreeExpansionEvent event) {
-                        // refresh();
-                    }
-                });
 
                 recommendedPlaylistTree.addMouseMotionListener(new TreeScanner());
                 recommendedPlaylistTree.setExpandedState(new TreePath(recommendedPlaylistModel.getPathToRoot(recommendedPlaylist)), true);
@@ -805,14 +793,12 @@ public class MusicToolWindow {
             category.setVisible(true);
             genre.setVisible(true);
             recommendRefresh.setVisible(true);
-            recommendScroll.setMinimumSize(new Dimension(-1, 75));
         } else {
             recommendPanel.setVisible(false);
             recommendationHeader.setVisible(false);
             category.setVisible(false);
             genre.setVisible(false);
             recommendRefresh.setVisible(false);
-            recommendScroll.setMinimumSize(new Dimension(0, 0));
         }
         recommendScroll.getVerticalScrollBar().setUnitIncrement(16);
         recommendScroll.getHorizontalScrollBar().setUnitIncrement(16);
