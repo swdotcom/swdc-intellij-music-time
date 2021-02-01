@@ -57,6 +57,9 @@ public class MusicToolWindow {
     public static String[] rec_categories = {"Familiar", "Happy", "Energetic", "Danceable", "Instrumental", "Quiet music"};
     public static String[] rec_genres;
 
+    private static Icon gearIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/settings.png");
+    private static Icon generateIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/generate.png");
+
     public MusicToolWindow(ToolWindow toolWindow) {
         playlistWindowContent.setFocusable(true);
 
@@ -493,7 +496,8 @@ public class MusicToolWindow {
             DefaultListModel refreshAIModel = new DefaultListModel();
 
             /* Generate or Refresh AI playlist */
-            Icon gearIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/generate.png");
+            int playlistModelIndex = 0;
+
             JLabel aiPlaylist = new JLabel();
             if (PlayListCommands.myAIPlaylistId != null) {
                 aiPlaylist.setText("Refresh my AI playlist");
@@ -502,14 +506,17 @@ public class MusicToolWindow {
                 aiPlaylist.setText("Generate my AI playlist");
                 aiPlaylist.setToolTipText("Generate your personalized playlist (My AI Top 40)");
             }
-            refreshAIModel.add(0, aiPlaylist);
+            aiPlaylist.setIcon(generateIcon);
+            refreshAIModel.add(playlistModelIndex, aiPlaylist);
+            playlistModelIndex++;
 
             /* Create playlist */
-            Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist.png");
             JLabel createPlaylist = new JLabel();
+            createPlaylist.setIcon(generateIcon);
             createPlaylist.setText("Create Playlist");
             createPlaylist.setToolTipText("Create your personalized playlist");
-            refreshAIModel.add(1, createPlaylist);
+            refreshAIModel.add(playlistModelIndex, createPlaylist);
+            playlistModelIndex++;
 
             JList<JLabel> refreshAIList = new JBList<>(refreshAIModel);
             refreshAIList.setVisibleRowCount(1);
