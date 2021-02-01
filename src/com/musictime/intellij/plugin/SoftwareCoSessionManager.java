@@ -91,6 +91,9 @@ public class SoftwareCoSessionManager {
     }
 
     public static void launchMusicTimeMetricsDashboard() {
+        if (!SoftwareCoUtils.checkRegistration()) {
+            return;
+        }
         Project p = getOpenProject();
         if (p == null) {
             return;

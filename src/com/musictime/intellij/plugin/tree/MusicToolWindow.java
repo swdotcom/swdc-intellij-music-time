@@ -14,10 +14,10 @@ import com.musictime.intellij.plugin.music.*;
 import com.musictime.intellij.plugin.musicjava.Apis;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import org.apache.commons.lang.StringUtils;
+import swdc.java.ops.manager.AccountManager;
+import swdc.java.ops.manager.FileUtilManager;
 
 import javax.swing.*;
-import javax.swing.event.TreeExpansionEvent;
-import javax.swing.event.TreeExpansionListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
@@ -269,11 +269,18 @@ public class MusicToolWindow {
         // Get VSpacer component
         Component component = dataPanel.getComponent(dataPanel.getComponentCount() - 1);
         boolean hasSpotifyAccess = MusicControlManager.hasSpotifyAccess();
+        boolean isRegistered = (FileUtilManager.getItem("name", null) != null);
+
+        dataPanel.removeAll();
+        dataPanel.setBackground((Color) null);
+        dataPanel.setFocusable(true);
+
+        listIndex = 0;
+        DefaultListModel listModel = new DefaultListModel();
+
         if (!hasSpotifyAccess) {
-            dataPanel.removeAll();
             menu.setVisible(false);
             refresh.setVisible(false);
-            DefaultListModel listModel = new DefaultListModel();
 
             boolean requiresReAuth = MusicControlManager.requiresReAuthentication();
             String connectLabel = requiresReAuth ? "Reconnect Spotify" : "Connect Spotify";
@@ -282,8 +289,9 @@ public class MusicToolWindow {
             connectedState.setText(connectLabel);
             connectedState.setIcon(icon);
             connectedState.setOpaque(true);
+            listModel.add(listIndex, connectedState);
+            listIndex++;
 
-            listModel.add(0, connectedState);
             JList<JLabel> actionList = new JList<>(listModel);
             actionList.setVisibleRowCount(1);
             actionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -330,15 +338,42 @@ public class MusicToolWindow {
             playlistWindowContent.revalidate();
 
         } else {
-            //Rectangle rect = dataPanel.getBounds();
-            dataPanel.removeAll();
-            dataPanel.setBackground((Color) null);
-            dataPanel.setFocusable(true);
             menu.setVisible(true);
             refresh.setVisible(true);
-            listIndex = 0;
 
-            DefaultListModel listModel = new DefaultListModel();
+            if (!isRegistered) {
+                /* Open dashboard */
+                Icon pawIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/paw.png");
+                JLabel signupButton = new JLabel();
+                signupButton.setIcon(pawIcon);
+                signupButton.setText("Sign up");
+                signupButton.setToolTipText("Sign up to see more data visualizations");
+                listModel.add(listIndex, signupButton);
+                listIndex++;
+
+                JLabel loginButton = new JLabel();
+                loginButton.setIcon(pawIcon);
+                loginButton.setText("Log in");
+                loginButton.setToolTipText("Log in to see more data visualizations");
+                listModel.add(listIndex, loginButton);
+                listIndex++;
+            } else {
+                JLabel loggedInButton = new JLabel();
+                String authType = FileUtilManager.getItem("authType");
+                String name = FileUtilManager.getItem("name");
+                String iconName = "email.png";
+                if ("google".equals(authType)) {
+                    iconName = "google.png";
+                } else if ("github".equals(authType)) {
+                    iconName = "github.png";
+                }
+
+                Icon loggedInIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/" + iconName);
+                loggedInButton.setIcon(loggedInIcon);
+                loggedInButton.setText(name);
+                listModel.add(listIndex, loggedInButton);
+                listIndex++;
+            }
 
             /* Open dashboard */
             Icon dashboardIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/dashboard.png");
@@ -353,7 +388,7 @@ public class MusicToolWindow {
             Icon pawIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/paw.png");
             JLabel webAnalytics = new JLabel();
             webAnalytics.setIcon(pawIcon);
-            webAnalytics.setText("See web analytics");
+            webAnalytics.setText("More data at Software.com");
             webAnalytics.setToolTipText("See music analytics in the web app");
             listModel.add(listIndex, webAnalytics);
             listIndex++;
@@ -362,7 +397,7 @@ public class MusicToolWindow {
             Icon readmeIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/readme.png");
             JLabel learnMore = new JLabel();
             learnMore.setIcon(readmeIcon);
-            learnMore.setText("Learn more");
+            learnMore.setText("Documentation");
             learnMore.setToolTipText("View the Music Time Readme to learn more");
             listModel.add(listIndex, learnMore);
             listIndex++;
@@ -414,18 +449,22 @@ public class MusicToolWindow {
                     JList list = (JList) e.getSource();
                     JLabel label = (JLabel) list.getSelectedValue();
                     if (label != null && label.getText() != null) {
-                        if (label.getText().equals("See web analytics")) {
+                        if (label.getText().equals("More data at Software.com")) {
                             //Code to call web analytics
                             SoftwareCoUtils.launchMusicWebDashboard();
                         } else if (label.getText().equals("Dashboard")) {
                             //Code to open web dashboard
                             SoftwareCoSessionManager.launchMusicTimeMetricsDashboard();
-                        } else if (label.getText().equals("Learn more")) {
+                        } else if (label.getText().equals("Documentation")) {
                             SoftwareCoSessionManager.getInstance().openReadmeFile();
                         } else if (label.getText().contains("Listening on") ||
                                 label.getText().contains("Connect to") ||
                                 label.getText().contains("Available")) {
                             MusicControlManager.displayDeviceSelection();
+                        } else if (label.getText().equals("Sign up")) {
+                            AccountManager.showAuthSelectPrompt(true, "Music Time", ()-> {refresh();});
+                        } else if (label.getText().equals("Log in")) {
+                            AccountManager.showAuthSelectPrompt(false, "Music Time", ()-> {refresh();});
                         }
                     }
                 }
