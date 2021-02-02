@@ -331,9 +331,11 @@ public class SoftwareCoUtils {
                         boolean requiresAccess = requiresReAuth || !hasSpotifyAccess ? true : false;
 
                         String connectLabel = null;
+                        String connectTooltip = "Connect Spotify";
                         if (requiresAccess) {
                             if (requiresReAuth) {
                                 connectLabel = "Reconnect Spotify";
+                                connectTooltip = "We're unable to access Spotify. Reconnect if this issue continues.";
                             } else if (!hasSpotifyAccess) {
                                 connectLabel = "Connect Spotify";
                             }
@@ -354,7 +356,7 @@ public class SoftwareCoUtils {
 
                         if (StringUtils.isNotBlank(connectLabel)) {
                             SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                    connectLabel, connectLabel, connectspotifyId);
+                                    connectLabel, connectTooltip, connectspotifyId);
                             statusBar.addWidget(kpmWidget, connectspotifyId, disposable);
                             statusBar.updateWidget(connectspotifyId);
                         }

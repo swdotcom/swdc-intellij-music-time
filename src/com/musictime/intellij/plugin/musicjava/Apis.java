@@ -337,6 +337,12 @@ public class Apis {
                     MusicControlManager.currentPlaylistId = uri[uri.length - 1];
                 }
             }
+            boolean requiresReAuth = FileUtilManager.getBooleanItem("requiresSpotifyReAuth");
+            if (requiresReAuth) {
+                FileUtilManager.setBooleanItem("requiresSpotifyReAuth", false);
+                // refresh the status bar
+                SoftwareCoUtils.setStatusLineMessage();
+            }
         }
         return resp;
     }
@@ -355,15 +361,9 @@ public class Apis {
 
                     FileUtilManager.setBooleanItem("requiresSpotifyReAuth", true);
 
-                    // disconnect spotify
-                    MusicControlManager.disConnectSpotify();
-
-                    // show reconnect prompt
-                    // SoftwareCoMusic.showReconnectPrompt();
                     LOG.log(Level.WARNING, "Music Time: Failed to refresh Spotify access");
                     return false;
                 }
-
             }
         }
         return true;
