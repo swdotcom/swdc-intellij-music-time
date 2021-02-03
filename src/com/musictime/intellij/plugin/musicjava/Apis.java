@@ -30,7 +30,8 @@ public class Apis {
     private static int offset = 0;
 
     public static Integration getSpotifyIntegration() {
-        Integration spotifyIntegration = FileUtilManager.getIntegrations().stream()
+        List<Integration> integrations = FileUtilManager.getIntegrations();
+        Integration spotifyIntegration = integrations.stream()
                 .filter(n -> "spotify".equals(n.name.toLowerCase()) && n.status.toLowerCase().equals("active"))
                 .findAny()
                 .orElse(null);
