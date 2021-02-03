@@ -125,7 +125,7 @@ public class DeviceManager {
     private static void populateDevices() {
         devices = new ArrayList<>();
 
-        String spotifyAccessToken = FileUtilManager.getItem("spotify_access_token");
+        String spotifyAccessToken = Apis.getSpotifyAccessToken();
         if (StringUtils.isBlank(spotifyAccessToken)) {
             return;
         }

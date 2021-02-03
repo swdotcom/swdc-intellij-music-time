@@ -31,18 +31,23 @@ import com.musictime.intellij.plugin.music.MusicControlManager;
 import com.musictime.intellij.plugin.music.PlayListCommands;
 import com.musictime.intellij.plugin.musicjava.DeviceManager;
 import com.musictime.intellij.plugin.musicjava.MusicStore;
+import com.musictime.intellij.plugin.tree.MusicToolWindow;
 import com.musictime.intellij.plugin.tree.PlaylistAction;
 import org.apache.commons.lang.StringUtils;
 import swdc.java.ops.http.ClientResponse;
 import swdc.java.ops.http.OpsHttpClient;
+import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.AsyncManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.Integration;
+import swdc.java.ops.model.User;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.*;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -326,9 +331,11 @@ public class SoftwareCoUtils {
                         boolean requiresAccess = requiresReAuth || !hasSpotifyAccess ? true : false;
 
                         String connectLabel = null;
+                        String connectTooltip = "Connect Spotify";
                         if (requiresAccess) {
                             if (requiresReAuth) {
                                 connectLabel = "Reconnect Spotify";
+                                connectTooltip = "We're unable to access Spotify. Reconnect if this issue continues.";
                             } else if (!hasSpotifyAccess) {
                                 connectLabel = "Connect Spotify";
                             }
@@ -349,7 +356,7 @@ public class SoftwareCoUtils {
 
                         if (StringUtils.isNotBlank(connectLabel)) {
                             SoftwareCoStatusBarTextWidget kpmWidget = buildStatusBarTextWidget(
-                                    connectLabel, connectLabel, connectspotifyId);
+                                    connectLabel, connectTooltip, connectspotifyId);
                             statusBar.addWidget(kpmWidget, connectspotifyId, disposable);
                             statusBar.updateWidget(connectspotifyId);
                         }
@@ -595,52 +602,26 @@ public class SoftwareCoUtils {
         return result;
     }
 
-    public static JsonObject getUser() {
-        String api = "/users/me";
-        ClientResponse resp = OpsHttpClient.softwareGet(api, FileUtilManager.getItem("jwt"));
-        if (resp.isOk()) {
-            // check if we have the data and jwt
-            // resp.data.jwt and resp.data.user
-            // then update the session.json for the jwt
-            JsonObject obj = resp.getJsonObj();
-
-            if (obj != null && obj.has("data")) {
-                JsonObject userData = obj.get("data").getAsJsonObject();
-
-                if (userData != null && userData.get("integrations") != null) {
-                    JsonArray jsonArray = userData.get("integrations").getAsJsonArray();
-                    if (jsonArray != null && jsonArray.size() > 0) {
-                        // check if Intellij Code Time is installed
-                        for (JsonElement el : jsonArray) {
-                            if (el.getAsJsonObject().get("pluginId").getAsInt() == 4) {
-                                codeTimeInstalled = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!codeTimeInstalled) {
-                    // check to see if latestPayloadTimestampEndUtc is found
-                    String val = FileUtilManager.getItem("latestPayloadTimestampEndUtc");
-                    if (StringUtils.isNotBlank(val)) {
-                        codeTimeInstalled = true;
-                    }
-                }
-
-                return userData;
-            }
-        }
-
-        if (!codeTimeInstalled) {
-            // check to see if latestPayloadTimestampEndUtc is found
-            String val = FileUtilManager.getItem("latestPayloadTimestampEndUtc");
-            if (StringUtils.isNotBlank(val)) {
+    public static User getUser() {
+        User softwareUser = AccountManager.getUser();
+        if (softwareUser != null && !codeTimeInstalled) {
+            // check to see if intellij codetime is installed
+            Integration intellijCtPlugin = FileUtilManager.getIntegrations().stream()
+                    .filter(n -> n.id == 4 && n.status.toLowerCase().equals("active"))
+                    .findAny()
+                    .orElse(null);
+            if (intellijCtPlugin != null) {
+                // it's installed
                 codeTimeInstalled = true;
+            } else {
+                // check to see if latestPayloadTimestampEndUtc is found
+                String val = FileUtilManager.getItem("latestPayloadTimestampEndUtc");
+                if (StringUtils.isNotBlank(val)) {
+                    codeTimeInstalled = true;
+                }
             }
         }
-
-        return null;
+        return softwareUser;
     }
 
     public static void getAndUpdateClientInfo() {
@@ -699,6 +680,21 @@ public class SoftwareCoUtils {
         return Messages.showInputDialog(message, title, icon, "", getRegexInputValidator());
     }
 
+    public static boolean checkRegistration() {
+        String email = FileUtilManager.getItem("name");
+        if (StringUtils.isBlank(email)) {
+            String infoMsg = "Sign up or register for a web.com account at Software.com to view your most productive music.";
+            String[] options = new String[]{"Sign up", "Cancel"};
+            int response = Messages.showDialog(infoMsg, SoftwareCoUtils.getPluginName(), options, 0, Messages.getInformationIcon());
+            if (response == 0) {
+                AccountManager.showAuthSelectPrompt(true, ()-> {
+                    MusicToolWindow.refresh();});
+            }
+            return false;
+        }
+        return true;
+    }
+
     private static InputValidator getRegexInputValidator() {
         return new InputValidator() {
             @Override
@@ -733,8 +729,33 @@ public class SoftwareCoUtils {
     }
 
     public static void launchMusicWebDashboard() {
+        if (!SoftwareCoUtils.checkRegistration()) {
+            return;
+        }
         String url = launch_url + "/music";
         BrowserUtil.browse(url);
+    }
+
+    public static String buildQueryString(JsonObject obj, boolean includeQmark) {
+        StringBuffer sb = new StringBuffer();
+        Iterator<String> keys = obj.keySet().iterator();
+        while(keys.hasNext()) {
+            if (sb.length() > 0) {
+                sb.append("&");
+            }
+            String key = keys.next();
+            String val = obj.get(key).getAsString();
+            try {
+                val = URLEncoder.encode(val, "UTF-8");
+            } catch (Exception e) {
+                //
+            }
+            sb.append(key).append("=").append(val);
+        }
+        if (includeQmark) {
+            return "?" + sb.toString();
+        }
+        return sb.toString();
     }
 
 }

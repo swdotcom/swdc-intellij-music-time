@@ -16,6 +16,8 @@ import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.AsyncManager;
 import swdc.java.ops.manager.FileUtilManager;
 import swdc.java.ops.manager.UtilManager;
+import swdc.java.ops.model.Integration;
+import swdc.java.ops.model.User;
 import swdc.java.ops.model.UserState;
 
 import javax.swing.*;
@@ -64,8 +66,20 @@ public class MusicControlManager {
         String api = "/auth/spotify/disconnect";
         OpsHttpClient.softwarePut(api, FileUtilManager.getItem("jwt"), null);
 
-        FileUtilManager.setItem("spotify_access_token", null);
-        FileUtilManager.setItem("spotify_refresh_token", null);
+        List<Integration> integrations = FileUtilManager.getIntegrations();
+        int removeIdx = -1;
+        for (int i = integrations.size() - 1; i >= 0; i--) {
+            Integration n = integrations.get(i);
+            if ("spotify".equals(n.name.toLowerCase()) && n.status.toLowerCase().equals("active")) {
+                removeIdx = i;
+                break;
+            }
+        }
+        if (removeIdx != -1) {
+            integrations.remove(removeIdx);
+            FileUtilManager.syncIntegrations(integrations);
+        }
+
         FileUtilManager.setBooleanItem("requiresSpotifyReAuth", true);
 
         resetSpotify();
@@ -85,24 +99,28 @@ public class MusicControlManager {
 
         // Authenticate Spotify
         authSpotify();
-
-        // Periodically check that the user has connected
-        final Runnable service = () -> lazilyFetchSpotifyStatus(40);
-        AsyncManager.getInstance().executeOnceInSeconds(service, 10);
     }
 
     private static void authSpotify() {
-        /**
-         * const qryStr = `token=${encodedJwt}&mac=${mac}`;
-         *     const endpoint = `${api_endpoint}/auth/spotify?${qryStr}`;
-         */
-        String jwt = FileUtilManager.getItem("jwt");
-        String api = SoftwareCoUtils.api_endpoint + "/auth/spotify?plugin_token=" + jwt + "&mac=" + UtilManager.isMac();
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("plugin", SoftwareCoUtils.getPluginName());
+        jsonObject.addProperty("plugin_uuid", FileUtilManager.getPluginUuid());
+        jsonObject.addProperty("pluginVersion", SoftwareCoUtils.getVersion());
+        jsonObject.addProperty("plugin_id", SoftwareCoUtils.pluginId);
+        jsonObject.addProperty("mac", UtilManager.isMac());
+        jsonObject.addProperty("auth_callback_state", FileUtilManager.getAuthCallbackState(true));
+
+        String qryStr = SoftwareCoUtils.buildQueryString(jsonObject, true);
+
+        String api = SoftwareCoUtils.api_endpoint + "/auth/spotify" + qryStr;
         BrowserUtil.browse(api);
+
+        // Periodically check that the user has connected
+        AsyncManager.getInstance().executeOnceInSeconds(() -> lazilyFetchSpotifyStatus(40), 10);
     }
 
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
-        UserState userState = AccountManager.getUserLoginState(false);
+        UserState userState = AccountManager.getUserLoginState(true);
 
         if (!userState.loggedIn) {
             if (retryCount > 0) {
@@ -116,6 +134,9 @@ public class MusicControlManager {
             spotifyStatus = "Connected";
             FileUtilManager.setAuthCallbackState(null);
             SoftwareCoUtils.showInfoMessage("Successfully connected to Spotify, please wait while we load your playlists.");
+
+            // update the spotify integration
+            updateSpotifyIntegration(userState.user);
 
             FileUtilManager.setBooleanItem("requiresSpotifyReAuth", false);
 
@@ -139,6 +160,24 @@ public class MusicControlManager {
 
             // refresh the status bar
             SoftwareCoUtils.setStatusLineMessage();
+        }
+    }
+
+    public static void updateSpotifyIntegration(User softwareUser) {
+        List<Integration> integrations = FileUtilManager.getIntegrations();
+        if (integrations == null) {
+            integrations = new ArrayList<>();
+        }
+        if (softwareUser.integrations != null) {
+            for (Integration n : softwareUser.integrations) {
+                if ("spotify".equals(n.name.toLowerCase())
+                        && n.status.toLowerCase().equals("active")
+                        && StringUtils.isNotBlank(n.access_token)) {
+                    integrations.add(n);
+                    break;
+                }
+            }
+            FileUtilManager.syncIntegrations(integrations);
         }
     }
 
@@ -259,7 +298,7 @@ public class MusicControlManager {
     }
 
     public static boolean hasSpotifyAccess() {
-        String accessToken = FileUtilManager.getItem("spotify_access_token");
+        String accessToken = Apis.getSpotifyAccessToken();
         // has a spotify access token if its not null or empty
         return StringUtils.isNotBlank(accessToken);
     }
@@ -394,6 +433,30 @@ public class MusicControlManager {
                     JsonObject track = items.get(currentIndex - 1).getAsJsonObject().getAsJsonObject("track");
                     currentTrackId = track.get("id").getAsString();
                     currentTrackName = track.get("name").getAsString();
+                }
+            }
+        }
+    }
+
+    public static void migrateSpotifyAccessInfo() {
+        String legacyAccessToken = FileUtilManager.getItem("spotify_access_token", null);
+        if (StringUtils.isNotBlank(legacyAccessToken) && Apis.getSpotifyAccessToken() == null) {
+            if (StringUtils.isNotBlank(legacyAccessToken)) {
+                User softwareUser = AccountManager.getUser();
+                if (softwareUser != null && softwareUser.integrations != null) {
+                    FileUtilManager.setItem("spotify_access_token", null);
+                    FileUtilManager.setItem("spotify_refresh_token", null);
+                    // update the spotify integrations
+                    Integration spotifyIntegration = softwareUser.integrations.stream()
+                            .filter(n -> "spotify".equals(n.name.toLowerCase()) && n.status.toLowerCase().equals("active"))
+                            .findAny()
+                            .orElse(null);
+                    List<Integration> integrations = FileUtilManager.getIntegrations();
+                    if (integrations == null) {
+                        integrations = new ArrayList<>();
+                    }
+                    integrations.add(spotifyIntegration);
+                    FileUtilManager.syncIntegrations(integrations);
                 }
             }
         }

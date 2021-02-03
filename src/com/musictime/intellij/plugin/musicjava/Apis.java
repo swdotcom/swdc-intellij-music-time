@@ -9,12 +9,13 @@ import com.musictime.intellij.plugin.music.PlaylistManager;
 import org.apache.commons.lang.StringUtils;
 import swdc.java.ops.http.ClientResponse;
 import swdc.java.ops.http.OpsHttpClient;
-import swdc.java.ops.manager.AccountManager;
 import swdc.java.ops.manager.AsyncManager;
 import swdc.java.ops.manager.FileUtilManager;
+import swdc.java.ops.model.Integration;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -28,8 +29,17 @@ public class Apis {
     private static JsonArray userPlaylistArray = new JsonArray();
     private static int offset = 0;
 
-    private static String getSpotifyAccessToken() {
-        return FileUtilManager.getItem("spotify_access_token");
+    public static Integration getSpotifyIntegration() {
+        Integration spotifyIntegration = FileUtilManager.getIntegrations().stream()
+                .filter(n -> "spotify".equals(n.name.toLowerCase()) && n.status.toLowerCase().equals("active"))
+                .findAny()
+                .orElse(null);
+        return spotifyIntegration;
+    }
+
+    public static String getSpotifyAccessToken() {
+        Integration spotifyIntegration = getSpotifyIntegration();
+        return spotifyIntegration != null ? spotifyIntegration.access_token : null;
     }
 
     /*
@@ -44,21 +54,28 @@ public class Apis {
             SoftwareCoUtils.getAndUpdateClientInfo();
         }
 
-        String refreshToken = FileUtilManager.getItem("spotify_refresh_token");
-        if (StringUtils.isBlank(refreshToken)) {
-            AccountManager.getUserLoginState(false);
-            refreshToken = FileUtilManager.getItem("spotify_refresh_token");
-            if (StringUtils.isBlank(refreshToken)) {
-                return false;
-            }
+        Integration spotifyIntegration = getSpotifyIntegration();
+        if (spotifyIntegration == null) {
+            return false;
         }
+
+        String refreshToken = spotifyIntegration.refresh_token;
 
         String clientId = MusicStore.getSpotifyClientId();
         String clientSecret = MusicStore.getSpotifyClientSecret();
         String refreshedAccessToken = OpsHttpClient.spotifyTokenRefresh(refreshToken, clientId, clientSecret);
 
         if (refreshedAccessToken != null) {
-            FileUtilManager.setItem("spotify_access_token", refreshedAccessToken);
+            List<Integration> integrations = FileUtilManager.getIntegrations();
+            if (integrations != null) {
+                for (Integration n : integrations) {
+                    if ("spotify".equals(n.name.toLowerCase()) && n.status.toLowerCase().equals("active")) {
+                        n.access_token = refreshedAccessToken;
+                        break;
+                    }
+                }
+                FileUtilManager.syncIntegrations(integrations);
+            }
             return true;
         }
         return false;
@@ -320,6 +337,12 @@ public class Apis {
                     MusicControlManager.currentPlaylistId = uri[uri.length - 1];
                 }
             }
+            boolean requiresReAuth = FileUtilManager.getBooleanItem("requiresSpotifyReAuth");
+            if (requiresReAuth) {
+                FileUtilManager.setBooleanItem("requiresSpotifyReAuth", false);
+                // refresh the status bar
+                SoftwareCoUtils.setStatusLineMessage();
+            }
         }
         return resp;
     }
@@ -330,20 +353,17 @@ public class Apis {
     }
 
     public static boolean refreshAccessTokenIfExpired(JsonObject obj) {
-        if (obj != null && obj.has("error") && !obj.get("error").isJsonNull()) {
+        boolean requiresReAuth = FileUtilManager.getBooleanItem("requiresSpotifyReAuth");
+        if (!requiresReAuth && obj != null && obj.has("error") && !obj.get("error").isJsonNull()) {
             JsonObject error = obj.get("error").getAsJsonObject();
             if (error.has("status") && error.get("status").getAsInt() == 401) {
                 if (!refreshAccessToken()) {
 
-                    // disconnect spotify
-                    // MusicControlManager.disConnectSpotify();
+                    FileUtilManager.setBooleanItem("requiresSpotifyReAuth", true);
 
-                    // show reconnect prompt
-                    // SoftwareCoMusic.showReconnectPrompt();
                     LOG.log(Level.WARNING, "Music Time: Failed to refresh Spotify access");
                     return false;
                 }
-
             }
         }
         return true;

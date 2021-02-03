@@ -122,6 +122,8 @@ public class SoftwareCoMusic implements ApplicationComponent {
         // send the 1st event: activate
         EventTrackerManager.getInstance().trackEditorAction("editor", "activate");
 
+        MusicControlManager.migrateSpotifyAccessInfo();
+
         boolean hasAccess = MusicControlManager.hasSpotifyAccess();
 
         if (!hasAccess) {

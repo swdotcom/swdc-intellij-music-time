@@ -41,6 +41,7 @@ public class SoftwareCoEventManager {
     }
 
     private SoftwareCoEventManager() {
+        tracker = EventTrackerManager.getInstance();
         keystrokeMgr = KeystrokeManager.getInstance();
 
         final Runnable checkFocusStateTimer = () -> checkFocusState();
@@ -59,10 +60,10 @@ public class SoftwareCoEventManager {
                         keystrokeCount.triggered = false;
                         keystrokeCount.processKeystrokes();
                     }
-                    EventTrackerManager.getInstance().trackEditorAction("editor", "unfocus");
+                    tracker.trackEditorAction("editor", "unfocus");
                 } else {
                     // just set the process keystrokes payload to false since we're focused again
-                    EventTrackerManager.getInstance().trackEditorAction("editor", "focus");
+                    tracker.trackEditorAction("editor", "focus");
                 }
 
                 // update the currently active flag

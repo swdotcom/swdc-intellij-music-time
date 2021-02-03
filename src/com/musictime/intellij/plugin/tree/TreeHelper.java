@@ -100,7 +100,7 @@ public class TreeHelper {
     }
 
     public static PlaylistTree buildSlackWorkspacesNode() {
-        List<Integration> workspaces = SlackManager.getSlackWorkspaces(false);
+        List<Integration> workspaces = SlackManager.getSlackWorkspaces();
         List<NodeLabel> nodeLabels = new ArrayList<>();
         if (workspaces != null && workspaces.size() > 0) {
             for (Integration workspace : workspaces) {
