@@ -122,7 +122,17 @@ public class MusicControlManager {
     protected static void lazilyFetchSpotifyStatus(int retryCount) {
         UserState userState = AccountManager.getUserLoginState(true);
 
-        if (!userState.loggedIn) {
+        // check to see if there are any active spotify integrations
+        boolean foundSpotifyIntegrations = false;
+        if (userState.user != null && userState.user.integrations != null) {
+            Integration spotifyIntegration = userState.user.integrations.stream()
+                    .filter(n -> "spotify".equals(n.name.toLowerCase()) && n.status.toLowerCase().equals("active"))
+                    .findAny()
+                    .orElse(null);
+            foundSpotifyIntegrations = (spotifyIntegration != null) ? true : false;
+        }
+
+        if (!foundSpotifyIntegrations) {
             if (retryCount > 0) {
                 final int newRetryCount = retryCount - 1;
                 final Runnable service = () -> lazilyFetchSpotifyStatus(newRetryCount);
