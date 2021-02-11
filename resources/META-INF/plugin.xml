@@ -117,7 +117,7 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <postStartupActivity implementation="com.musictime.intellij.plugin.PluginPostStartupActivity"/>
-    <toolWindow anchor="left" factoryClass="com.musictime.intellij.plugin.tree.MusicToolWindowFactory" icon="/com/musictime/intellij/plugin/assets/paw.png" id="Music Time"/>
+    <toolWindow anchor="left" factoryClass="com.musictime.intellij.plugin.tree.MusicToolWindowFactory" icon="/com/musictime/intellij/plugin/assets/paw-rotated.png" id="Music Time"/>
   </extensions>
 
   <actions>
