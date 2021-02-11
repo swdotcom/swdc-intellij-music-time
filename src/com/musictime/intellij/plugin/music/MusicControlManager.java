@@ -108,6 +108,7 @@ public class MusicControlManager {
         jsonObject.addProperty("pluginVersion", SoftwareCoUtils.getVersion());
         jsonObject.addProperty("plugin_id", SoftwareCoUtils.pluginId);
         jsonObject.addProperty("mac", UtilManager.isMac());
+        jsonObject.addProperty("plugin_token", FileUtilManager.getItem("jwt"));
         jsonObject.addProperty("auth_callback_state", FileUtilManager.getAuthCallbackState(true));
 
         String qryStr = SoftwareCoUtils.buildQueryString(jsonObject, true);
