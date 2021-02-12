@@ -2,7 +2,7 @@
   <id>com.musictime.intellij.plugin</id>
 
   <name>Music Time</name>
-  <version>2.1.5</version>
+  <version>2.1.6</version>
 
   <vendor email="cody@software.com" url="https://www.software.com">Software</vendor>
 
@@ -117,7 +117,7 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <postStartupActivity implementation="com.musictime.intellij.plugin.PluginPostStartupActivity"/>
-    <toolWindow anchor="left" factoryClass="com.musictime.intellij.plugin.tree.MusicToolWindowFactory" icon="/com/musictime/intellij/plugin/assets/paw.png" id="Music Time"/>
+    <toolWindow anchor="left" factoryClass="com.musictime.intellij.plugin.tree.MusicToolWindowFactory" icon="/com/musictime/intellij/plugin/assets/paw-rotated.png" id="Music Time"/>
   </extensions>
 
   <actions>
