@@ -65,8 +65,8 @@ public class SoftwareCoUtils {
 
     // 16 = intellij music time
     public static int pluginId = 16;
-    public static String api_endpoint = "https://stagingapi.software.com";// "https://api.software.com";
-    public static String launch_url = "https://staging.software.com";// "https://app.software.com";
+    public static String api_endpoint = "https://api.software.com";
+    public static String launch_url = "https://app.software.com";
 
     public static String IDE_NAME = "";
     public static String IDE_VERSION = "";
