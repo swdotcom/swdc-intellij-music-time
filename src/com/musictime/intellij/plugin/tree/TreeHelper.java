@@ -29,7 +29,7 @@ public class TreeHelper {
     public static Icon addIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/add.png");
     public static Icon slackIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/slack.png");
     public static Icon likeIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/heart-filled.png");
-    public static Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist-16x16.png");
+    public static Icon playlistIcon = IconLoader.getIcon("/com/musictime/intellij/plugin/assets/playlist-folder.png");
 
     private static Map<String, String> trackNameMap = new HashMap<>();
 
