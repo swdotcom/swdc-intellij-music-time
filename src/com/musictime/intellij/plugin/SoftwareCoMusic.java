@@ -5,7 +5,6 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManager;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
@@ -35,7 +34,7 @@ import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SoftwareCoMusic implements ApplicationComponent {
+public class SoftwareCoMusic {
     public static final Logger log = Logger.getLogger("SoftwareCoMusic");
     public static Gson gson;
 
@@ -49,6 +48,7 @@ public class SoftwareCoMusic implements ApplicationComponent {
     private SlackStateChangeObserver slackStateChangeObserver;
 
     public SoftwareCoMusic() {
+        initComponent();
     }
 
     private static IdeaPluginDescriptor getIdeaPluginDescriptor() {

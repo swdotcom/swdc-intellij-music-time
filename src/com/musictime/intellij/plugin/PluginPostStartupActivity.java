@@ -37,5 +37,7 @@ public class PluginPostStartupActivity implements StartupActivity {
                 }
             }
         });
+
+        new SoftwareCoMusic();
     }
 }
